@@ -193,6 +193,49 @@
     return div.firstElementChild;
   }
 
+  // ---------------- Effetto "decodifica" per il nome (una tantum) ----------------
+  // Ogni carattere scorre tra simboli casuali prima di fermarsi su quello vero,
+  // con un piccolo ritardo crescente da sinistra a destra. Gioca una sola volta
+  // (non e' un loop): sul nome dell'app, ripeterlo ad ogni click sarebbe fastidioso.
+  function decodeReveal(el, text) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = text;
+      return;
+    }
+    const CHARS = '!<>-_/[]{}=+*^?#$%&';
+    const randChar = () => CHARS[(Math.random() * CHARS.length) | 0];
+    el.textContent = '';
+    el.classList.add('decode-name');
+    const chars = text.split('');
+    const spans = chars.map(() => el.appendChild(document.createElement('span')));
+    const caret = el.appendChild(document.createElement('span'));
+    caret.className = 'decode-caret';
+
+    const churnStart = chars.map((_, i) => i * 28 + Math.random() * 35);
+    const lockTime = churnStart.map((t) => t + 150 + Math.random() * 160);
+    const locked = chars.map(() => false);
+    const start = performance.now();
+    const timer = setInterval(() => {
+      const elapsed = performance.now() - start;
+      let allLocked = true;
+      chars.forEach((ch, i) => {
+        if (locked[i]) return;
+        if (elapsed >= lockTime[i]) {
+          spans[i].textContent = ch;
+          spans[i].className = 'decode-cell--locked';
+          locked[i] = true;
+        } else {
+          allLocked = false;
+          if (elapsed >= churnStart[i]) {
+            spans[i].textContent = ch === ' ' ? ' ' : randChar();
+            spans[i].className = 'decode-cell--churn';
+          }
+        }
+      });
+      if (allLocked) { clearInterval(timer); caret.remove(); }
+    }, 45);
+  }
+
   // ---------------- Auth ----------------
   const authScreen = document.getElementById('auth-screen');
   const appRoot = document.getElementById('app');
@@ -200,11 +243,14 @@
   const authSub = document.getElementById('auth-sub');
   const authError = document.getElementById('auth-error');
   const authSubmit = document.getElementById('auth-submit');
+  const authTitle = document.getElementById('auth-title');
   let setupMode = false;
+  let authTitleDecoded = false;
 
   function showAuthScreen() {
     appRoot.classList.add('hidden');
     authScreen.classList.remove('hidden');
+    if (!authTitleDecoded) { authTitleDecoded = true; decodeReveal(authTitle, 'Mindkeep'); }
   }
 
   async function checkAuth() {
@@ -267,9 +313,14 @@
 
   document.getElementById('logout-btn').addEventListener('click', logout);
 
+  let sidebarBrandDecoded = false;
   function startApp() {
     authScreen.classList.add('hidden');
     appRoot.classList.remove('hidden');
+    if (!sidebarBrandDecoded) {
+      sidebarBrandDecoded = true;
+      decodeReveal(document.getElementById('sidebar-brand-name'), 'Mindkeep');
+    }
     render('flusso');
   }
 

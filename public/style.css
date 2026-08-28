@@ -101,6 +101,27 @@ button { font-family: inherit; }
   letter-spacing: -0.01em;
 }
 
+/* ---------- Effetto "decodifica" sul nome (schermata di login, sidebar) ---------- */
+@keyframes decode-lock {
+  0% { opacity: .4; text-shadow: 0 0 12px var(--accent), 0 0 2px currentColor; }
+  100% { opacity: 1; text-shadow: 0 0 transparent; }
+}
+@keyframes decode-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.decode-name { display: inline-block; white-space: pre; }
+.decode-cell--churn { opacity: .45; color: var(--accent-soft); }
+.decode-cell--locked { animation: decode-lock .3s ease-out both; }
+.decode-caret {
+  display: inline-block; width: 2px; height: 0.85em; margin-left: 1px;
+  background: var(--accent); vertical-align: -0.1em;
+  animation: decode-blink 1s step-end infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .decode-cell--locked, .decode-caret { animation: none; }
+}
+
 .auth-sub {
   color: var(--text-muted);
   margin: 0 0 28px;
