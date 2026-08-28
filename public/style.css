@@ -879,11 +879,11 @@ body.no-scroll { overflow: hidden; }
   }
   .sheet-title {
     font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 0.14em;
+    font-size: 13.5px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-weight: 400;
-    color: var(--text-faint);
+    font-weight: 600;
+    color: var(--text-muted);
     margin: 0 0 12px;
   }
   .sheet-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
