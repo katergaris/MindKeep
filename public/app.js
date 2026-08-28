@@ -183,8 +183,8 @@
     const div = document.createElement('div');
     div.innerHTML = html.trim();
     // Con piu' elementi al primo livello restituiamo un frammento: prima ne
-    // usciva solo il primo e il resto spariva senza avvisare (era il caso del
-    // divisore della dashboard e dei testi di aiuto di Vault e Fascicoli).
+    // usciva solo il primo e il resto spariva senza avvisare (era il caso dei
+    // testi di aiuto di Vault e Fascicoli).
     if (div.children.length > 1) {
       const frag = document.createDocumentFragment();
       while (div.firstChild) frag.appendChild(div.firstChild);
@@ -2160,7 +2160,7 @@
   // ==================================================================
   // CESTINO
   // ==================================================================
-  const TYPE_LABELS = { idea: 'Idea', project: 'Progetto', vault: 'Vault', account: 'Abbonamento', document: 'Documento', dossier: 'Fascicolo' };
+  const TYPE_LABELS = { idea: 'Idea', project: 'Progetto', vault: 'Vault', account: 'Abbonamento', document: 'Documento', dossier: 'Fascicolo', reminder: 'Scadenza' };
 
   views.trash = async (root) => {
     const items = await api('/trash');
