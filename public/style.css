@@ -44,11 +44,6 @@ html, body {
   /* Fa usare al browser le varianti scure dei controlli nativi (scrollbar
      comprese): senza, Windows disegna uno scrollbar chiaro anche qui sopra. */
   color-scheme: dark;
-  /* La pagina non deve MAI scorrere di lato: se un elemento al suo interno
-     sfora (es. un nome file lungo senza spazi), deve tagliarsi lui, non
-     spingere lo schermo intero fuori asse. Chi ha bisogno di scorrimento
-     orizzontale proprio (.table-scroll, .orbit-svg) lo gestisce da solo. */
-  overflow-x: hidden;
 }
 
 /* Scrollbar sottile e scura, coerente col resto dell'interfaccia. */
