@@ -167,6 +167,12 @@ app.use('/api', (req, res) => {
 });
 
 // --- Frontend statico ---
+// Interfaccia testuale minima (senza sidebar/vista grafica): login e comandi
+// rapidi (/progetto, /scadenza, idee) da riga di comando, stessa sessione
+// dell'interfaccia normale.
+app.get('/cli', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'cli.html'));
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));

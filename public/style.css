@@ -981,3 +981,26 @@ body.no-scroll { overflow: hidden; }
 @media (max-width: 460px) {
   .recovery-codes { grid-template-columns: 1fr; }
 }
+
+/* ---------- CLI (/cli): login e comandi testuali, nessuna sidebar ---------- */
+.cli-body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+.cli-screen {
+  height: 100vh; box-sizing: border-box; padding: 18px 20px; overflow-y: auto;
+  display: flex; flex-direction: column; font-size: 14px; line-height: 1.7;
+  cursor: text;
+}
+.cli-output { display: flex; flex-direction: column; }
+.cli-line { white-space: pre-wrap; word-break: break-word; }
+.cli-banner { color: var(--accent-soft); margin-bottom: 10px; }
+.cli-echo { color: var(--text-faint); }
+.cli-ok { color: var(--moss); }
+.cli-error { color: var(--danger-soft); }
+.cli-info { color: var(--text-muted); }
+.cli-help { color: var(--text-muted); }
+.cli-input-row { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+.cli-prompt { color: var(--accent); flex: none; }
+.cli-input {
+  flex: 1; background: transparent; border: none; border-radius: 0;
+  padding: 0; font: inherit; color: var(--text); caret-color: var(--accent);
+}
+.cli-input:focus { outline: none; box-shadow: none; }
