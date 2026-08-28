@@ -1078,29 +1078,63 @@
       });
     });
 
-    // ---- sfondo: trascina per spostare la vista, rotellina per zoomare ----
-    let panStart = null;
-    svg.addEventListener('pointerdown', (e) => {
-      if (e.target !== svg) return;
-      panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
-    });
-    window.addEventListener('pointermove', (e) => {
-      if (!panStart) return;
-      const scale = view.w / svg.clientWidth;
-      view.x = panStart.vx - (e.clientX - panStart.x) * scale;
-      view.y = panStart.vy - (e.clientY - panStart.y) * scale;
-      applyViewBox();
-    });
-    window.addEventListener('pointerup', () => { panStart = null; });
-    svg.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      const newW = Math.min(Math.max(view.w * factor, 200), 3000);
+    // ---- sfondo: trascina per spostare la vista; rotellina (mouse) o
+    // pizzico a due dita (tocco: la rotellina non esiste sul telefono) per
+    // zoomare ----
+    function zoomTo(newW) {
+      newW = Math.min(Math.max(newW, 200), 3000);
       const newH = newW * (H / W);
       view.x += (view.w - newW) / 2;
       view.y += (view.h - newH) / 2;
       view.w = newW; view.h = newH;
       applyViewBox();
+    }
+
+    let panStart = null;
+    const activePointers = new Map(); // pointerId -> {x,y} in coordinate schermo, per il pizzico a due dita
+    let pinchStart = null;
+
+    function endPointer(e) {
+      activePointers.delete(e.pointerId);
+      pinchStart = null;
+      if (activePointers.size === 1) {
+        const p = [...activePointers.values()][0];
+        panStart = { x: p.x, y: p.y, vx: view.x, vy: view.y };
+      } else {
+        panStart = null;
+      }
+    }
+
+    svg.addEventListener('pointerdown', (e) => {
+      if (e.target !== svg) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.size === 1) {
+        panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+      } else if (activePointers.size === 2) {
+        panStart = null;
+        const pts = [...activePointers.values()];
+        pinchStart = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1, w: view.w };
+      }
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.size >= 2 && pinchStart) {
+        const pts = [...activePointers.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+        zoomTo(pinchStart.w * (pinchStart.dist / dist));
+      } else if (panStart) {
+        const scale = view.w / svg.clientWidth;
+        view.x = panStart.vx - (e.clientX - panStart.x) * scale;
+        view.y = panStart.vy - (e.clientY - panStart.y) * scale;
+        applyViewBox();
+      }
+    });
+    window.addEventListener('pointerup', endPointer);
+    window.addEventListener('pointercancel', endPointer);
+    svg.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      zoomTo(view.w * (e.deltaY > 0 ? 1.1 : 0.9));
     }, { passive: false });
 
     // ---- simulazione: repulsione fra tutti i nodi + molla lungo gli archi + gravita' verso il centro ----
@@ -1213,7 +1247,7 @@
           <button type="button" class="btn btn-primary" id="flusso-save">Salva</button>
         </div>
         <div class="composer-hint">
-          <span><span class="kb">Ctrl</span>+<span class="kb">Invio</span> salva</span>
+          <span class="composer-hint-kb"><span class="kb">Ctrl</span>+<span class="kb">Invio</span> salva</span>
           <span>/ per il tipo · @ per collegare un fascicolo · # per un tag</span>
         </div>
       </div>

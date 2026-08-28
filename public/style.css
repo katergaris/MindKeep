@@ -799,6 +799,11 @@ body.no-scroll { overflow: hidden; }
   .topbar.search-open .search-wrap { display: block; flex: 1; }
   .topbar.search-open .search-toggle { margin-left: 8px; order: 2; }
 
+  /* Un tasto Ctrl non esiste sul telefono: la scorciatoia da tastiera non
+     ha senso qui, resta solo la spiegazione di / @ # (validi anche col
+     tastierino a schermo). */
+  .composer-hint-kb { display: none; }
+
   /* Spazio in fondo per non finire sotto la barra fissa (ora su due righe) */
   .view-root {
     padding: 20px 16px calc(140px + env(safe-area-inset-bottom, 0px));
