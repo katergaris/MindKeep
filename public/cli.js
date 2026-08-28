@@ -123,6 +123,35 @@
     }
   }
 
+  // ---------------- Cronologia comandi (frecce su/giu', persistente) ----------------
+  const HISTORY_KEY = 'mindkeep-cli-history';
+  const MAX_HISTORY = 100;
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function pushHistory(cmd) {
+    const history = loadHistory();
+    history.push(cmd);
+    while (history.length > MAX_HISTORY) history.shift();
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) { /* storage non disponibile: pazienza */ }
+  }
+  let historyIndex = loadHistory().length;
+
+  // ---------------- "Forse intendevi...?" per i comandi "/" sbagliati ----------------
+  function levenshtein(a, b) {
+    const track = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+    for (let i = 0; i <= a.length; i++) track[0][i] = i;
+    for (let j = 0; j <= b.length; j++) track[j][0] = j;
+    for (let j = 1; j <= b.length; j++) {
+      for (let i = 1; i <= a.length; i++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        track[j][i] = Math.min(track[j][i - 1] + 1, track[j - 1][i] + 1, track[j - 1][i - 1] + cost);
+      }
+    }
+    return track[b.length][a.length];
+  }
+  const KNOWN_SLASH_COMMANDS = ['/progetto', '/scadenza'];
+
   // ---------------- Comandi ----------------
   const HELP = [
     ['<testo>', 'nuova idea nel Flusso'],
@@ -134,6 +163,8 @@
     ['logout', 'chiude la sessione'],
     ['clear', 'pulisce lo schermo'],
     ['gui', 'apre l\'interfaccia grafica'],
+    ['↑ / ↓', 'richiama i comandi precedenti'],
+    ['TAB', 'completa /progetto, /scadenza'],
   ];
 
   // Estrae "#tag" e "@fascicolo" da una riga: il fascicolo e' tutto cio' che
@@ -213,7 +244,10 @@
       }
 
       if (trimmed.startsWith('/')) {
-        throw new Error(`Comando sconosciuto: ${trimmed.split(' ')[0]}. Scrivi "help" per l'elenco.`);
+        const typed = trimmed.split(' ')[0];
+        const best = KNOWN_SLASH_COMMANDS.map((c) => ({ c, d: levenshtein(typed, c) })).sort((a, b) => a.d - b.d)[0];
+        const hint = best && best.d <= 3 ? ` Forse intendevi "${best.c}"?` : ' Scrivi "help" per l\'elenco.';
+        throw new Error(`Comando sconosciuto: ${typed}.${hint}`);
       }
 
       // Nessun prefisso: idea (il tipo predefinito, come nel Flusso).
@@ -234,14 +268,33 @@
       if (match) { e.preventDefault(); input.value = match; }
       return;
     }
+    // La cronologia (con le frecce) ha senso solo per i comandi, mai per
+    // richiamare per sbaglio una password digitata durante l'accesso.
+    if (e.key === 'ArrowUp' && mode === 'ready') {
+      e.preventDefault();
+      const history = loadHistory();
+      if (historyIndex > 0) { historyIndex--; input.value = history[historyIndex]; }
+      return;
+    }
+    if (e.key === 'ArrowDown' && mode === 'ready') {
+      e.preventDefault();
+      const history = loadHistory();
+      historyIndex = Math.min(historyIndex + 1, history.length);
+      input.value = historyIndex < history.length ? history[historyIndex] : '';
+      return;
+    }
     if (e.key !== 'Enter') return;
     e.preventDefault();
     const value = input.value;
     input.value = '';
     input.disabled = true;
     try {
-      if (mode === 'ready') await runCommand(value);
-      else await handleLogin(value);
+      if (mode === 'ready') {
+        if (value.trim()) { pushHistory(value); historyIndex = loadHistory().length; }
+        await runCommand(value);
+      } else {
+        await handleLogin(value);
+      }
     } finally {
       input.disabled = false;
       input.focus();
