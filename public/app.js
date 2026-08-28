@@ -565,7 +565,6 @@
       VIEW_TABS.forEach((t) => {
         const btn = el(`<button type="button" class="view-tab ${t.key === activeTab ? 'active' : ''}">${esc(t.label)}</button>`);
         btn.addEventListener('click', () => {
-          if (t.key === 'orbita') { toast('Vista in arrivo'); return; }
           if (t.key === activeTab) return;
           render('flusso', { filter: opts.filter, tab: t.key === 'flusso' ? undefined : t.key });
         });
@@ -948,6 +947,187 @@
     root.appendChild(board);
   }
 
+  // ---- Vista Orbita: grafo dei fascicoli e di cio' che collegano, stile
+  // "graph view" di Obsidian. Simulazione a molle scritta a mano (repulsione
+  // fra tutti i nodi + attrazione lungo i collegamenti + gravita' verso il
+  // centro): niente libreria esterna, coerente col resto del progetto. ----
+  function renderFlussoOrbita(root, dossiers) {
+    const wrap = el(`
+      <div class="orbit-wrap">
+        <svg class="orbit-svg"></svg>
+        <p class="card-sub" style="margin-top:8px">Trascina un nodo per spostarlo, rotellina per zoomare, trascina lo sfondo per spostare la vista, click su un nodo per aprirlo.</p>
+      </div>
+    `);
+    root.appendChild(wrap);
+    const svg = wrap.querySelector('.orbit-svg');
+
+    const nodes = [];
+    const nodeIndex = new Map();
+    const edges = [];
+    const NS = 'http://www.w3.org/2000/svg';
+
+    dossiers.forEach((d) => {
+      const node = {
+        key: `dossier:${d.id}`, kind: 'dossier', view: 'dossiers', id: d.id, label: d.title,
+        x: 0, y: 0, vx: 0, vy: 0, r: 12 + Math.min(d.items.length, 10) * 1.4,
+      };
+      nodes.push(node);
+      nodeIndex.set(node.key, node);
+    });
+    dossiers.forEach((d) => {
+      d.items.forEach((item) => {
+        const key = `${item.type}:${item.id}`;
+        let node = nodeIndex.get(key);
+        if (!node) {
+          node = { key, kind: item.type, view: TYPE_TO_VIEW[item.type] || 'flusso', id: item.id, label: item.label, x: 0, y: 0, vx: 0, vy: 0, r: 8 };
+          nodes.push(node);
+          nodeIndex.set(key, node);
+        }
+        edges.push({ a: nodeIndex.get(`dossier:${d.id}`), b: node });
+      });
+    });
+
+    if (!nodes.length) {
+      wrap.innerHTML = '<div class="empty-state">Nessuna connessione ancora: collega qualche elemento a un fascicolo per vederla qui.</div>';
+      return;
+    }
+
+    // Posizioni iniziali su un cerchio, cosi' non partono tutte sovrapposte nello stesso punto.
+    const W = 800, H = 560;
+    nodes.forEach((n, i) => {
+      const angle = (i / nodes.length) * Math.PI * 2;
+      n.x = W / 2 + Math.cos(angle) * 220;
+      n.y = H / 2 + Math.sin(angle) * 220;
+    });
+
+    const view = { x: 0, y: 0, w: W, h: H };
+    function applyViewBox() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }
+    applyViewBox();
+
+    const g = document.createElementNS(NS, 'g');
+    svg.appendChild(g);
+    const edgeEls = edges.map(() => {
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('class', 'orbit-edge');
+      g.appendChild(line);
+      return line;
+    });
+    const nodeEls = nodes.map((n) => {
+      const nodeG = document.createElementNS(NS, 'g');
+      nodeG.setAttribute('class', `orbit-node orbit-node-${n.kind === 'dossier' ? 'dossier' : 'item'}`);
+      const circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('r', n.r);
+      const text = document.createElementNS(NS, 'text');
+      text.setAttribute('class', 'orbit-label');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('y', n.r + 12);
+      text.textContent = n.label.length > 20 ? n.label.slice(0, 19) + '…' : n.label;
+      nodeG.appendChild(circle);
+      nodeG.appendChild(text);
+      g.appendChild(nodeG);
+      return nodeG;
+    });
+
+    // ---- interazione: trascina un nodo (fermo mentre lo tieni), clicca per aprirlo ----
+    let dragging = null;
+    let moved = false;
+    function svgPoint(evt) {
+      const pt = svg.createSVGPoint();
+      pt.x = evt.clientX;
+      pt.y = evt.clientY;
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return { x: 0, y: 0 };
+      const p = pt.matrixTransform(ctm.inverse());
+      return { x: p.x, y: p.y };
+    }
+    nodeEls.forEach((nodeG, i) => {
+      const n = nodes[i];
+      nodeG.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        dragging = n;
+        moved = false;
+        nodeG.setPointerCapture(e.pointerId);
+      });
+      nodeG.addEventListener('pointermove', (e) => {
+        if (dragging !== n) return;
+        const p = svgPoint(e);
+        n.x = p.x; n.y = p.y; n.vx = 0; n.vy = 0;
+        moved = true;
+      });
+      nodeG.addEventListener('pointerup', () => {
+        dragging = null;
+        if (!moved) render(n.view, { highlight: n.id });
+      });
+    });
+
+    // ---- sfondo: trascina per spostare la vista, rotellina per zoomare ----
+    let panStart = null;
+    svg.addEventListener('pointerdown', (e) => {
+      if (e.target !== svg) return;
+      panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!panStart) return;
+      const scale = view.w / svg.clientWidth;
+      view.x = panStart.vx - (e.clientX - panStart.x) * scale;
+      view.y = panStart.vy - (e.clientY - panStart.y) * scale;
+      applyViewBox();
+    });
+    window.addEventListener('pointerup', () => { panStart = null; });
+    svg.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.1 : 0.9;
+      const newW = Math.min(Math.max(view.w * factor, 200), 3000);
+      const newH = newW * (H / W);
+      view.x += (view.w - newW) / 2;
+      view.y += (view.h - newH) / 2;
+      view.w = newW; view.h = newH;
+      applyViewBox();
+    }, { passive: false });
+
+    // ---- simulazione: repulsione fra tutti i nodi + molla lungo gli archi + gravita' verso il centro ----
+    const REPULSION = 12000, SPRING_LENGTH = 90, SPRING_K = 0.02, DAMPING = 0.82, CENTER_K = 0.0005;
+    function tick() {
+      if (!document.body.contains(svg)) return; // vista lasciata: si ferma da sola
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const distSq = Math.max(dx * dx + dy * dy, 1);
+          const dist = Math.sqrt(distSq);
+          const force = REPULSION / distSq;
+          const fx = (dx / dist) * force, fy = (dy / dist) * force;
+          if (a !== dragging) { a.vx += fx; a.vy += fy; }
+          if (b !== dragging) { b.vx -= fx; b.vy -= fy; }
+        }
+      }
+      edges.forEach(({ a, b }) => {
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        const force = (dist - SPRING_LENGTH) * SPRING_K;
+        const fx = (dx / dist) * force, fy = (dy / dist) * force;
+        if (a !== dragging) { a.vx += fx; a.vy += fy; }
+        if (b !== dragging) { b.vx -= fx; b.vy -= fy; }
+      });
+      nodes.forEach((n) => {
+        if (n === dragging) return;
+        n.vx += (W / 2 - n.x) * CENTER_K;
+        n.vy += (H / 2 - n.y) * CENTER_K;
+        n.vx *= DAMPING; n.vy *= DAMPING;
+        n.x += n.vx; n.y += n.vy;
+      });
+
+      nodeEls.forEach((nodeG, i) => nodeG.setAttribute('transform', `translate(${nodes[i].x},${nodes[i].y})`));
+      edgeEls.forEach((line, i) => {
+        line.setAttribute('x1', edges[i].a.x); line.setAttribute('y1', edges[i].a.y);
+        line.setAttribute('x2', edges[i].b.x); line.setAttribute('y2', edges[i].b.y);
+      });
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
   views.flusso = async (root, opts = {}) => {
     // Oggi arriva qui solo per le scadenze (uniche col flusso come unica "casa"):
     // gli altri tipi hanno una sezione propria e usano il loro highlight interno.
@@ -993,6 +1173,7 @@
 
     if (opts.tab === 'tabella') { renderFlussoTabella(root, entries, linkIndex); return; }
     if (opts.tab === 'bacheca') { renderFlussoBacheca(root, projects); return; }
+    if (opts.tab === 'orbita') { renderFlussoOrbita(root, dossiers); return; }
 
     const layout = el('<div class="flusso-layout"></div>');
     const main = el('<div></div>');

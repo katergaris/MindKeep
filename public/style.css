@@ -624,6 +624,21 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 .board-card-actions button:hover:not(:disabled) { color: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 .board-card-actions button:disabled { opacity: 0.3; cursor: default; }
 
+/* ---------- Flusso: Vista Orbita (grafo dei fascicoli) ---------- */
+.orbit-wrap { display: flex; flex-direction: column; }
+.orbit-svg {
+  width: 100%; height: 560px; background: var(--bg-2); border: 1px solid var(--border-soft);
+  border-radius: var(--radius); touch-action: none; cursor: grab;
+}
+.orbit-svg:active { cursor: grabbing; }
+.orbit-edge { stroke: var(--border); stroke-width: 1; }
+.orbit-node { cursor: pointer; }
+.orbit-node-dossier circle { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 1.5; }
+.orbit-node-item circle { fill: var(--surface-2); stroke: var(--accent-dim); stroke-width: 1; }
+.orbit-node:hover circle { stroke: var(--accent-soft); }
+.orbit-label { fill: var(--text-muted); font-family: var(--font-mono); font-size: 10px; pointer-events: none; user-select: none; }
+.orbit-node-dossier .orbit-label { fill: var(--accent-soft); font-weight: 600; }
+
 /* ---------- Riga elenco: base condivisa da Vault / Drive / Cestino ---------- */
 .row-card {
   align-items: center;
