@@ -46,8 +46,11 @@ app.use(
 );
 
 // --- Health check (pubblico, usato da Docker e dallo script di setup) ---
+// "version" e' il commit da cui e' stata costruita l'immagine (GIT_SHA,
+// impostato dalla pipeline CI): serve a controllare a colpo d'occhio se si
+// sta girando sull'ultima build o su una vecchia rimasta in cache.
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', version: (process.env.GIT_SHA || 'dev').slice(0, 7) });
 });
 
 // --- Autenticazione ---

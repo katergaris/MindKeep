@@ -2658,6 +2658,17 @@
     e.preventDefault();
   });
 
+  // Commit da cui gira questa build: si vede sia prima sia dopo l'accesso,
+  // cosi' si controlla a colpo d'occhio se il container e' stato davvero
+  // aggiornato invece di continuare a girare su un'immagine vecchia in cache.
+  api('/health').then((health) => {
+    const label = `build ${health.version}`;
+    const authEl = document.getElementById('auth-version');
+    const sidebarEl = document.getElementById('sidebar-version');
+    if (authEl) authEl.textContent = label;
+    if (sidebarEl) sidebarEl.textContent = label;
+  }).catch(() => {});
+
   // ---------------- Avvio ----------------
   checkAuth().catch((err) => {
     authError.textContent = err.message;

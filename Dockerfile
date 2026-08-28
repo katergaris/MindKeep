@@ -16,6 +16,13 @@ COPY public ./public
 
 RUN mkdir -p /app/data /app/uploads
 
+# Commit da cui e' stata costruita l'immagine: mostrato nell'app (sidebar,
+# /api/health) cosi' si vede a colpo d'occhio se si sta girando sull'ultima
+# build o su una vecchia rimasta in cache/non aggiornata. "dev" quando si fa
+# una build locale senza passare questo argomento.
+ARG GIT_SHA=dev
+ENV GIT_SHA=$GIT_SHA
+
 EXPOSE 3000
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=5 \

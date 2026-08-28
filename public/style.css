@@ -130,6 +130,11 @@ button { font-family: inherit; }
 
 .auth-form { text-align: left; display: flex; flex-direction: column; gap: 16px; }
 
+.auth-version {
+  margin: 18px 0 0; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.06em; color: var(--text-faint);
+}
+
 .auth-form label {
   display: flex;
   flex-direction: column;
