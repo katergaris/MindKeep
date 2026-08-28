@@ -1,13 +1,31 @@
 (() => {
   'use strict';
 
+  // ---------------- PWA: cache del guscio per installabilita' e avvio offline ----------------
+  // Se la registrazione fallisce (es. accesso in http semplice, senza
+  // certificato: i service worker richiedono https) l'app funziona comunque,
+  // solo senza installabilita' ne' cache offline.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
   // ---------------- API helper ----------------
   async function api(path, opts = {}) {
-    const res = await fetch('/api' + path, {
-      credentials: 'same-origin',
-      headers: opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
-      ...opts,
-    });
+    let res;
+    try {
+      res = await fetch('/api' + path, {
+        credentials: 'same-origin',
+        headers: opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
+        ...opts,
+      });
+    } catch (e) {
+      // fetch() lancia (invece di rispondere con un errore HTTP) quando non
+      // c'e' proprio connessione: senza questo l'utente vedeva "Failed to
+      // fetch" invece di un messaggio comprensibile.
+      throw new Error('Sei offline: serve una connessione al server per questa operazione.');
+    }
     // Un 401 sulle rotte di accesso e' una credenziale sbagliata, non una
     // sessione scaduta: va lasciato passare alla schermata di login, che sa
     // spiegare cosa manca (password errata, codice a due fattori, ...).
