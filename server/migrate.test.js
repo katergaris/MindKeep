@@ -41,6 +41,12 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
   assert.ok(accountColumns.includes('type'));
   assert.ok(accountColumns.includes('location'));
   assert.ok(accountColumns.includes('payment_method'));
+
+  const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
+  assert.ok(vaultColumns.includes('type'));
+  assert.ok(vaultColumns.includes('totp_secret_encrypted'));
+  assert.ok(vaultColumns.includes('card_cvv_encrypted'));
+  assert.ok(vaultColumns.includes('card_expiry'));
 });
 
 test('e\' idempotente: eseguirla piu\' volte non fallisce e non riapplica nulla', () => {
@@ -101,6 +107,18 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       deleted_at TEXT
     );
+    CREATE TABLE vault_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      site TEXT NOT NULL,
+      username TEXT DEFAULT '',
+      password_encrypted TEXT NOT NULL,
+      url TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      tags TEXT DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      deleted_at TEXT
+    );
   `);
 
   // Se rieseguisse le migrazioni invece di adottarle, "ALTER TABLE ADD COLUMN
@@ -125,4 +143,7 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
 
   const accountColumns = db.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name);
   assert.ok(accountColumns.includes('type'), 'la migrazione del tipo account non e\' stata eseguita sul database legacy');
+
+  const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
+  assert.ok(vaultColumns.includes('totp_secret_encrypted'), 'la migrazione dei tipi vault non e\' stata eseguita sul database legacy');
 });

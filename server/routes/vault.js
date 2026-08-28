@@ -3,18 +3,30 @@ const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const db = require('../db');
 const { encrypt, decrypt } = require('../crypto');
+const totp = require('../totp');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
+// Tipi di voce: cambia solo il significato dei campi condivisi (site/username/
+// password_encrypted), non lo schema. "password_encrypted" contiene sempre
+// l'unico segreto principale della voce: la password, il numero di carta o il
+// contenuto della nota sicura, a seconda del tipo.
+const VALID_TYPES = ['password', 'note', 'card'];
+
 function serialize(row, { reveal = false } = {}) {
-  const base = { ...row, tags: JSON.parse(row.tags || '[]') };
+  const base = { ...row, tags: JSON.parse(row.tags || '[]'), hasTotp: !!row.totp_secret_encrypted };
   delete base.password_encrypted;
+  delete base.totp_secret_encrypted;
+  delete base.card_cvv_encrypted;
   if (reveal) {
     try {
       base.password = decrypt(row.password_encrypted);
     } catch (e) {
       base.password = null;
+    }
+    if (row.card_cvv_encrypted) {
+      try { base.cvv = decrypt(row.card_cvv_encrypted); } catch (e) { base.cvv = null; }
     }
   }
   return base;
@@ -31,21 +43,78 @@ router.get('/:id/reveal', (req, res) => {
   res.json(serialize(row, { reveal: true }));
 });
 
+// Codice attuale a 6 cifre per il TOTP salvato su questa voce: non espone mai
+// il segreto stesso al frontend, solo il codice effimero gia' calcolato.
+router.get('/:id/totp', (req, res) => {
+  const row = db.prepare('SELECT totp_secret_encrypted FROM vault_entries WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Voce non trovata' });
+  if (!row.totp_secret_encrypted) return res.status(404).json({ error: 'Nessun codice configurato per questa voce' });
+  let secret;
+  try {
+    secret = decrypt(row.totp_secret_encrypted);
+  } catch (e) {
+    return res.status(500).json({ error: 'Impossibile decifrare il codice' });
+  }
+  const code = totp.codeForStep(secret, totp.currentStep());
+  const secondsRemaining = 30 - (Math.floor(Date.now() / 1000) % 30);
+  res.json({ code, secondsRemaining });
+});
+
+function encryptTotpSecret(raw) {
+  const clean = String(raw).replace(/\s/g, '');
+  totp.base32Decode(clean); // lancia se non e' base32 valido
+  return encrypt(clean);
+}
+
 router.post('/', (req, res) => {
-  const { site, username = '', password, url = '', notes = '', tags = [] } = req.body;
-  if (!site || !password) return res.status(400).json({ error: 'Sito e password sono obbligatori' });
+  const { site, username = '', password, url = '', notes = '', tags = [], type = 'password', totp_secret = '', card_cvv = '', card_expiry = '' } = req.body;
+  if (!site || !password) return res.status(400).json({ error: 'Titolo e contenuto sono obbligatori' });
+  const finalType = VALID_TYPES.includes(type) ? type : 'password';
+
+  let totpSecretEncrypted = null;
+  if (totp_secret) {
+    try {
+      totpSecretEncrypted = encryptTotpSecret(totp_secret);
+    } catch (e) {
+      return res.status(400).json({ error: 'Segreto TOTP non valido' });
+    }
+  }
+
   const info = db
-    .prepare('INSERT INTO vault_entries (site, username, password_encrypted, url, notes, tags) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(site, username, encrypt(password), url, notes, JSON.stringify(tags));
+    .prepare(
+      'INSERT INTO vault_entries (site, username, password_encrypted, url, notes, tags, type, totp_secret_encrypted, card_cvv_encrypted, card_expiry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    )
+    .run(
+      site, username, encrypt(password), url, notes, JSON.stringify(tags),
+      finalType, totpSecretEncrypted, card_cvv ? encrypt(card_cvv) : null, card_expiry || null
+    );
   res.status(201).json(serialize(db.prepare('SELECT * FROM vault_entries WHERE id = ?').get(info.lastInsertRowid)));
 });
 
 router.put('/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM vault_entries WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Voce non trovata' });
-  const { site, username, password, url, notes, tags } = req.body;
+  const { site, username, password, url, notes, tags, type, totp_secret, card_cvv, card_expiry } = req.body;
+  const finalType = type && VALID_TYPES.includes(type) ? type : existing.type;
+
+  // Come la password: campo vuoto = non cambiarlo. Per rimuovere del tutto il
+  // codice TOTP il frontend manda esplicitamente la stringa "-" (vedi il
+  // checkbox "rimuovi" nel modulo di modifica).
+  let totpSecretEncrypted = existing.totp_secret_encrypted;
+  if (totp_secret === '-') {
+    totpSecretEncrypted = null;
+  } else if (totp_secret) {
+    try {
+      totpSecretEncrypted = encryptTotpSecret(totp_secret);
+    } catch (e) {
+      return res.status(400).json({ error: 'Segreto TOTP non valido' });
+    }
+  }
+
+  const cardCvvEncrypted = card_cvv ? encrypt(card_cvv) : existing.card_cvv_encrypted;
+
   db.prepare(
-    "UPDATE vault_entries SET site = ?, username = ?, password_encrypted = ?, url = ?, notes = ?, tags = ?, updated_at = datetime('now') WHERE id = ?"
+    "UPDATE vault_entries SET site = ?, username = ?, password_encrypted = ?, url = ?, notes = ?, tags = ?, type = ?, totp_secret_encrypted = ?, card_cvv_encrypted = ?, card_expiry = ?, updated_at = datetime('now') WHERE id = ?"
   ).run(
     site ?? existing.site,
     username ?? existing.username,
@@ -53,6 +122,10 @@ router.put('/:id', (req, res) => {
     url ?? existing.url,
     notes ?? existing.notes,
     JSON.stringify(tags ?? JSON.parse(existing.tags || '[]')),
+    finalType,
+    totpSecretEncrypted,
+    cardCvvEncrypted,
+    card_expiry !== undefined ? (card_expiry || null) : existing.card_expiry,
     req.params.id
   );
   res.json(serialize(db.prepare('SELECT * FROM vault_entries WHERE id = ?').get(req.params.id)));

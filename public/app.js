@@ -1525,13 +1525,62 @@
   // ==================================================================
   // VAULT
   // ==================================================================
+  // Generatore locale: niente ambiguita' visiva (niente I/l/1/O/0), 20
+  // caratteri da un alfabeto di 70 simboli sono gia' ~123 bit di entropia.
+  function generatePassword(length = 20) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*-_=+';
+    const bytes = new Uint32Array(length);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (n) => chars[n % chars.length]).join('');
+  }
+
   function vaultModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Sito / servizio</label><input type="text" name="site" required /></div>
-        <div class="form-row"><label>Username</label><input type="text" name="username" /></div>
-        <div class="form-row"><label>Password ${existing ? '(lascia vuoto per non cambiarla)' : ''}</label><input type="text" name="password" ${existing ? '' : 'required'} /></div>
-        <div class="form-row"><label>URL</label><input type="text" name="url" /></div>
+        <div class="form-row"><label>Titolo</label><input type="text" name="site" required /></div>
+        <div class="form-row"><label>Tipo</label>
+          <select name="type">
+            <option value="password">Password</option>
+            <option value="note">Nota sicura</option>
+            <option value="card">Carta di credito</option>
+          </select>
+        </div>
+
+        <div data-type-fields="password">
+          <div class="form-row"><label>Username</label><input type="text" name="username" /></div>
+          <div class="form-row">
+            <label>Password${existing ? ' (lascia vuoto per non cambiarla)' : ''}</label>
+            <div style="display:flex;gap:6px">
+              <input type="text" name="password" style="flex:1" />
+              <button type="button" class="btn btn-sm" id="gen-password">Genera</button>
+            </div>
+          </div>
+          <div class="form-row"><label>URL</label><input type="text" name="url" /></div>
+          <div class="form-row">
+            <label>Codice TOTP${existing ? ' (lascia vuoto per non cambiarlo)' : ' (opzionale)'}</label>
+            <input type="text" name="totp_secret" placeholder="es. JBSWY3DPEHPK3PXP" />
+            <span class="field-hint">Segreto dell'app di autenticazione per questo sito: mostra un codice a 6 cifre insieme alla password.</span>
+          </div>
+          <div class="form-row" id="remove-totp-row" style="display:none">
+            <label style="flex-direction:row;align-items:center;gap:6px">
+              <input type="checkbox" name="remove_totp" style="width:auto" /> Rimuovi il codice TOTP salvato
+            </label>
+          </div>
+        </div>
+
+        <div data-type-fields="note">
+          <div class="form-row"><label>Contenuto${existing ? ' (lascia vuoto per non cambiarlo)' : ''}</label><textarea name="secure_note" rows="6"></textarea></div>
+        </div>
+
+        <div data-type-fields="card">
+          <div class="form-row"><label>Titolare carta</label><input type="text" name="card_holder" /></div>
+          <div class="form-row"><label>Numero carta${existing ? ' (lascia vuoto per non cambiarlo)' : ''}</label><input type="text" name="card_number" inputmode="numeric" /></div>
+          <div style="display:flex;gap:10px">
+            <div class="form-row" style="flex:1"><label>Scadenza (MM/AA)</label><input type="text" name="card_expiry" placeholder="12/28" /></div>
+            <div class="form-row" style="flex:1"><label>CVV${existing ? ' (lascia vuoto per non cambiarlo)' : ''}</label><input type="text" name="card_cvv" inputmode="numeric" /></div>
+          </div>
+        </div>
+
         <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
         <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
         <div class="form-actions">
@@ -1540,14 +1589,69 @@
         </div>
       </form>
     `);
+
+    function syncTypeFields() {
+      form.querySelectorAll('[data-type-fields]').forEach((group) => {
+        group.classList.toggle('hidden', group.dataset.typeFields !== form.type.value);
+      });
+    }
+    form.type.addEventListener('change', syncTypeFields);
+    form.querySelector('#gen-password').addEventListener('click', () => {
+      form.password.value = generatePassword();
+    });
+
     if (existing) {
       form.site.value = existing.site;
+      form.type.value = existing.type || 'password';
+      // "username" (password) e "card_holder" (carta) sono la stessa colonna
+      // lato server: precompiliamo entrambi, solo uno e' visibile alla volta.
       form.username.value = existing.username;
+      form.card_holder.value = existing.username;
       form.url.value = existing.url;
       form.notes.value = existing.notes;
       form.tags.value = (existing.tags || []).join(', ');
+      form.card_expiry.value = existing.card_expiry || '';
+      if (existing.hasTotp) form.querySelector('#remove-totp-row').style.display = '';
+      // Il tipo non si cambia dopo la creazione: in modifica i campi del
+      // segreto principale restano vuoti ("lascia vuoto per non cambiarlo"),
+      // e cambiare tipo a quel punto scambierebbe il significato del segreto
+      // gia' salvato (es. una password che diventa "numero di carta").
+      form.type.disabled = true;
     }
+    syncTypeFields();
     return form;
+  }
+
+  // Costruisce il corpo della richiesta in base al tipo scelto: il campo
+  // "password" del form alimenta sempre l'unico segreto principale della
+  // voce (password / numero carta / contenuto nota), qualunque sia il tipo.
+  function collectVaultPayload(form, existing) {
+    const type = form.type.value;
+    const tags = parseTags(form);
+    const payload = { site: form.site.value, type, notes: form.notes.value, tags };
+    const primary = type === 'password' ? form.password.value : type === 'note' ? form.secure_note.value : form.card_number.value;
+    if (primary || !existing) payload.password = primary;
+
+    if (type === 'password') {
+      payload.username = form.username.value;
+      payload.url = form.url.value;
+      if (form.remove_totp && form.remove_totp.checked) payload.totp_secret = '-';
+      else if (form.totp_secret.value.trim()) payload.totp_secret = form.totp_secret.value.trim();
+    } else if (type === 'card') {
+      payload.username = form.card_holder.value;
+      payload.card_expiry = form.card_expiry.value;
+      if (form.card_cvv.value.trim()) payload.card_cvv = form.card_cvv.value.trim();
+    }
+    return payload;
+  }
+
+  function vaultPrimaryFieldError(form, existing) {
+    if (existing) return null; // in modifica, vuoto = "non cambiare": mai un errore
+    const type = form.type.value;
+    if (type === 'password' && !form.password.value) return 'La password e\' obbligatoria';
+    if (type === 'note' && !form.secure_note.value) return 'Il contenuto della nota e\' obbligatorio';
+    if (type === 'card' && !form.card_number.value) return 'Il numero della carta e\' obbligatorio';
+    return null;
   }
 
   views.vault = async (root, opts = {}) => {
@@ -1586,8 +1690,9 @@
       const form = vaultModal();
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const tags = parseTags(form);
-        await api('/vault', { method: 'POST', body: JSON.stringify({ site: form.site.value, username: form.username.value, password: form.password.value, url: form.url.value, notes: form.notes.value, tags }) });
+        const error = vaultPrimaryFieldError(form, null);
+        if (error) { toast(error); return; }
+        await api('/vault', { method: 'POST', body: JSON.stringify(collectVaultPayload(form, null)) });
         closeModal(); toast('Voce salvata'); render('vault');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -1599,13 +1704,15 @@
       return;
     }
 
+    const TYPE_LABEL = { password: 'Password', note: 'Nota', card: 'Carta' };
     entries.forEach((entry) => {
       const row = el(`
         <div class="vault-row row-card">
-          <strong>${esc(entry.site)}</strong>
+          <strong><span class="chip-type">${esc(TYPE_LABEL[entry.type] || entry.type)}</span> ${esc(entry.site)}</strong>
           <span>${esc(entry.username) || '—'}</span>
-          <span class="password-field" data-pwd>••••••••</span>
+          <span class="password-field" data-pwd>${entry.type === 'note' ? '(nota sicura)' : '••••••••'}</span>
           <span class="card-actions" style="padding:0">
+            ${entry.hasTotp ? '<button class="btn btn-sm" data-totp>Codice</button>' : ''}
             <button class="btn btn-sm" data-reveal>Mostra</button>
             <button class="btn btn-sm" data-edit>Modifica</button>
             <button class="btn btn-sm" data-link>Fascicolo</button>
@@ -1614,27 +1721,53 @@
         </div>
       `);
       let revealed = false;
-      row.querySelector('[data-reveal]').addEventListener('click', async (btn) => {
+      row.querySelector('[data-reveal]').addEventListener('click', async () => {
         const pwdEl = row.querySelector('[data-pwd]');
         if (!revealed) {
           const full = await api(`/vault/${entry.id}/reveal`);
-          pwdEl.textContent = full.password || '(vuota)';
+          pwdEl.textContent = entry.type === 'card'
+            ? `${full.password || '(vuoto)'} · CVV ${full.cvv || '—'}`
+            : (full.password || '(vuoto)');
           revealed = true;
           row.querySelector('[data-reveal]').textContent = 'Nascondi';
         } else {
-          pwdEl.textContent = '••••••••';
+          pwdEl.textContent = entry.type === 'note' ? '(nota sicura)' : '••••••••';
           revealed = false;
           row.querySelector('[data-reveal]').textContent = 'Mostra';
         }
       });
+      if (entry.hasTotp) {
+        let totpTimer = null;
+        const totpBtn = row.querySelector('[data-totp]');
+        totpBtn.addEventListener('click', async () => {
+          if (totpTimer) {
+            clearInterval(totpTimer);
+            totpTimer = null;
+            row.querySelector('[data-pwd]').textContent = entry.type === 'note' ? '(nota sicura)' : (revealed ? row.querySelector('[data-pwd]').textContent : '••••••••');
+            totpBtn.textContent = 'Codice';
+            return;
+          }
+          const pwdEl = row.querySelector('[data-pwd]');
+          const showCode = async () => {
+            // La riga potrebbe non esistere piu' (navigazione altrove): si ferma da sola.
+            if (!document.body.contains(row)) { clearInterval(totpTimer); return; }
+            try {
+              const { code, secondsRemaining } = await api(`/vault/${entry.id}/totp`);
+              pwdEl.textContent = `${code} (${secondsRemaining}s)`;
+            } catch (e) {
+              pwdEl.textContent = 'Codice non disponibile';
+            }
+          };
+          await showCode();
+          totpTimer = setInterval(showCode, 1000);
+          totpBtn.textContent = 'Nascondi codice';
+        });
+      }
       row.querySelector('[data-edit]').addEventListener('click', () => {
         const form = vaultModal(entry);
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const tags = parseTags(form);
-          const payload = { site: form.site.value, username: form.username.value, url: form.url.value, notes: form.notes.value, tags };
-          if (form.password.value) payload.password = form.password.value;
-          await api(`/vault/${entry.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+          await api(`/vault/${entry.id}`, { method: 'PUT', body: JSON.stringify(collectVaultPayload(form, entry)) });
           closeModal(); toast('Voce aggiornata'); render('vault');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
