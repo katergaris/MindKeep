@@ -465,12 +465,12 @@ body.no-scroll { overflow: hidden; }
 /* ---------- Vista Bacheca (Progetti) ---------- */
 .board { display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 14px; }
 @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
-.board-col { background: var(--surface-2); border: 1px solid var(--border-soft); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.board-col { background: var(--surface-2); border: 1px solid var(--border-soft); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .board-col-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 2px 4px; }
 .board-col-count { font-family: var(--font-mono); }
 .board-col-body { display: flex; flex-direction: column; gap: 8px; min-height: 30px; }
-.board-card { background: var(--surface); border: 1px solid var(--border-soft); padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
-.board-card-title { margin: 0; font-size: 0.87rem; font-weight: 600; }
+.board-card { background: var(--surface); border: 1px solid var(--border-soft); padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.board-card-title { margin: 0; font-size: 0.87rem; font-weight: 600; overflow-wrap: anywhere; }
 .board-card-actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 4px; }
 .board-card { cursor: grab; }
 .board-card.board-card-dragging { opacity: 0.4; }
@@ -508,7 +508,7 @@ body.no-scroll { overflow: hidden; }
 }
 .card.card-highlight, .row-card.card-highlight, .entry-block.card-highlight, .vault-sheet-row.card-highlight { outline: 2px solid var(--accent); outline-offset: 1px; }
 .card-title { font-weight: 700; font-size: 1rem; margin: 0; overflow-wrap: anywhere; }
-.card-sub { color: var(--text-muted); font-size: 0.82rem; margin: 0; }
+.card-sub { color: var(--text-muted); font-size: 0.82rem; margin: 0; overflow-wrap: anywhere; }
 .card-body { font-size: 0.88rem; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; }
 
@@ -575,9 +575,14 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 .vsh-cell:last-child, .vs-cell:last-child { border-right: none; }
 .vault-sheet-row { border-bottom: 1px solid var(--border-soft); font-size: 0.85rem; min-height: 28px; }
 .vault-sheet-row:last-child { border-bottom: none; }
-.vault-sheet-row:hover { background: var(--sel-bg); color: var(--sel-text); }
-.vault-sheet-row:hover .vs-num,
-.vault-sheet-row:hover .vs-pwd { color: inherit; }
+.vault-sheet-row:nth-child(even) { background: var(--surface-2); }
+/* Evidenzia la riga solo con un mouse vero: su touch lo stato :hover resta
+   "incollato" dopo un tocco e sembra una selezione casuale — segnalato
+   dall'utente. Niente piu' inversione blu piena: solo una tinta leggera,
+   il testo resta sempre leggibile. */
+@media (hover: hover) and (pointer: fine) {
+  .vault-sheet-row:hover { background: var(--accent-bg); }
+}
 .vs-num { color: var(--text-faint); font-family: var(--font-mono); font-size: 0.78rem; }
 .vs-type { display: flex; align-items: center; gap: 6px; }
 .vs-type-dot { width: 9px; height: 9px; flex: none; box-shadow: inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35); }
@@ -587,11 +592,14 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 .vs-pwd { font-family: var(--font-mono); color: var(--text-muted); }
 .vs-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; padding-top: 4px; padding-bottom: 4px; }
 .vs-actions .btn-sm { padding: 3px 8px; font-size: 0.76rem; }
+.vs-actions .btn-icon { width: 27px; height: 27px; padding: 0; }
+.vs-actions .btn-icon .icon { width: 15px; height: 15px; }
 
 .doc-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .doc-name { font-weight: 600; }
 .doc-original { color: var(--text-faint); font-size: 0.74rem; font-family: var(--font-mono); }
 .doc-meta { color: var(--text-muted); font-size: 0.78rem; }
+.doc-dossier { color: var(--accent-soft); font-size: 0.78rem; margin-top: 2px; }
 
 .chip-type { color: var(--accent-soft); text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.5px; }
 
@@ -640,6 +648,7 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   font-size: 0.68rem; padding: 2px 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .calendar-entry:hover { background: var(--sel-bg); color: var(--sel-text); }
+.calendar-entry-time { font-weight: 700; font-family: var(--font-mono); }
 
 /* ---------- Modal ---------- */
 .modal-backdrop {
@@ -717,6 +726,8 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   .vault-sheet-row .vs-num { display: none; }
   .vs-actions { justify-content: flex-start; }
   .vs-actions .btn-sm { min-height: 40px; }
+  .vs-actions .btn-icon { width: 40px; height: 40px; }
+  .vs-actions .btn-icon .icon { width: 18px; height: 18px; }
 
   .chip { font-size: 12.5px; padding: 4px 8px; }
   .composer-hint { font-size: 12px; }

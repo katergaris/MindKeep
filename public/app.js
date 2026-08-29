@@ -403,6 +403,12 @@
   const VECTOR_ICONS = {
     cerca: '<circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/>',
     chiudi: '<path d="M6 6l12 12M18 6L6 18"/>',
+    occhio: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+    'occhio-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-4 4.9M6.3 6.5C3.4 8.3 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/><path d="M9.5 9.7a3 3 0 0 0 4.2 4.2"/>',
+    matita: '<path d="M4 20l.9-4L16 4.9a1.6 1.6 0 0 1 2.3 0l.8.8a1.6 1.6 0 0 1 0 2.3L8 19.1z"/><path d="M14.5 7.5l2 2"/>',
+    cartellaLinea: '<path d="M3 7a1.8 1.8 0 0 1 1.8-1.8h4l2 2h8.4A1.8 1.8 0 0 1 21 9v8.2A1.8 1.8 0 0 1 19.2 19H4.8A1.8 1.8 0 0 1 3 17.2z"/>',
+    cestino: '<path d="M4.5 7h15M9.5 7V4.5h5V7M7 7l1 12.5a1.5 1.5 0 0 0 1.5 1.4h7a1.5 1.5 0 0 0 1.5-1.4L18 7"/><path d="M10.2 11v6M13.8 11v6"/>',
+    codice: '<rect x="2" y="5.5" width="20" height="13" rx="1"/><text x="6" y="15" font-size="9.5" font-family="var(--font-mono, monospace)" font-weight="700" stroke="none" fill="currentColor">01</text>',
   };
   function iconaLinea(nome) {
     return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -724,7 +730,7 @@
         const form = reminderModal();
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
-          await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+          await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
           closeModal(); toast('Scadenza salvata'); closeQuickCapture(); render('reminders');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -855,7 +861,10 @@
     const form = el(`
       <form class="modal-body" style="padding:0">
         <div class="form-row"><label>Cosa</label><input type="text" name="label" required /></div>
-        <div class="form-row"><label>Quando</label><input type="date" name="date" required /></div>
+        <div style="display:flex;gap:10px">
+          <div class="form-row" style="flex:1"><label>Quando</label><input type="date" name="date" required /></div>
+          <div class="form-row" style="flex:1"><label>Ora (opzionale)</label><input type="time" name="time" /></div>
+        </div>
         <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
@@ -866,6 +875,7 @@
     if (existing) {
       form.label.value = existing.label;
       form.date.value = existing.date ? existing.date.slice(0, 10) : '';
+      form.time.value = existing.time || '';
       form.notes.value = existing.notes;
     }
     return form;
@@ -886,7 +896,7 @@
       const form = reminderModal();
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+        await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
         closeModal(); toast('Scadenza salvata'); render('reminders');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -900,7 +910,7 @@
 
     reminders
       .slice()
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .sort((a, b) => new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`))
       .forEach((r) => {
         const days = daysUntil(r.date);
         const dayLabel = days === 0 ? 'oggi' : days > 0 ? `tra ${days} giorn${days === 1 ? 'o' : 'i'}` : `passata da ${-days} giorn${days === -1 ? 'o' : 'i'}`;
@@ -908,7 +918,7 @@
           <div class="trash-row row-card">
             <span>
               <strong>${esc(r.label)}</strong>
-              <span class="card-sub" style="display:block">${fmtDate(r.date)} · ${esc(dayLabel)}${r.notes ? ' · ' + escTrim(r.notes, 80) : ''}</span>
+              <span class="card-sub" style="display:block">${fmtDate(r.date)}${r.time ? ' · ' + esc(r.time) : ''} · ${esc(dayLabel)}${r.notes ? ' · ' + escTrim(r.notes, 80) : ''}</span>
             </span>
             <span class="card-actions" style="padding:0">
               <button class="btn btn-sm" data-edit>Modifica</button>
@@ -921,7 +931,7 @@
           const form = reminderModal(r);
           form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+            await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
             closeModal(); toast('Scadenza aggiornata'); render('reminders');
           });
           form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -959,7 +969,7 @@
       if (dateStr) form.date.value = dateStr;
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+        await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
         closeModal(); toast('Scadenza salvata'); render('calendar', { month: monthKey(cursor) });
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -970,7 +980,7 @@
       const form = reminderModal(r);
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+        await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
         closeModal(); toast('Scadenza aggiornata'); render('calendar', { month: monthKey(cursor) });
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -996,7 +1006,9 @@
     root.appendChild(gridWrap);
 
     function remindersOn(dateStr) {
-      return reminders.filter((r) => (r.date || '').slice(0, 10) === dateStr);
+      return reminders
+        .filter((r) => (r.date || '').slice(0, 10) === dateStr)
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     }
 
     function renderMonth() {
@@ -1021,7 +1033,7 @@
         `);
         const entriesEl = cell.querySelector('.calendar-entries');
         remindersOn(dateStr).forEach((r) => {
-          const chip = el(`<button type="button" class="calendar-entry">${escTrim(r.label, 40)}</button>`);
+          const chip = el(`<button type="button" class="calendar-entry">${r.time ? `<span class="calendar-entry-time">${esc(r.time)}</span> ` : ''}${escTrim(r.label, 40)}</button>`);
           chip.addEventListener('click', (e) => { e.stopPropagation(); saveEdit(r); });
           entriesEl.appendChild(chip);
         });
@@ -1594,16 +1606,17 @@
           <span class="vs-cell" data-label="Utente">${esc(entry.username) || '—'}</span>
           <span class="vs-cell vs-pwd" data-label="Password" data-pwd>${entry.type === 'note' ? '(nota sicura)' : '••••••••'}</span>
           <span class="vs-cell vs-actions">
-            ${entry.hasTotp ? '<button class="btn btn-sm" data-totp>Codice</button>' : ''}
-            <button class="btn btn-sm" data-reveal>Mostra</button>
-            <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Cartella</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina</button>
+            ${entry.hasTotp ? `<button class="btn btn-sm btn-icon" data-totp title="Codice TOTP">${iconaLinea('codice')}</button>` : ''}
+            <button class="btn btn-sm btn-icon" data-reveal title="Mostra">${iconaLinea('occhio')}</button>
+            <button class="btn btn-sm btn-icon" data-edit title="Modifica">${iconaLinea('matita')}</button>
+            <button class="btn btn-sm btn-icon" data-link title="Cartella">${iconaLinea('cartellaLinea')}</button>
+            <button class="btn btn-sm btn-icon btn-danger" data-del title="Elimina">${iconaLinea('cestino')}</button>
           </span>
         </div>
       `);
       let revealed = false;
-      row.querySelector('[data-reveal]').addEventListener('click', async () => {
+      const revealBtn = row.querySelector('[data-reveal]');
+      revealBtn.addEventListener('click', async () => {
         const pwdEl = row.querySelector('[data-pwd]');
         if (!revealed) {
           const full = await api(`/vault/${entry.id}/reveal`);
@@ -1611,11 +1624,13 @@
             ? `${full.password || '(vuoto)'} · CVV ${full.cvv || '—'}`
             : (full.password || '(vuoto)');
           revealed = true;
-          row.querySelector('[data-reveal]').textContent = 'Nascondi';
+          revealBtn.innerHTML = iconaLinea('occhio-off');
+          revealBtn.title = 'Nascondi';
         } else {
           pwdEl.textContent = entry.type === 'note' ? '(nota sicura)' : '••••••••';
           revealed = false;
-          row.querySelector('[data-reveal]').textContent = 'Mostra';
+          revealBtn.innerHTML = iconaLinea('occhio');
+          revealBtn.title = 'Mostra';
         }
       });
       if (entry.hasTotp) {
@@ -1626,7 +1641,8 @@
             clearInterval(totpTimer);
             totpTimer = null;
             row.querySelector('[data-pwd]').textContent = entry.type === 'note' ? '(nota sicura)' : (revealed ? row.querySelector('[data-pwd]').textContent : '••••••••');
-            totpBtn.textContent = 'Codice';
+            totpBtn.innerHTML = iconaLinea('codice');
+            totpBtn.title = 'Codice TOTP';
             return;
           }
           const pwdEl = row.querySelector('[data-pwd]');
@@ -1642,7 +1658,8 @@
           };
           await showCode();
           totpTimer = setInterval(showCode, 1000);
-          totpBtn.textContent = 'Nascondi codice';
+          totpBtn.innerHTML = iconaLinea('occhio-off');
+          totpBtn.title = 'Nascondi codice';
         });
       }
       row.querySelector('[data-edit]').addEventListener('click', () => {
@@ -1877,12 +1894,18 @@
   // ==================================================================
   // DRIVE
   // ==================================================================
-  function documentModal(existing) {
+  function dossierSelectOptions(dossiers, selectedId) {
+    return `<option value="">— nessuna —</option>` + dossiers.map((ds) =>
+      `<option value="${ds.id}"${String(ds.id) === String(selectedId) ? ' selected' : ''}>${esc(ds.title)}</option>`
+    ).join('');
+  }
+
+  function documentModal(existing, dossiers, currentDossierId) {
     const form = el(`
       <form class="modal-body" style="padding:0">
         <div class="form-row"><label>Nome (opzionale)</label><input type="text" name="display_name" placeholder="Lascia vuoto per usare il nome del file" /></div>
         <p class="card-sub" style="margin:-6px 0 0">File originale: ${esc(existing.original_name)}</p>
-        <div class="form-row"><label>Cartella</label><input type="text" name="folder" placeholder="es. Casa, Auto, Fiscale" /></div>
+        <div class="form-row"><label>Cartella</label><select name="dossier_id">${dossierSelectOptions(dossiers, currentDossierId)}</select></div>
         <div class="form-row"><label>Scadenza (opzionale)</label><input type="date" name="expiry_date" /></div>
         <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
         <div class="form-actions">
@@ -1892,15 +1915,33 @@
       </form>
     `);
     form.display_name.value = existing.display_name || '';
-    form.folder.value = existing.folder || '';
     form.expiry_date.value = existing.expiry_date ? existing.expiry_date.slice(0, 10) : '';
     form.tags.value = (existing.tags || []).join(', ');
     return form;
   }
 
+  // Riallinea i collegamenti cartella di un elemento a un solo id selezionato
+  // da un menu a tendina (scollega gli altri, collega quello nuovo se manca).
+  async function setSingleDossierLink(itemType, itemId, currentDossierIds, newDossierId) {
+    const targets = currentDossierIds.filter((id) => String(id) !== String(newDossierId));
+    await Promise.all(targets.map((id) => api(`/dossiers/${id}/links/${itemType}/${itemId}`, { method: 'DELETE' })));
+    if (newDossierId && !currentDossierIds.some((id) => String(id) === String(newDossierId))) {
+      await api(`/dossiers/${newDossierId}/links`, { method: 'POST', body: JSON.stringify({ item_type: itemType, item_id: itemId }) });
+    }
+  }
+
   views.drive = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const docs = await api('/drive');
+    const [docs, dossiers] = await Promise.all([api('/drive'), api('/dossiers')]);
+    // Documento -> cartelle a cui e' collegato (di norma una sola, il menu a
+    // tendina tratta il collegamento come singolo anche se il modello dati
+    // sotto permetterebbe piu' cartelle per lo stesso elemento).
+    const docDossiers = {};
+    dossiers.forEach((ds) => {
+      ds.items.forEach((it) => {
+        if (it.type === 'document') (docDossiers[it.id] ||= []).push(ds);
+      });
+    });
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
@@ -1914,7 +1955,7 @@
         <form class="modal-body" style="padding:0">
           <div class="form-row"><label>File</label><input type="file" name="file" required /></div>
           <div class="form-row"><label>Nome (opzionale)</label><input type="text" name="display_name" placeholder="Lascia vuoto per usare il nome del file" /></div>
-          <div class="form-row"><label>Cartella</label><input type="text" name="folder" placeholder="es. Casa, Auto, Fiscale" /></div>
+          <div class="form-row"><label>Cartella (opzionale)</label><select name="dossier_id">${dossierSelectOptions(dossiers, '')}</select></div>
           <div class="form-row"><label>Scadenza (opzionale)</label><input type="date" name="expiry_date" /></div>
           <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
           <div class="form-actions">
@@ -1929,10 +1970,12 @@
         const fd = new FormData();
         fd.append('file', form.file.files[0]);
         fd.append('display_name', form.display_name.value);
-        fd.append('folder', form.folder.value);
         fd.append('expiry_date', form.expiry_date.value || '');
         fd.append('tags', JSON.stringify(tags));
-        await api('/drive', { method: 'POST', body: fd });
+        const doc = await api('/drive', { method: 'POST', body: fd });
+        if (form.dossier_id.value) {
+          await api(`/dossiers/${form.dossier_id.value}/links`, { method: 'POST', body: JSON.stringify({ item_type: 'document', item_id: doc.id }) });
+        }
         closeModal(); toast('Documento caricato'); render('drive');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -1948,6 +1991,7 @@
       const ext = (d.original_name.includes('.') ? d.original_name.split('.').pop() : '').toUpperCase().slice(0, 4);
       const previewable = PREVIEWABLE_MIME.has(d.mime);
       const isImage = (d.mime || '').startsWith('image/');
+      const linkedDossiers = docDossiers[d.id] || [];
       const row = el(`
         <div class="doc-row row-card">
           <div style="display:flex;gap:10px;align-items:center;min-width:0">
@@ -1960,29 +2004,30 @@
               <div class="doc-name">${esc(d.display_name || d.original_name)}</div>
               ${d.display_name ? `<div class="doc-original">${esc(d.original_name)}</div>` : ''}
               <div class="doc-meta">${d.folder ? esc(d.folder) + ' · ' : ''}${fmtSize(d.size)}${d.expiry_date ? ' · scade ' + fmtDate(d.expiry_date) : ''}</div>
+              ${linkedDossiers.length ? `<div class="doc-dossier">→ ${linkedDossiers.map((ds) => esc(ds.title)).join(', ')}</div>` : ''}
             </div>
           </div>
           <span class="card-actions" style="padding:0">
             <a class="btn btn-sm" href="/api/drive/${d.id}/download">Scarica</a>
             <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Cartella</button>
             <button class="btn btn-sm btn-danger" data-del>Elimina</button>
           </span>
         </div>
       `);
       if (previewable) row.querySelector('.entry-doc').addEventListener('click', () => openDocumentPreview(d));
       row.querySelector('[data-edit]').addEventListener('click', () => {
-        const form = documentModal(d);
+        const currentIds = linkedDossiers.map((ds) => ds.id);
+        const form = documentModal(d, dossiers, currentIds[0] || '');
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           const tags = parseTags(form);
-          await api(`/drive/${d.id}`, { method: 'PUT', body: JSON.stringify({ display_name: form.display_name.value, folder: form.folder.value, expiry_date: form.expiry_date.value || null, tags }) });
+          await api(`/drive/${d.id}`, { method: 'PUT', body: JSON.stringify({ display_name: form.display_name.value, expiry_date: form.expiry_date.value || null, tags }) });
+          await setSingleDossierLink('document', d.id, currentIds, form.dossier_id.value);
           closeModal(); toast('Documento aggiornato'); render('drive');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
         openModal('Modifica documento', form);
       });
-      row.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('document', d.id, d.display_name || d.original_name));
       row.querySelector('[data-del]').addEventListener('click', async () => {
         if (!confirm('Spostare questo documento nel cestino?')) return;
         await api(`/drive/${d.id}`, { method: 'DELETE' });

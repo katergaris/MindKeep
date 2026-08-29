@@ -165,6 +165,48 @@ Segnalati dall'utente durante l'uso reale, non voci del piano originale:
   preferenza gia' nota dell'utente (commit/push senza fermarsi a ogni
   passo, una volta approvato l'insieme).
 
+## Sessione 30/08/2026: Vault icone, Drive cartella, orario scadenze
+
+Altro giro di feedback dall'uso reale, dopo il giro di bug fix del 29/08:
+
+- **Vault**: i quattro pulsanti testuali (Mostra/Modifica/Cartella/Elimina)
+  sono diventati icone in stile Windows (occhio/matita/cartella/cestino,
+  linea vettoriale coerente con `iconaLinea()` gia' usata per la ricerca —
+  non emoji). Il pulsante "Codice" TOTP e' un'icona con "01" dentro (SVG con
+  `<text>`, non un font emoji). L'hover blu pieno su tutta la riga (stile
+  Excel) e' stato tolto: su schermi touch restava "incollato" dopo un tocco
+  e sembrava una selezione casuale — segnalato dall'utente. Ora c'e' solo
+  zebra striping (`:nth-child(even)`) piu' un hover leggero (tinta, non piu'
+  inversione colore) attivo solo con mouse vero via `@media (hover: hover)
+  and (pointer: fine)`.
+- **Drive**: il vecchio campo "Cartella" era testo libero non collegato al
+  vero sistema Cartelle (dossiers) — un secondo concetto di "cartella" mai
+  spiegato, confuso con quello vero. Sostituito con un menu a tendina delle
+  Cartelle reali sia in caricamento che in modifica; il collegamento risultante
+  ora compare scritto sulla card del file stesso ("→ NomeCartella"), non solo
+  entrando nella cartella da Cartelle. Vedi `setSingleDossierLink()` in
+  `app.js` — tratta il collegamento come singolo anche se il modello dati
+  sotto (`dossier_links`) permetterebbe piu' cartelle per lo stesso file.
+  Il vecchio campo testuale `documents.folder` resta nel database e nella
+  card per chi lo aveva gia' valorizzato, ma non e' piu' scrivibile dai form:
+  soppiantato dal collegamento a cartella reale.
+- **Scadenze/Calendario**: aggiunto un orario opzionale (nuova colonna
+  `reminders.time`, migrazione `012_reminder_time.js`). Le scadenze senza
+  orario si comportano esattamente come prima (dovute dall'inizio della
+  giornata). Il controllo di `reminder-notifier.js` ora aspetta anche
+  l'orario, quando c'e', prima di considerare la scadenza "dovuta" — vedi il
+  commento nel file per la logica esatta (confronto tra ora locale e stringa
+  HH:MM salvata, la parte "solo data" non e' stata toccata per non introdurre
+  bug di fuso orario dove non serviva).
+- **Progetti su mobile tagliavano il contenuto**: `.board-card-title` e
+  `.card-sub` non avevano `overflow-wrap: anywhere` (a differenza di
+  `.card-title`/`.card-body` altrove, che gia' lo avevano) — un titolo lungo
+  senza spazi restava clippato invece di andare a capo. Stessa famiglia di
+  bug del `.doc-original` di Drive risolto il 29/08. Aggiunto anche
+  `min-width: 0` su `.board-col`/`.board-card` (necessario perche' i figli
+  flex/grid si restringano davvero sotto la dimensione del contenuto).
+- Verificato tutto con Playwright reale (server isolato, DB temporaneo).
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più

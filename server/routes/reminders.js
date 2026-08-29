@@ -8,24 +8,26 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { label, date, notes = '' } = req.body;
+  const { label, date, time = null, notes = '' } = req.body;
   if (!label) return res.status(400).json({ error: 'Il testo e\' obbligatorio' });
   if (!date) return res.status(400).json({ error: 'La data e\' obbligatoria' });
-  const info = db.prepare('INSERT INTO reminders (label, date, notes) VALUES (?, ?, ?)').run(label, date, notes);
+  const info = db.prepare('INSERT INTO reminders (label, date, time, notes) VALUES (?, ?, ?, ?)').run(label, date, time || null, notes);
   res.status(201).json(db.prepare('SELECT * FROM reminders WHERE id = ?').get(info.lastInsertRowid));
 });
 
 router.put('/:id', (req, res) => {
-  const { label, date, notes } = req.body;
+  const { label, date, time, notes } = req.body;
   const existing = db.prepare('SELECT * FROM reminders WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Scadenza non trovata' });
   const finalDate = date ?? existing.date;
-  // Se la data si sposta, la scadenza puo' notificare di nuovo quando la
-  // nuova data arriva: altrimenti chi la rimanda non riceverebbe piu' nulla.
-  const notifiedAt = finalDate === existing.date ? existing.notified_at : null;
+  const finalTime = time === undefined ? existing.time : (time || null);
+  // Se la data o l'orario si spostano, la scadenza puo' notificare di nuovo
+  // quando il nuovo momento arriva: altrimenti chi lo rimanda non riceverebbe
+  // piu' nulla.
+  const notifiedAt = (finalDate === existing.date && finalTime === existing.time) ? existing.notified_at : null;
   db.prepare(
-    "UPDATE reminders SET label = ?, date = ?, notes = ?, notified_at = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(label ?? existing.label, finalDate, notes ?? existing.notes, notifiedAt, req.params.id);
+    "UPDATE reminders SET label = ?, date = ?, time = ?, notes = ?, notified_at = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(label ?? existing.label, finalDate, finalTime, notes ?? existing.notes, notifiedAt, req.params.id);
   res.json(db.prepare('SELECT * FROM reminders WHERE id = ?').get(req.params.id));
 });
 
