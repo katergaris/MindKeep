@@ -41,6 +41,9 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
   assert.ok(accountColumns.includes('type'));
   assert.ok(accountColumns.includes('location'));
   assert.ok(accountColumns.includes('payment_method'));
+  assert.ok(accountColumns.includes('billing_frequency'));
+  assert.ok(accountColumns.includes('amount'));
+  assert.ok(accountColumns.includes('vault_entry_id'));
 
   const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
   assert.ok(vaultColumns.includes('type'));
@@ -143,6 +146,8 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
 
   const accountColumns = db.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name);
   assert.ok(accountColumns.includes('type'), 'la migrazione del tipo account non e\' stata eseguita sul database legacy');
+  assert.ok(accountColumns.includes('billing_frequency'), 'la migrazione della fatturazione account non e\' stata eseguita sul database legacy');
+  assert.ok(accountColumns.includes('vault_entry_id'), 'la migrazione della fatturazione account non e\' stata eseguita sul database legacy');
 
   const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
   assert.ok(vaultColumns.includes('totp_secret_encrypted'), 'la migrazione dei tipi vault non e\' stata eseguita sul database legacy');
