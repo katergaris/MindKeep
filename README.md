@@ -197,7 +197,7 @@ mindkeep/
 │   └── routes/                  # API REST per ogni sezione
 └── public/                       # frontend (HTML/CSS/JS, nessuna build richiesta)
     ├── manifest.webmanifest   # aggiunta alla schermata home del telefono
-    └── icon.svg / icon-*.png   # icone dell'app
+    └── icon-*.png              # icone dell'app
 ```
 
 ## Licenza

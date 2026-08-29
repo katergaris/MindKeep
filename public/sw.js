@@ -3,7 +3,7 @@
 // l'app all'istante e renderla installabile, non per usare i dati offline
 // (idee, vault, ecc. servono comunque il server). Bump della versione per
 // invalidare la cache quando cambiano gli asset precaricati qui sotto.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `mindkeep-shell-${CACHE_VERSION}`;
 const SHELL_ASSETS = [
   '/',
@@ -12,7 +12,7 @@ const SHELL_ASSETS = [
   '/app.js',
   '/style.css',
   '/manifest.webmanifest',
-  '/icon.svg',
+  '/icon-64.png',
   '/icon-192.png',
   '/icon-512.png',
   '/offline.html',

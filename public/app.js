@@ -532,7 +532,7 @@
       desktopWallpaperEl.style.background = wp.color;
     } else {
       desktopWallpaperEl.style.background = '';
-      desktopWallpaperEl.appendChild(el('<img class="wallpaper-logo" src="/icon.svg" alt="" />'));
+      desktopWallpaperEl.appendChild(el('<img class="wallpaper-logo" src="/icon-512.png" alt="" />'));
     }
     localStorage.setItem('mindkeep-wallpaper', name);
   }
