@@ -16,6 +16,12 @@ anche i file collegati sotto, poi procedi.
   rifinitura visiva Bacheca — progress bar/scadenza concreta/budget/contatti
   (`38ffd8d`). L'utente ha chiesto di procedere senza fermarsi a chiedere
   conferma ad ogni passo (commit + push automatici a fine pezzo).
+- **Fase 3 completata, verificata con Playwright reale e 34/34 test del
+  server, e committata** (`e71719e`, + `6e2f601` per README/env.example):
+  Calendario (griglia mensile) e notifiche push per le scadenze. Vedi
+  sezione dedicata sotto per i dettagli — **non verificata la consegna
+  reale di una notifica push end-to-end** (richiede HTTPS, non testabile
+  in locale).
 - Il piano completo (Fase 1 dettagliata + roadmap Fase 2-4) è in
   `C:\Users\Salva\.claude\plans\clever-scribbling-toast.md` — **leggilo per i
   dettagli tecnici** (struttura di `wm.js`, decisioni su singleton-per-view,
@@ -55,6 +61,20 @@ anche i file collegati sotto, poi procedi.
   concreto colorato per urgenza ("Scade tra 2 giorni" / "Scaduto da 3
   giorni" — funzione condivisa `daysUntil()`), budget e contatti ora
   visibili sulla card (prima raccolti dal modulo ma mai mostrati).
+- **Calendario**: nuova voce di menu, griglia mensile (`views.calendar` in
+  `app.js`), riusa `/api/reminders` e `reminderModal()` — stessi dati di
+  Scadenze, che resta anche come elenco piatto (non sostituita). Click su
+  un giorno vuoto = nuova scadenza con quella data precompilata, click su
+  una voce = modifica.
+- **Notifiche push**: `server/push.js` (invio via `web-push`, pulizia
+  automatica delle sottoscrizioni scadute 404/410), `server/reminder-
+  notifier.js` (job ogni 5 minuti + al boot, controlla `reminders` con
+  `date <= oggi AND notified_at IS NULL` — non e' una coda di ritentativi,
+  vedi commento nel file), `server/routes/push.js` (`/api/push/vapid-
+  public-key`, `/subscribe`, `/unsubscribe`), sezione "Notifiche scadenze"
+  in Sicurezza per attivare/disattivare dal browser. Chiavi VAPID generate
+  al primo avvio in `server/secrets.js`, stessa convenzione di
+  `SESSION_SECRET`/`ENCRYPTION_KEY`.
 
 ## Decisioni di naming/design da NON invertire senza motivo
 
@@ -88,31 +108,29 @@ scrivere il codice: https://claude.ai/code/artifact/d31cfc7a-3392-4f14-aa2c-2aa5
 viste mobile). Usalo come riferimento visivo per le fasi 2-3 ancora da
 scrivere in codice.
 
-## Prossimi passi (Fase 3, non iniziata)
+## Prossimi passi (Fase 4, non iniziata — rifiniture opzionali)
 
-Fase 2 è completa (vedi sopra). Dal piano, Fase 3 — Calendario + notifiche
-push PWA — è l'unica parte con vero lavoro backend nuovo: dipendenza
-`web-push`, coppia di chiavi VAPID generata al primo avvio (stessa
-convenzione di `SESSION_SECRET`/`ENCRYPTION_KEY` in `.secrets.env`), nuova
-migrazione per una tabella `push_subscriptions` + colonna `notified_at` su
-`reminders`, nuove rotte `/api/push` subscribe/unsubscribe, handler
-`push`/`notificationclick` in `sw.js`, un job a intervalli da zero (non
-esiste nulla di simile oggi — nessun `node-cron`/`setInterval` per i
-promemoria) che controlla le scadenze dovute e invia le notifiche, una
-finestra Calendario a griglia mensile (solo frontend, riusa l'API
-reminders già esistente), flusso di richiesta permesso frontend. **Da
-verificare subito quando si inizia questa fase**: le notifiche push
-richiedono un contesto sicuro HTTPS — probabilmente ok su `localhost` in
-sviluppo, ma va riverificato sul LAN IP del Raspberry Pi prima di darlo per
-scontato, e servirà il certificato TLS vero una volta spostato sul dominio
-Aruba.
-
-Poi Fase 4 (drag&drop reale sulla Bacheca — oggi le card si spostano solo
-con le frecce ←/→, i due gap backend trovati durante l'esplorazione
-originale — `reminders` non collegabile a una cartella, `documents` senza
-`updated_at` — persistenza posizione/dimensione finestre se risulta
-mancare dopo aver vissuto con il reset a cascata di oggi, gesto swipe-up
-per il menu Avvio su mobile).
+Fasi 1-3 sono complete (vedi sopra). Quello che resta dal piano originale è
+esplicitamente rifinitura/opzionale, non scope fermo come le fasi
+precedenti — vale la pena controllare con l'utente cosa gli interessa
+davvero prima di implementare, invece di presumere tutta la lista:
+- Drag&drop reale sulla Bacheca (oggi le card si spostano solo con le
+  frecce ←/→, funzionante ma non "vero" trascinamento).
+- Due incongruenze backend trovate durante l'esplorazione originale:
+  `reminders` non è collegabile a una cartella (manca da `TABLES` in
+  `server/routes/dossiers.js`, anche se `search.js`/`trash.js` lo trattano
+  già come collegabile/cercabile); `documents` non ha `updated_at` a
+  differenza di ogni altra entità.
+- Persistenza posizione/dimensione finestre — solo se dopo aver vissuto
+  con il reset a cascata attuale risulta che manca davvero.
+- Gesto swipe-up per aprire il menu Avvio su mobile (consigliato dalla
+  skill, non richiesto).
+- **Verifica reale delle notifiche push da fare appena possibile, non è
+  rifinitura rimandabile quanto le altre**: richiedono HTTPS — funzionano
+  su `localhost` in sviluppo ma vanno riverificate sul LAN IP del
+  Raspberry Pi (probabilmente non basta, serve il certificato TLS vero
+  una volta spostato sul dominio Aruba) prima di considerarle utilizzabili
+  davvero dall'utente.
 
 ## Limiti noti della Fase 1 (non bloccanti, ma da tenere a mente)
 
