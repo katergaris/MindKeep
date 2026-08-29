@@ -826,6 +826,7 @@
       <form class="modal-body" style="padding:0">
         <div class="form-row"><label>Titolo</label><input type="text" name="title" required /></div>
         <div class="form-row"><label>Descrizione</label><textarea name="body" rows="5"></textarea></div>
+        <div class="form-row"><label>Checklist (una voce per riga, opzionale)</label><textarea name="checklist" rows="4" placeholder="es. Comprare il latte"></textarea></div>
         <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
@@ -836,6 +837,7 @@
     if (existing) {
       form.title.value = existing.title;
       form.body.value = existing.body;
+      form.checklist.value = (existing.checklist || []).map((c) => c.text).join('\n');
       form.tags.value = (existing.tags || []).join(', ');
     }
     return form;
@@ -857,7 +859,8 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const tags = parseTags(form);
-        await api('/ideas', { method: 'POST', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags }) });
+        const checklist = collectChecklist(form, []);
+        await api('/ideas', { method: 'POST', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags, checklist }) });
         closeModal(); toast('Nota salvata'); render('ideas');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
@@ -871,6 +874,7 @@
 
     const grid = el('<div class="grid"></div>');
     ideas.forEach((idea) => {
+      const { done, total } = checklistProgress(idea.checklist);
       const card = el(`
         <div class="card">
           <p class="card-title">${esc(idea.title)}</p>
@@ -883,12 +887,33 @@
           </div>
         </div>
       `);
+      if (total) {
+        const checklistEl = el('<div class="idea-checklist"></div>');
+        checklistEl.appendChild(el(`<p class="card-sub">${done}/${total} completati</p>`));
+        (idea.checklist || []).forEach((item, i) => {
+          const row = el(`
+            <label class="idea-checklist-item">
+              <input type="checkbox" ${item.done ? 'checked' : ''} />
+              <span>${esc(item.text)}</span>
+              ${item.done ? '<span class="idea-checklist-badge" title="Completato">✓</span>' : ''}
+            </label>
+          `);
+          row.querySelector('input').addEventListener('change', async (e) => {
+            const updated = idea.checklist.map((c, j) => (j === i ? { ...c, done: e.target.checked } : c));
+            await api(`/ideas/${idea.id}`, { method: 'PUT', body: JSON.stringify({ checklist: updated }) });
+            render('ideas');
+          });
+          checklistEl.appendChild(row);
+        });
+        card.querySelector('.card-body').insertAdjacentElement('afterend', checklistEl);
+      }
       card.querySelector('[data-edit]').addEventListener('click', () => {
         const form = ideaModal(idea);
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           const tags = parseTags(form);
-          await api(`/ideas/${idea.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags }) });
+          const checklist = collectChecklist(form, idea.checklist);
+          await api(`/ideas/${idea.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags, checklist }) });
           closeModal(); toast('Nota aggiornata'); render('ideas');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);

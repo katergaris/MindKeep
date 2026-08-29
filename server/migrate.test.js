@@ -50,6 +50,9 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
   assert.ok(vaultColumns.includes('totp_secret_encrypted'));
   assert.ok(vaultColumns.includes('card_cvv_encrypted'));
   assert.ok(vaultColumns.includes('card_expiry'));
+
+  const ideaColumns = db.prepare('PRAGMA table_info(ideas)').all().map((c) => c.name);
+  assert.ok(ideaColumns.includes('checklist'));
 });
 
 test('e\' idempotente: eseguirla piu\' volte non fallisce e non riapplica nulla', () => {
@@ -74,6 +77,15 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
       totp_secret TEXT,
       totp_enabled INTEGER NOT NULL DEFAULT 0,
       totp_last_step INTEGER
+    );
+    CREATE TABLE ideas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      body TEXT DEFAULT '',
+      tags TEXT DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      deleted_at TEXT
     );
     CREATE TABLE documents (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,4 +163,7 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
 
   const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
   assert.ok(vaultColumns.includes('totp_secret_encrypted'), 'la migrazione dei tipi vault non e\' stata eseguita sul database legacy');
+
+  const ideaColumns = db.prepare('PRAGMA table_info(ideas)').all().map((c) => c.name);
+  assert.ok(ideaColumns.includes('checklist'), 'la migrazione della checklist note non e\' stata eseguita sul database legacy');
 });

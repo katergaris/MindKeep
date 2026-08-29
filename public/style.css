@@ -486,6 +486,14 @@ body.no-scroll { overflow: hidden; }
 .card-body { font-size: 0.88rem; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; }
 
+.idea-checklist { display: flex; flex-direction: column; gap: 3px; }
+.idea-checklist-item {
+  display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;
+}
+.idea-checklist-item input[type="checkbox"] { flex: none; width: auto; }
+.idea-checklist-item span:not(.idea-checklist-badge) { overflow-wrap: anywhere; }
+.idea-checklist-badge { color: var(--moss); font-weight: 700; margin-left: auto; flex: none; }
+
 .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag { background: var(--accent-bg); color: var(--accent-soft); border-radius: 999px; padding: 3px 11px; font-size: 0.72rem; }
 .tag-neutral { background: var(--surface-2); color: var(--text-muted); }
