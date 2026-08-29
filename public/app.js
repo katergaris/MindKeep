@@ -386,8 +386,6 @@
   // Sezione in cui vive ciascun tipo di elemento collegato a una cartella o
   // trovato dalla ricerca globale: usata per aprire l'elemento cliccandolo.
   const TYPE_TO_VIEW = { document: 'drive', idea: 'ideas', project: 'projects', account: 'accounts', vault: 'vault', reminder: 'reminders', dossier: 'dossiers' };
-  // Conteggi per tipo mostrati nel riepilogo di una cartella (Cartelle > Apri).
-  const TREE_TYPE_LABELS = { document: 'documenti', idea: 'note', project: 'progetti', account: 'account', vault: 'vault', reminder: 'scadenze' };
 
   const VIEW_LABELS = Object.fromEntries(SECTIONS.map((s) => [s.view, s.label]));
 
@@ -1672,19 +1670,31 @@
   // ==================================================================
   // FASCICOLI
   // ==================================================================
+  // Vista Cartelle: griglia a icone stile Esplora Risorse. Livello radice =
+  // icona-cartella per ogni dossier; entrando (click) si vede il contenuto
+  // collegato come icone del tipo reale (documento/vault/nota/...), stesso
+  // set icone gia' usato da menu Avvio/taskbar (appIcon), nessuna nuova
+  // icona necessaria. Nessuna sotto-cartella: un solo livello di profondita'.
   views.dossiers = async (root, opts = {}) => {
     const dossiers = await api('/dossiers');
     const highlightId = opts.highlight ? String(opts.highlight) : null;
     root.innerHTML = '';
-    root.appendChild(el(`
-      <div class="view-header">
-        <h2>Cartelle</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-dossier">+ Nuova cartella</button></div>
-      </div>
-      <p class="card-sub">Una cartella raccoglie insieme documenti, password, abbonamenti e note legati allo stesso tema. Collega gli elementi dai loro pulsanti "Cartella".</p>
-    `));
 
-    root.querySelector('#new-dossier').addEventListener('click', () => {
+    const toolbar = el(`
+      <div class="explorer-toolbar">
+        <button type="button" class="btn" id="explorer-up" disabled>⬆ Su</button>
+        <span class="explorer-path" id="explorer-path">Cartelle</span>
+        <button type="button" class="btn btn-primary" id="new-dossier">+ Nuova cartella</button>
+      </div>
+    `);
+    const gridWrap = el('<div></div>');
+    root.appendChild(toolbar);
+    root.appendChild(gridWrap);
+
+    const upBtn = toolbar.querySelector('#explorer-up');
+    const pathEl = toolbar.querySelector('#explorer-path');
+
+    toolbar.querySelector('#new-dossier').addEventListener('click', () => {
       const form = el(`
         <form class="modal-body" style="padding:0">
           <div class="form-row"><label>Titolo</label><input type="text" name="title" required /></div>
@@ -1704,78 +1714,79 @@
       openModal('Nuova cartella', form);
     });
 
-    if (!dossiers.length) {
-      root.appendChild(el('<div class="empty-state">Nessuna cartella ancora.</div>'));
-      return;
-    }
-
-    // Elenco completo con dettaglio: si apre cliccando la card (o "Apri").
-    function openDossierDetail(d) {
-      const wrap = el('<div></div>');
-      if (!d.items.length) {
-        wrap.appendChild(el('<p class="card-sub">Nessun elemento collegato.</p>'));
-      } else {
-        d.items.forEach((item) => {
-          const row = el(`
-            <div class="trash-row row-card" style="cursor:pointer">
-              <span><span class="chip-type">${esc(item.type)}</span>&nbsp;${esc(item.label)}</span>
-              <button type="button" class="btn btn-sm btn-danger" title="Scollega">✕</button>
-            </div>
-          `);
-          row.addEventListener('click', (e) => {
-            if (e.target.closest('button')) return;
-            const view = TYPE_TO_VIEW[item.type];
-            closeModal();
-            if (view) render(view, { highlight: item.id });
-          });
-          row.querySelector('button').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await api(`/dossiers/${d.id}/links/${item.type}/${item.id}`, { method: 'DELETE' });
-            toast('Elemento scollegato'); closeModal(); render('dossiers');
-          });
-          wrap.appendChild(row);
-        });
+    function renderRoot() {
+      upBtn.disabled = true;
+      pathEl.textContent = 'Cartelle';
+      gridWrap.innerHTML = '';
+      if (!dossiers.length) {
+        gridWrap.appendChild(el('<div class="empty-state">Nessuna cartella ancora.</div>'));
+        return;
       }
-      openModal(d.title, wrap);
+      const grid = el('<div class="explorer-grid"></div>');
+      dossiers.forEach((d) => {
+        const n = d.items.length;
+        const icon = el(`
+          <button type="button" class="explorer-icon">
+            <span class="unlink-badge" data-del title="Elimina cartella">✕</span>
+            ${appIcon('dossiers', 34)}
+            <span class="label">${esc(d.title)}</span>
+            <span class="count">${n} element${n === 1 ? 'o' : 'i'}</span>
+          </button>
+        `);
+        icon.addEventListener('click', (e) => {
+          if (e.target.closest('[data-del]')) return;
+          renderDossier(d);
+        });
+        icon.querySelector('[data-del]').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Spostare questa cartella nel cestino? Gli elementi collegati non verranno eliminati.')) return;
+          await api(`/dossiers/${d.id}`, { method: 'DELETE' });
+          toast('Cartella eliminata'); render('dossiers');
+        });
+        grid.appendChild(icon);
+      });
+      gridWrap.appendChild(grid);
     }
 
-    const grid = el('<div class="grid"></div>');
-    dossiers.forEach((d) => {
-      const counts = {};
-      d.items.forEach((item) => { counts[item.type] = (counts[item.type] || 0) + 1; });
-      const summary = Object.entries(counts).map(([type, count]) => `${count} ${TREE_TYPE_LABELS[type] || type}`).join(' · ');
-      const card = el(`
-        <div class="card dossier-card" style="cursor:pointer">
-          <p class="card-title">${esc(d.title)}</p>
-          <p class="card-body">${esc(d.description)}</p>
-          <p class="card-sub">${summary ? esc(summary) : 'Nessun elemento collegato.'}</p>
-          <div class="card-actions">
-            <button class="btn btn-sm" data-open>Apri</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina cartella</button>
-          </div>
-        </div>
-      `);
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        openDossierDetail(d);
+    function renderDossier(d) {
+      upBtn.disabled = false;
+      pathEl.textContent = `Cartelle > ${d.title}`;
+      gridWrap.innerHTML = '';
+      if (!d.items.length) {
+        gridWrap.appendChild(el('<div class="empty-state">Nessun elemento collegato.</div>'));
+        return;
+      }
+      const grid = el('<div class="explorer-grid"></div>');
+      d.items.forEach((item) => {
+        const view = TYPE_TO_VIEW[item.type];
+        const icon = el(`
+          <button type="button" class="explorer-icon">
+            <span class="unlink-badge" data-unlink title="Scollega">✕</span>
+            ${appIcon(view, 34)}
+            <span class="label">${esc(item.label)}</span>
+          </button>
+        `);
+        icon.addEventListener('click', (e) => {
+          if (e.target.closest('[data-unlink]')) return;
+          if (view) render(view, { highlight: item.id });
+        });
+        icon.querySelector('[data-unlink]').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await api(`/dossiers/${d.id}/links/${item.type}/${item.id}`, { method: 'DELETE' });
+          toast('Elemento scollegato'); render('dossiers');
+        });
+        grid.appendChild(icon);
       });
-      card.querySelector('[data-open]').addEventListener('click', () => openDossierDetail(d));
-      card.querySelector('[data-del]').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (!confirm('Spostare questa cartella nel cestino? Gli elementi collegati non verranno eliminati.')) return;
-        await api(`/dossiers/${d.id}`, { method: 'DELETE' });
-        toast('Cartella eliminata'); render('dossiers');
-      });
-      if (highlightId && String(d.id) === highlightId) card.classList.add('card-highlight');
-      grid.appendChild(card);
-    });
-    root.appendChild(grid);
-    if (highlightId) {
-      const target = grid.querySelector('.card-highlight');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const match = dossiers.find((d) => String(d.id) === highlightId);
-      if (match) openDossierDetail(match);
+      gridWrap.appendChild(grid);
     }
+
+    upBtn.addEventListener('click', renderRoot);
+
+    if (highlightId) {
+      const match = dossiers.find((d) => String(d.id) === highlightId);
+      if (match) { renderDossier(match); return; }
+    }
+    renderRoot();
   };
 
   // ==================================================================
