@@ -41,7 +41,7 @@ router.post('/', upload.single('file'), (req, res) => {
   }
   const info = db
     .prepare(
-      'INSERT INTO documents (original_name, stored_name, folder, mime, size, expiry_date, tags, display_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      "INSERT INTO documents (original_name, stored_name, folder, mime, size, expiry_date, tags, display_name, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))"
     )
     .run(req.file.originalname, req.file.filename, folder, req.file.mimetype, req.file.size, expiry_date || null, JSON.stringify(parsedTags), display_name.trim() || null);
   res.status(201).json(serialize(db.prepare('SELECT * FROM documents WHERE id = ?').get(info.lastInsertRowid)));
@@ -77,7 +77,7 @@ router.put('/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Documento non trovato' });
   const { folder, tags, expiry_date, display_name } = req.body;
-  db.prepare('UPDATE documents SET folder = ?, tags = ?, expiry_date = ?, display_name = ? WHERE id = ?').run(
+  db.prepare("UPDATE documents SET folder = ?, tags = ?, expiry_date = ?, display_name = ?, updated_at = datetime('now') WHERE id = ?").run(
     folder ?? existing.folder,
     JSON.stringify(tags ?? JSON.parse(existing.tags || '[]')),
     expiry_date !== undefined ? expiry_date : existing.expiry_date,
