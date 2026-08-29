@@ -44,6 +44,32 @@ window.MindkeepWM = (() => {
 
   function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
+  // Posizione/dimensione finestre: solo desktop, solo comodita' locale
+  // (localStorage, come lo sfondo) — non e' un dato da sincronizzare o da
+  // proteggere, quindi niente backend. Salvata a fine trascinamento/
+  // ridimensionamento, riapplicata (con i limiti dell'attuale viewport,
+  // nel caso la finestra del browser sia piu' piccola di quando fu salvata)
+  // quando la stessa app viene riaperta in una sessione successiva.
+  const GEOMETRY_KEY = 'mindkeep-window-geometry';
+  function loadGeometryStore() {
+    try { return JSON.parse(localStorage.getItem(GEOMETRY_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveGeometry(win) {
+    const store = loadGeometryStore();
+    store[win.id] = { left: win.el.style.left, top: win.el.style.top, width: win.el.style.width, height: win.el.style.height };
+    try { localStorage.setItem(GEOMETRY_KEY, JSON.stringify(store)); } catch (e) { /* storage pieno/non disponibile: si ignora */ }
+  }
+  function applyGeometry(win, defaultSize) {
+    const saved = loadGeometryStore()[win.id];
+    if (!saved) { cascadePosition(win, defaultSize); return; }
+    const w = clamp(parseInt(saved.width, 10) || defaultSize.w, 280, window.innerWidth);
+    const h = clamp(parseInt(saved.height, 10) || defaultSize.h, 200, window.innerHeight - taskbarHeight());
+    win.el.style.width = w + 'px';
+    win.el.style.height = h + 'px';
+    win.el.style.left = clamp(parseInt(saved.left, 10) || 40, -w + 80, window.innerWidth - 80) + 'px';
+    win.el.style.top = clamp(parseInt(saved.top, 10) || 36, 0, window.innerHeight - taskbarHeight() - 28) + 'px';
+  }
+
   function taskbarHeight() {
     const tb = document.getElementById('taskbar');
     return tb ? tb.offsetHeight : 42;
@@ -70,6 +96,7 @@ window.MindkeepWM = (() => {
         win.titlebarEl.removeEventListener('pointermove', onMove);
         win.titlebarEl.removeEventListener('pointerup', onUp);
         win.titlebarEl.removeEventListener('pointercancel', onUp);
+        if (!win.el.classList.contains('maximized')) saveGeometry(win);
       };
       win.titlebarEl.addEventListener('pointermove', onMove);
       win.titlebarEl.addEventListener('pointerup', onUp);
@@ -98,6 +125,7 @@ window.MindkeepWM = (() => {
           handle.removeEventListener('pointermove', onMove);
           handle.removeEventListener('pointerup', onUp);
           handle.removeEventListener('pointercancel', onUp);
+          saveGeometry(win);
         };
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onUp);
@@ -244,7 +272,7 @@ window.MindkeepWM = (() => {
       el.classList.add('mobile-full');
       windowLayer.appendChild(el);
     } else {
-      cascadePosition(win, defaultSize);
+      applyGeometry(win, defaultSize);
       windowLayer.appendChild(el);
       attachDrag(win);
       if (resizable) attachResize(win);
