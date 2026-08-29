@@ -478,6 +478,35 @@
   // mobile, per scegliere la seconda app da mettere in split.
   window.addEventListener('mindkeep:request-start-menu', openStartMenu);
 
+  // Gesto swipe-up per aprire il menu Avvio su mobile (paradigma "pocket PC"
+  // suggerito dalla skill Windows 95): il tasto Avvio resta comunque sempre
+  // raggiungibile, questa e' solo una scorciatoia in piu'. Stessa soglia di
+  // breakpoint gia' usata in wm.js/style.css (760px), non una nuova.
+  const startGestureMQ = window.matchMedia('(max-width: 760px)');
+  const SWIPE_ZONE_PX = 70; // quanto vicino alla base dello schermo deve partire il tocco
+  const SWIPE_MIN_DISTANCE = 45;
+  const SWIPE_MAX_DURATION = 600; // ms, oltre e' uno scroll lento, non uno swipe
+  let swipeStartY = null;
+  let swipeStartX = 0;
+  let swipeStartTime = 0;
+  document.addEventListener('touchstart', (e) => {
+    if (!startGestureMQ.matches || !startMenu.classList.contains('hidden')) { swipeStartY = null; return; }
+    const touch = e.touches[0];
+    if (window.innerHeight - touch.clientY > SWIPE_ZONE_PX) { swipeStartY = null; return; }
+    swipeStartY = touch.clientY;
+    swipeStartX = touch.clientX;
+    swipeStartTime = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (swipeStartY == null) return;
+    const touch = e.changedTouches[0];
+    const dy = swipeStartY - touch.clientY;
+    const dx = Math.abs(touch.clientX - swipeStartX);
+    const dt = Date.now() - swipeStartTime;
+    swipeStartY = null;
+    if (dy > SWIPE_MIN_DISTANCE && dx < 60 && dt < SWIPE_MAX_DURATION) openStartMenu();
+  }, { passive: true });
+
   // ---------------- Desktop: sfondo, cartelle e note recenti come icone ----------------
   // Lo sfondo e' una preferenza solo del dispositivo (localStorage), non un
   // dato di Mindkeep: niente migrazione, niente sincronizzazione fra dispositivi.
