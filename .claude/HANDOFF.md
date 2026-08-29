@@ -22,6 +22,16 @@ anche i file collegati sotto, poi procedi.
   sezione dedicata sotto per i dettagli — **non verificata la consegna
   reale di una notifica push end-to-end** (richiede HTTPS, non testabile
   in locale).
+- **Fase 4 completata (tutti e 4 i pezzi opzionali, scelti dall'utente),
+  verificata con Playwright reale, e committata** (4 commit, uno per
+  pezzo): `documents.updated_at` (`1df158c`), persistenza posizione/
+  dimensione finestre (`80b0dea`), gesto swipe-up per il menu Avvio su
+  mobile (`76d386c`), drag&drop reale delle card in Bacheca (`8b818f9`).
+  L'incongruenza "reminders non collegabile a una cartella" segnalata nel
+  piano originale risultava già risolta, nessuna modifica necessaria li'.
+  **Il redesign Windows 95 è ora completo end-to-end** (Fasi 1-4): resta
+  solo la verifica delle notifiche push su HTTPS reale (vedi sotto) e
+  l'apertura della PR quando l'utente lo riterrà pronto.
 - Il piano completo (Fase 1 dettagliata + roadmap Fase 2-4) è in
   `C:\Users\Salva\.claude\plans\clever-scribbling-toast.md` — **leggilo per i
   dettagli tecnici** (struttura di `wm.js`, decisioni su singleton-per-view,
@@ -108,29 +118,20 @@ scrivere il codice: https://claude.ai/code/artifact/d31cfc7a-3392-4f14-aa2c-2aa5
 viste mobile). Usalo come riferimento visivo per le fasi 2-3 ancora da
 scrivere in codice.
 
-## Prossimi passi (Fase 4, non iniziata — rifiniture opzionali)
+## Prossimi passi
 
-Fasi 1-3 sono complete (vedi sopra). Quello che resta dal piano originale è
-esplicitamente rifinitura/opzionale, non scope fermo come le fasi
-precedenti — vale la pena controllare con l'utente cosa gli interessa
-davvero prima di implementare, invece di presumere tutta la lista:
-- Drag&drop reale sulla Bacheca (oggi le card si spostano solo con le
-  frecce ←/→, funzionante ma non "vero" trascinamento).
-- Due incongruenze backend trovate durante l'esplorazione originale:
-  `reminders` non è collegabile a una cartella (manca da `TABLES` in
-  `server/routes/dossiers.js`, anche se `search.js`/`trash.js` lo trattano
-  già come collegabile/cercabile); `documents` non ha `updated_at` a
-  differenza di ogni altra entità.
-- Persistenza posizione/dimensione finestre — solo se dopo aver vissuto
-  con il reset a cascata attuale risulta che manca davvero.
-- Gesto swipe-up per aprire il menu Avvio su mobile (consigliato dalla
-  skill, non richiesto).
-- **Verifica reale delle notifiche push da fare appena possibile, non è
-  rifinitura rimandabile quanto le altre**: richiedono HTTPS — funzionano
-  su `localhost` in sviluppo ma vanno riverificate sul LAN IP del
-  Raspberry Pi (probabilmente non basta, serve il certificato TLS vero
-  una volta spostato sul dominio Aruba) prima di considerarle utilizzabili
-  davvero dall'utente.
+Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più
+"lavoro di redesign", è messa in produzione:
+- **Verifica reale delle notifiche push su HTTPS**: funzionano su
+  `localhost` in sviluppo ma vanno riverificate sul LAN IP del Raspberry
+  Pi (probabilmente non basta, serve il certificato TLS vero una volta
+  spostato sul dominio Aruba) prima di considerarle utilizzabili davvero
+  dall'utente.
+- **Apertura della PR** verso `main` quando l'utente lo riterrà pronto:
+  https://github.com/katergaris/MindKeep/pull/new/redesign-retro-ui
+  (branch già pushato, nessuna PR aperta finora).
+- Da qui in poi, nuovo lavoro = nuove richieste dell'utente, non voci
+  residue di un piano — non presumere altro da fare senza chiedere.
 
 ## Limiti noti della Fase 1 (non bloccanti, ma da tenere a mente)
 
