@@ -539,8 +539,46 @@
 
   const POSTIT_CLASSES = ['postit-y', 'postit-p', 'postit-b'];
 
+  // Le note sul desktop mostrano solo il titolo per restare compatte; al tocco
+  // si allargano sul posto per mostrare corpo/checklist/tag (stesso comportamento
+  // su desktop e mobile, cosi' non serve aprire la finestra Note solo per leggere).
+  // Si richiudono al tocco di un qualsiasi punto (anche se stesso) o non appena
+  // parte una nuova operazione, perche' quel tocco arriva comunque al listener
+  // globale sotto.
+  let expandedPostit = null;
+
+  function collapsePostit() {
+    if (!expandedPostit) return;
+    const { el: noteEl, original } = expandedPostit;
+    noteEl.classList.remove('postit-expanded');
+    noteEl.innerHTML = '';
+    noteEl.appendChild(original);
+    expandedPostit = null;
+  }
+
+  function expandPostit(noteEl, idea) {
+    collapsePostit();
+    const original = document.createDocumentFragment();
+    while (noteEl.firstChild) original.appendChild(noteEl.firstChild);
+    noteEl.classList.add('postit-expanded');
+    const { done, total } = checklistProgress(idea.checklist);
+    noteEl.innerHTML = `
+      <p class="postit-expanded-title">${esc(idea.title)}</p>
+      ${idea.body ? `<p class="postit-expanded-body">${esc(idea.body)}</p>` : ''}
+      ${total ? `<p class="postit-expanded-sub">${done}/${total} completati</p>` : ''}
+      ${(idea.tags || []).length ? `<div class="tag-row">${idea.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    `;
+    expandedPostit = { el: noteEl, original };
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!expandedPostit || expandedPostit.el.contains(e.target)) return;
+    collapsePostit();
+  });
+
   async function buildDesktop() {
     applyWallpaper(currentWallpaper());
+    expandedPostit = null;
     desktopIconsEl.innerHTML = '';
     try {
       const [dossiers, ideas] = await Promise.all([api('/dossiers'), api('/ideas')]);
@@ -552,9 +590,13 @@
       });
       ideas.slice(0, 4).forEach((idea, i) => {
         const note = el(`<button type="button" class="postit ${POSTIT_CLASSES[i % POSTIT_CLASSES.length]}"></button>`);
-        const text = idea.title || idea.body || '';
-        note.textContent = text.length > 90 ? text.slice(0, 90) + '…' : text;
-        note.addEventListener('click', () => render('ideas', { highlight: idea.id }));
+        const title = idea.title || idea.body || '';
+        note.textContent = title.length > 90 ? title.slice(0, 90) + '…' : title;
+        note.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (note.classList.contains('postit-expanded')) collapsePostit();
+          else expandPostit(note, idea);
+        });
         desktopIconsEl.appendChild(note);
       });
     } catch (err) {
@@ -584,7 +626,7 @@
     qcMenuEl = null; qcMenuItems = []; qcMenuTrigger = null; qcSelectedDossier = null;
   }
 
-  async function openQuickCapture() {
+  async function openQuickCapture(presetDossier) {
     closeStartMenu();
     quickCaptureEl.innerHTML = '';
     const dossiers = await api('/dossiers').catch(() => []);
@@ -727,6 +769,7 @@
         const idea = await api('/ideas', { method: 'POST', body: JSON.stringify({ title, body: text, tags }) });
         if (qcSelectedDossier) {
           await api(`/dossiers/${qcSelectedDossier.id}/links`, { method: 'POST', body: JSON.stringify({ item_type: 'idea', item_id: idea.id }) });
+          if (MindkeepWM.getWindow(windowId('dossiers'))) render('dossiers', { highlight: qcSelectedDossier.id });
         }
         toast('Nota salvata');
         closeQuickCapture();
@@ -736,6 +779,7 @@
       }
     }
     composer.querySelector('#qc-save').addEventListener('click', saveQc);
+    if (presetDossier) { qcSelectedDossier = presetDossier; renderLinkBadge(); }
     textarea.focus();
   }
 
@@ -766,6 +810,10 @@
     contentEl.appendChild(el('<div class="empty-state">Carico…</div>'));
     try {
       await views[view](contentEl, opts);
+      // Cartelle e Note compaiono anche come icone sul desktop: ogni volta che
+      // la loro finestra si aggiorna (creazione/modifica/eliminazione), le
+      // icone devono riflettere subito lo stesso stato, senza dover ricaricare.
+      if (view === 'ideas' || view === 'dossiers') buildDesktop();
     } catch (err) {
       contentEl.innerHTML = '';
       contentEl.appendChild(el(`<div class="empty-state">Errore: ${esc(err.message)}</div>`));
@@ -1967,6 +2015,7 @@
         <button type="button" class="btn" id="explorer-up" disabled>⬆ Su</button>
         <span class="explorer-path" id="explorer-path">Cartelle</span>
         <button type="button" class="btn btn-primary" id="new-dossier">+ Nuova cartella</button>
+        <button type="button" class="btn btn-primary hidden" id="new-item-in-dossier">+ Nuovo elemento</button>
       </div>
     `);
     const gridWrap = el('<div></div>');
@@ -1975,6 +2024,9 @@
 
     const upBtn = toolbar.querySelector('#explorer-up');
     const pathEl = toolbar.querySelector('#explorer-path');
+    const newDossierBtn = toolbar.querySelector('#new-dossier');
+    const newItemBtn = toolbar.querySelector('#new-item-in-dossier');
+    newItemBtn.addEventListener('click', () => openQuickCapture(currentDossier));
 
     toolbar.querySelector('#new-dossier').addEventListener('click', () => {
       const form = el(`
@@ -1996,9 +2048,14 @@
       openModal('Nuova cartella', form);
     });
 
+    let currentDossier = null;
+
     function renderRoot() {
+      currentDossier = null;
       upBtn.disabled = true;
       pathEl.textContent = 'Cartelle';
+      newDossierBtn.classList.remove('hidden');
+      newItemBtn.classList.add('hidden');
       gridWrap.innerHTML = '';
       if (!dossiers.length) {
         gridWrap.appendChild(el('<div class="empty-state">Nessuna cartella ancora.</div>'));
@@ -2031,8 +2088,11 @@
     }
 
     function renderDossier(d) {
+      currentDossier = d;
       upBtn.disabled = false;
       pathEl.textContent = `Cartelle > ${d.title}`;
+      newDossierBtn.classList.add('hidden');
+      newItemBtn.classList.remove('hidden');
       gridWrap.innerHTML = '';
       if (!d.items.length) {
         gridWrap.appendChild(el('<div class="empty-state">Nessun elemento collegato.</div>'));

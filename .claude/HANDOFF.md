@@ -118,6 +118,53 @@ scrivere il codice: https://claude.ai/code/artifact/d31cfc7a-3392-4f14-aa2c-2aa5
 viste mobile). Usalo come riferimento visivo per le fasi 2-3 ancora da
 scrivere in codice.
 
+## Sessione 29/08/2026 (dopo il redesign): bug fix su desktop/mobile
+
+Segnalati dall'utente durante l'uso reale, non voci del piano originale:
+
+- **Bug grave: nessuna icona/postit del desktop era cliccabile.**
+  `.window-layer` (contenitore delle finestre, `z-index:2`) copriva l'intero
+  desktop anche a vuoto e intercettava tutti i click prima che arrivassero a
+  `.desktop-icons` (`z-index:1`) sotto. Risolto con lo stesso pattern gia'
+  usato per `.desktop-icons`/`.desktop-icon`: `pointer-events:none` sul
+  contenitore, `pointer-events:auto` sulle finestre vere (`.win-frame.window`)
+  in `style.css`. Prima di questo fix, cliccare una cartella o una nota sul
+  desktop non faceva letteralmente nulla, ne' su desktop ne' su mobile.
+- **Note sul desktop: da "solo titolo, non cliccabile" a espandibili sul
+  posto.** I postit mostravano solo il titolo troncato. Ora un tocco li
+  allarga (posizione fissa, centrata, sopra tutto) mostrando titolo, corpo
+  completo, checklist e tag; un tocco su un punto qualsiasi (compreso il
+  postit stesso) o l'inizio di una nuova operazione li richiude. Vedi
+  `expandPostit`/`collapsePostit`/`expandedPostit` in `app.js` — richiusura
+  gestita da un listener globale su `document` che ignora i click dentro il
+  nodo espanso. Stesso comportamento identico su desktop e mobile (prima il
+  problema su mobile era lo stesso bug del window-layer, non qualcosa di
+  specifico del tocco).
+- **Icone desktop non si aggiornavano senza reload.** `buildDesktop()` veniva
+  chiamata solo all'avvio e al cambio sfondo. Ora `render()` la richiama in
+  automatico ogni volta che la vista `ideas` o `dossiers` si aggiorna (crea/
+  modifica/elimina nota, checklist, cartella) — centralizzato in un unico
+  punto invece che sparso nei singoli handler.
+- **Testo lungo senza spazi (es. nome file originale in Drive) sfondava la
+  finestra e la mandava in scroll orizzontale su mobile.** `.doc-original`
+  non aveva `overflow-wrap:anywhere` nella media query mobile (a differenza
+  di `.doc-name`/`.doc-meta`, che gia' lo avevano). Aggiunto, e come rete di
+  sicurezza aggiunto anche `overflow-x:hidden` su `.win-content` cosi' che
+  nessun singolo elemento possa piu' spingere una finestra fuori dai suoi
+  margini, qualunque sia il contenuto.
+- **Dalle Cartelle non si poteva creare un nuovo elemento, solo collegarne
+  uno esistente.** Aggiunto bottone "+ Nuovo elemento" nella toolbar quando
+  si e' dentro una cartella (non alla radice): apre la cattura veloce
+  gia' pre-collegata a quella cartella (stesso meccanismo di `@cartella`
+  gia' esistente in cattura veloce). Se la finestra Cartelle e' gia' aperta,
+  si aggiorna da sola dopo il salvataggio (non viene pero' aperta se non lo
+  era gia', per non spuntare finestre non richieste).
+- Verificato tutto con Playwright reale (server isolato, DB temporaneo,
+  utente di test), desktop e viewport mobile (390x844).
+- Non ancora committato: chiedere conferma o procedere secondo la
+  preferenza gia' nota dell'utente (commit/push senza fermarsi a ogni
+  passo, una volta approvato l'insieme).
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più

@@ -299,7 +299,16 @@ body.no-scroll { overflow: hidden; }
 .postit-p { background: #ffd3e2; color: #5c1f38; }
 .postit-b { background: #cfe8ff; color: #123a5c; }
 
-.window-layer { position: absolute; inset: 0; z-index: 2; }
+.postit.postit-expanded {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(0deg);
+  width: min(320px, 86vw); max-height: min(70vh, 480px); overflow: auto;
+  z-index: 60; box-shadow: 6px 8px 0 rgba(0,0,0,.35); white-space: normal;
+}
+.postit-expanded-title { font-weight: bold; margin: 0 0 6px; }
+.postit-expanded-body { margin: 0 0 8px; white-space: pre-wrap; }
+.postit-expanded-sub { margin: 0 0 6px; opacity: .75; font-size: 11px; }
+
+.window-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .window-layer.split-mode { display: flex; flex-direction: column; }
 
 /* ---------- Finestre ---------- */
@@ -314,6 +323,7 @@ body.no-scroll { overflow: hidden; }
   padding: 2px;
   min-width: 280px;
   min-height: 200px;
+  pointer-events: auto;
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2), inset 2px 2px 0 var(--bevel-hi2), inset -2px -2px 0 var(--bevel-lo), 4px 4px 0 rgba(0,0,0,.28);
 }
 .win-frame.window.minimized { display: none; }
@@ -341,7 +351,7 @@ body.no-scroll { overflow: hidden; }
 .win-btn-close { font-size: 11px; }
 
 .win-content {
-  flex: 1; min-height: 0; overflow-y: auto; background: var(--surface);
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: var(--surface);
   padding: 20px 22px 28px;
 }
 
@@ -686,7 +696,7 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 
   .doc-row > *, .trash-row > * { min-width: 0; }
   .doc-row, .trash-row { flex-wrap: wrap; }
-  .doc-name, .doc-meta { overflow-wrap: anywhere; }
+  .doc-name, .doc-meta, .doc-original { overflow-wrap: anywhere; }
 
   .vault-toolbar .btn { flex: 1; }
 
