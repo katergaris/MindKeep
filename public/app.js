@@ -11,6 +11,41 @@
     });
   }
 
+  // ---------------- Notifiche push (scadenze) ----------------
+  // La chiave pubblica VAPID arriva codificata base64url (compatta, sicura
+  // negli URL): PushManager.subscribe vuole invece un Uint8Array grezzo.
+  function urlBase64ToUint8Array(base64) {
+    const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+    const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+
+  async function getPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    const reg = await navigator.serviceWorker.ready;
+    return reg.pushManager.getSubscription();
+  }
+
+  async function enablePushNotifications() {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') throw new Error('Permesso negato per le notifiche');
+    const { publicKey } = await api('/push/vapid-public-key');
+    if (!publicKey) throw new Error('Chiave del server non disponibile');
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+    await api('/push/subscribe', { method: 'POST', body: JSON.stringify(sub.toJSON()) });
+  }
+
+  async function disablePushNotifications() {
+    const sub = await getPushSubscription();
+    if (!sub) return;
+    await api('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) });
+    await sub.unsubscribe();
+  }
+
   // ---------------- API helper ----------------
   async function api(path, opts = {}) {
     let res;
@@ -349,6 +384,7 @@
     drive: '<rect x="3" y="2.5" width="14" height="15" rx="0.6" fill="#3a4a8a" stroke="#1a2450" stroke-width="0.8"/><rect x="6" y="3" width="8" height="5" fill="#c8ccd8" stroke="#4a4a52" stroke-width="0.5"/><rect x="7" y="3.6" width="2.4" height="3.8" fill="#8890a0"/><rect x="5" y="12" width="10" height="4" fill="#e8eaf0" stroke="#4a4a52" stroke-width="0.5"/>',
     dossiers: '<path d="M2 5h7l2 2.5h9v9.5H2z" fill="#e3b23c" stroke="#8a6414" stroke-width="0.8"/><path d="M2 5h7l2 2.5H2z" fill="#f3cf72" stroke="#8a6414" stroke-width="0.8"/>',
     reminders: '<circle cx="10" cy="10.5" r="7.5" fill="#f5f5f5" stroke="#4a4a52" stroke-width="1"/><path d="M10 6v5l3.2 2" fill="none" stroke="#000080" stroke-width="1.4" stroke-linecap="round"/><rect x="7.5" y="1" width="5" height="1.6" fill="#8a8a92"/>',
+    calendar: '<rect x="3" y="3.5" width="14" height="14" rx="0.8" fill="#f5f5f5" stroke="#4a4a52" stroke-width="0.8"/><rect x="3" y="3.5" width="14" height="4" fill="#c0392b" stroke="#4a4a52" stroke-width="0.8"/><rect x="6" y="1.5" width="1.6" height="3" fill="#8a8a92"/><rect x="12.4" y="1.5" width="1.6" height="3" fill="#8a8a92"/><rect x="5.5" y="10" width="2.6" height="2.2" fill="#4a7fc9"/><rect x="9.2" y="10" width="2.6" height="2.2" fill="#c8c8ce" stroke="#8a8a92" stroke-width="0.4"/><rect x="12.9" y="10" width="2.6" height="2.2" fill="#c8c8ce" stroke="#8a8a92" stroke-width="0.4"/>',
     trash: '<path d="M4 6h12l-1 11H5z" fill="#c8c8ce" stroke="#4a4a52" stroke-width="0.8"/><rect x="3" y="4.2" width="14" height="2" fill="#a8a8b0" stroke="#4a4a52" stroke-width="0.6"/><rect x="8" y="2" width="4" height="2.2" fill="#a8a8b0" stroke="#4a4a52" stroke-width="0.6"/><line x1="7.5" y1="8.5" x2="8" y2="14.5" stroke="#8a8a92" stroke-width="1"/><line x1="10" y1="8.5" x2="10" y2="14.5" stroke="#8a8a92" stroke-width="1"/><line x1="12.5" y1="8.5" x2="12" y2="14.5" stroke="#8a8a92" stroke-width="1"/>',
     security: '<path d="M10 1.5 16 3.8v5.3c0 4.4-2.6 7.5-6 8.9-3.4-1.4-6-4.5-6-8.9V3.8z" fill="#4a7fc9" stroke="#1f3a5c" stroke-width="0.8"/><path d="M7 10l2 2.2 4-4.5" fill="none" stroke="#fff" stroke-width="1.3"/>',
     esci: '<rect x="3" y="2" width="8" height="16" fill="#a5713a" stroke="#5c3a1a" stroke-width="0.8"/><circle cx="8.6" cy="10" r="0.8" fill="#3a2410"/><path d="M12 6l4 4-4 4" fill="none" stroke="#c0392b" stroke-width="1.6"/><line x1="9" y1="10" x2="16" y2="10" stroke="#c0392b" stroke-width="1.6"/>',
@@ -382,6 +418,7 @@
     { view: 'drive', label: 'Drive' },
     { view: 'dossiers', label: 'Cartelle' },
     { view: 'reminders', label: 'Scadenze' },
+    { view: 'calendar', label: 'Calendario' },
     { view: 'trash', label: 'Cestino' },
     { view: 'security', label: 'Sicurezza' },
   ];
@@ -684,7 +721,7 @@
 
   const views = {}; // popolate piu' sotto
 
-  const WINDOW_SIZES = { vault: { w: 1040, h: 640 }, dossiers: { w: 760, h: 560 } };
+  const WINDOW_SIZES = { vault: { w: 1040, h: 640 }, dossiers: { w: 760, h: 560 }, calendar: { w: 820, h: 620 } };
 
   function windowId(view) { return 'win-' + view; }
 
@@ -822,6 +859,105 @@
         if (highlightId && String(r.id) === highlightId) row.classList.add('card-highlight');
         root.appendChild(row);
       });
+  };
+
+  // Calendario: griglia mensile, riusa l'API e il modulo delle Scadenze —
+  // stessi dati, vista diversa. Click su un giorno vuoto = nuova scadenza con
+  // quella data precompilata; click su una voce = modifica.
+  const MONTH_LABELS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+  const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+  views.calendar = async (root, opts = {}) => {
+    const reminders = await api('/reminders');
+    root.innerHTML = '';
+    root.appendChild(el(`
+      <div class="view-header">
+        <h2>Calendario</h2>
+        <div class="view-header-actions"><button class="btn btn-primary" id="new-reminder-cal">+ Nuova scadenza</button></div>
+      </div>
+    `));
+
+    function saveNew(dateStr) {
+      const form = reminderModal();
+      if (dateStr) form.date.value = dateStr;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+        closeModal(); toast('Scadenza salvata'); render('calendar', { month: monthKey(cursor) });
+      });
+      form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+      openModal('Nuova scadenza', form);
+    }
+
+    function saveEdit(r) {
+      const form = reminderModal(r);
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+        closeModal(); toast('Scadenza aggiornata'); render('calendar', { month: monthKey(cursor) });
+      });
+      form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+      openModal('Modifica scadenza', form);
+    }
+
+    root.querySelector('#new-reminder-cal').addEventListener('click', () => saveNew());
+
+    function monthKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+    const cursor = opts.month ? new Date(`${opts.month}-01T00:00:00`) : new Date();
+    cursor.setDate(1);
+
+    const toolbar = el(`
+      <div class="calendar-toolbar">
+        <button type="button" class="btn" id="cal-prev">◄</button>
+        <span class="calendar-label" id="cal-label"></span>
+        <button type="button" class="btn" id="cal-next">►</button>
+        <button type="button" class="btn" id="cal-today">Oggi</button>
+      </div>
+    `);
+    const gridWrap = el('<div class="calendar-grid"></div>');
+    root.appendChild(toolbar);
+    root.appendChild(gridWrap);
+
+    function remindersOn(dateStr) {
+      return reminders.filter((r) => (r.date || '').slice(0, 10) === dateStr);
+    }
+
+    function renderMonth() {
+      toolbar.querySelector('#cal-label').textContent = `${MONTH_LABELS[cursor.getMonth()]} ${cursor.getFullYear()}`;
+      gridWrap.innerHTML = '';
+      WEEKDAY_LABELS.forEach((w) => gridWrap.appendChild(el(`<div class="calendar-weekday">${w}</div>`)));
+
+      const firstOfMonth = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Lun=0 ... Dom=6 (getDay() e' Dom=0 ... Sab=6)
+      const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      for (let i = 0; i < firstWeekday; i++) gridWrap.appendChild(el('<div class="calendar-cell calendar-cell-empty"></div>'));
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const cell = el(`
+          <div class="calendar-cell${dateStr === todayStr ? ' calendar-cell-today' : ''}">
+            <span class="calendar-daynum">${day}</span>
+            <div class="calendar-entries"></div>
+          </div>
+        `);
+        const entriesEl = cell.querySelector('.calendar-entries');
+        remindersOn(dateStr).forEach((r) => {
+          const chip = el(`<button type="button" class="calendar-entry">${escTrim(r.label, 40)}</button>`);
+          chip.addEventListener('click', (e) => { e.stopPropagation(); saveEdit(r); });
+          entriesEl.appendChild(chip);
+        });
+        cell.addEventListener('click', () => saveNew(dateStr));
+        gridWrap.appendChild(cell);
+      }
+    }
+
+    toolbar.querySelector('#cal-prev').addEventListener('click', () => { cursor.setMonth(cursor.getMonth() - 1); renderMonth(); });
+    toolbar.querySelector('#cal-next').addEventListener('click', () => { cursor.setMonth(cursor.getMonth() + 1); renderMonth(); });
+    toolbar.querySelector('#cal-today').addEventListener('click', () => { cursor.setFullYear(new Date().getFullYear(), new Date().getMonth(), 1); renderMonth(); });
+
+    renderMonth();
   };
 
   // ==================================================================
@@ -2048,6 +2184,47 @@
     }
 
     root.appendChild(block);
+
+    const notifyBlock = el('<div class="section-block"><h3>Notifiche scadenze</h3></div>');
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    if (!supported) {
+      notifyBlock.appendChild(el('<p class="card-sub">Il browser non supporta le notifiche push.</p>'));
+    } else {
+      const existingSub = await getPushSubscription();
+      if (Notification.permission === 'denied') {
+        notifyBlock.appendChild(el(`
+          <p class="card-sub">Notifiche bloccate dal browser. Per riattivarle, sblocca le notifiche
+          per questo sito dalle impostazioni del browser.</p>
+        `));
+      } else if (existingSub) {
+        notifyBlock.appendChild(el(`
+          <p class="card-sub">Attive: ricevi una notifica quando una scadenza arriva a termine
+          (funziona anche ad app chiusa).</p>
+        `));
+        const off = el('<button class="btn btn-sm btn-danger">Disattiva</button>');
+        off.addEventListener('click', async () => {
+          await disablePushNotifications();
+          toast('Notifiche disattivate'); render('security');
+        });
+        notifyBlock.appendChild(off);
+      } else {
+        notifyBlock.appendChild(el(`
+          <p class="card-sub">Non attive: ricevi una notifica quando una scadenza arriva a termine,
+          anche ad app chiusa. Nessun dato lascia il tuo server.</p>
+        `));
+        const on = el('<button class="btn btn-primary">Attiva notifiche</button>');
+        on.addEventListener('click', async () => {
+          try {
+            await enablePushNotifications();
+            toast('Notifiche attivate'); render('security');
+          } catch (err) {
+            toast(err.message);
+          }
+        });
+        notifyBlock.appendChild(on);
+      }
+    }
+    root.appendChild(notifyBlock);
 
     const wallpaperBlock = el('<div class="section-block"><h3>Sfondo desktop</h3><p class="card-sub">Solo su questo dispositivo — non viene sincronizzato.</p></div>');
     const wallpaperRow = el('<div class="card-actions" style="padding-top:10px"></div>');

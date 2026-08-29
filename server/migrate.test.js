@@ -18,12 +18,15 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
   runMigrations(db);
 
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
-  for (const t of ['users', 'ideas', 'projects', 'vault_entries', 'accounts', 'documents', 'dossiers', 'dossier_links', 'recovery_codes', 'reminders']) {
+  for (const t of ['users', 'ideas', 'projects', 'vault_entries', 'accounts', 'documents', 'dossiers', 'dossier_links', 'recovery_codes', 'reminders', 'push_subscriptions']) {
     assert.ok(tables.includes(t), `manca la tabella ${t}`);
   }
 
   const applied = db.prepare('SELECT id FROM schema_migrations ORDER BY rowid').all().map((r) => r.id);
   assert.deepEqual(applied, EXPECTED_IDS);
+
+  const reminderColumns = db.prepare('PRAGMA table_info(reminders)').all().map((c) => c.name);
+  assert.ok(reminderColumns.includes('notified_at'));
 
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
   assert.ok(userColumns.includes('totp_secret'));
@@ -149,6 +152,10 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
   // tabella nuova.
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
   assert.ok(tables.includes('reminders'), 'la migrazione delle scadenze non e\' stata eseguita sul database legacy');
+  assert.ok(tables.includes('push_subscriptions'), 'la migrazione delle notifiche push non e\' stata eseguita sul database legacy');
+
+  const reminderColumns = db.prepare('PRAGMA table_info(reminders)').all().map((c) => c.name);
+  assert.ok(reminderColumns.includes('notified_at'), 'la migrazione delle notifiche push non e\' stata eseguita sul database legacy');
 
   const docColumns = db.prepare('PRAGMA table_info(documents)').all().map((c) => c.name);
   assert.ok(docColumns.includes('display_name'), 'la migrazione del nome personalizzato non e\' stata eseguita sul database legacy');

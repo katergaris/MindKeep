@@ -19,9 +19,13 @@ router.put('/:id', (req, res) => {
   const { label, date, notes } = req.body;
   const existing = db.prepare('SELECT * FROM reminders WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Scadenza non trovata' });
+  const finalDate = date ?? existing.date;
+  // Se la data si sposta, la scadenza puo' notificare di nuovo quando la
+  // nuova data arriva: altrimenti chi la rimanda non riceverebbe piu' nulla.
+  const notifiedAt = finalDate === existing.date ? existing.notified_at : null;
   db.prepare(
-    "UPDATE reminders SET label = ?, date = ?, notes = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(label ?? existing.label, date ?? existing.date, notes ?? existing.notes, req.params.id);
+    "UPDATE reminders SET label = ?, date = ?, notes = ?, notified_at = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(label ?? existing.label, finalDate, notes ?? existing.notes, notifiedAt, req.params.id);
   res.json(db.prepare('SELECT * FROM reminders WHERE id = ?').get(req.params.id));
 });
 

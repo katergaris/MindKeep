@@ -605,6 +605,25 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 }
 .explorer-icon:hover .unlink-badge, .explorer-icon:focus-within .unlink-badge { display: flex; }
 
+/* ---------- Vista Calendario ---------- */
+.calendar-toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--win-face); margin-bottom: 14px;
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+}
+.calendar-label { flex: 1; text-align: center; font-weight: 700; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border-soft); border: 1px solid var(--border-soft); }
+.calendar-weekday { background: var(--win-face); text-align: center; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 4px 0; color: var(--text-muted); }
+.calendar-cell { background: var(--surface); min-height: 74px; padding: 4px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+.calendar-cell-empty { background: var(--surface-2); cursor: default; }
+.calendar-cell-today { outline: 2px solid var(--accent-soft); outline-offset: -2px; }
+.calendar-daynum { font-size: 0.76rem; font-weight: 700; color: var(--text-muted); }
+.calendar-entries { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.calendar-entry {
+  background: var(--accent-bg); color: var(--accent-soft); border: none; text-align: left;
+  font-size: 0.68rem; padding: 2px 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.calendar-entry:hover { background: var(--sel-bg); color: var(--sel-text); }
+
 /* ---------- Modal ---------- */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.5);
@@ -666,6 +685,13 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 
   .explorer-icon .unlink-badge { display: flex; width: 22px; height: 22px; }
   .explorer-path { min-width: 100%; order: -1; }
+
+  .calendar-cell { min-height: 52px; padding: 3px; }
+  .calendar-daynum { font-size: 0.68rem; }
+  .calendar-entry { font-size: 0.62rem; padding: 1px 3px; }
+  .calendar-weekday { font-size: 0.62rem; padding: 2px 0; }
+  .calendar-toolbar { flex-wrap: wrap; }
+  .calendar-label { order: -1; width: 100%; }
   .vault-sheet-head { display: none; }
   .vault-sheet-row { grid-template-columns: 1fr; border-bottom: 4px solid var(--border-soft); }
   .vs-cell { border-right: none; border-bottom: 1px solid var(--border-soft); white-space: normal; }

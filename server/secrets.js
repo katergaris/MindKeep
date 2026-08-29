@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const webpush = require('web-push');
 
 // Se SESSION_SECRET/ENCRYPTION_KEY non arrivano da .env o dall'ambiente (es.
 // un "docker compose up" senza alcun file preparato prima, come nell'installazione
@@ -31,7 +32,8 @@ function loadPersisted() {
 }
 
 function ensureSecrets() {
-  if (!needsValue('SESSION_SECRET') && !needsValue('ENCRYPTION_KEY')) return;
+  const allNames = ['SESSION_SECRET', 'ENCRYPTION_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'];
+  if (allNames.every((n) => !needsValue(n))) return;
 
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const persisted = loadPersisted();
@@ -48,11 +50,27 @@ function ensureSecrets() {
     changed = true;
   }
 
+  // Coppia di chiavi VAPID (notifiche push): vanno generate insieme, non una
+  // per volta, altrimenti pubblica/privata non si corrisponderebbero piu'.
+  if (needsValue('VAPID_PUBLIC_KEY') || needsValue('VAPID_PRIVATE_KEY')) {
+    if (persisted.VAPID_PUBLIC_KEY && persisted.VAPID_PRIVATE_KEY) {
+      process.env.VAPID_PUBLIC_KEY = persisted.VAPID_PUBLIC_KEY;
+      process.env.VAPID_PRIVATE_KEY = persisted.VAPID_PRIVATE_KEY;
+    } else {
+      const keys = webpush.generateVAPIDKeys();
+      process.env.VAPID_PUBLIC_KEY = keys.publicKey;
+      process.env.VAPID_PRIVATE_KEY = keys.privateKey;
+      persisted.VAPID_PUBLIC_KEY = keys.publicKey;
+      persisted.VAPID_PRIVATE_KEY = keys.privateKey;
+      changed = true;
+    }
+  }
+
   if (changed) {
     const body = Object.entries(persisted).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
     fs.writeFileSync(SECRETS_FILE, body, { mode: 0o600 });
     console.log(
-      '✓ SESSION_SECRET/ENCRYPTION_KEY generati automaticamente e salvati in data/.secrets.env ' +
+      '✓ SESSION_SECRET/ENCRYPTION_KEY/chiavi VAPID generati automaticamente e salvati in data/.secrets.env ' +
       '(non cancellare la cartella "data": senza quel file le password nel vault non sono piu\' recuperabili)'
     );
   }
