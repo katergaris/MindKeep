@@ -1188,9 +1188,81 @@
       { key: 'fatto', label: 'Fatto' },
     ];
     const board = el('<div class="board"></div>');
+
+    // Trascinamento vero delle card tra colonne (le frecce restano come
+    // alternativa funzionante, es. per chi preferisce non trascinare).
+    // Solo mouse: su schermi stretti le colonne si impilano una sopra
+    // l'altra e "trascinare tra colonne" coinciderebbe con lo scroll
+    // verticale della pagina — le frecce restano l'unico modo su touch.
+    function attachCardDrag(card, p) {
+      card.addEventListener('pointerdown', (e) => {
+        if (e.pointerType && e.pointerType !== 'mouse') return;
+        if (e.button !== 0) return;
+        if (e.target.closest('button')) return;
+        const startX = e.clientX, startY = e.clientY;
+        const rect = card.getBoundingClientRect();
+        const offsetX = startX - rect.left, offsetY = startY - rect.top;
+        let dragging = false;
+        let ghost = null;
+
+        function clearHighlights() {
+          board.querySelectorAll('.board-col.board-col-drop-target').forEach((c) => c.classList.remove('board-col-drop-target'));
+        }
+        function dropColAt(x, y) {
+          const target = document.elementFromPoint(x, y);
+          return target ? target.closest('.board-col') : null;
+        }
+        function startDrag() {
+          dragging = true;
+          card.classList.add('board-card-dragging');
+          ghost = card.cloneNode(true);
+          ghost.classList.add('board-card-ghost');
+          ghost.style.width = rect.width + 'px';
+          document.body.appendChild(ghost);
+        }
+        function moveGhost(x, y) {
+          ghost.style.left = (x - offsetX) + 'px';
+          ghost.style.top = (y - offsetY) + 'px';
+        }
+        function cleanup() {
+          card.removeEventListener('pointermove', onMove);
+          card.removeEventListener('pointerup', onUp);
+          card.removeEventListener('pointercancel', onCancel);
+          if (ghost) { ghost.remove(); ghost = null; }
+          card.classList.remove('board-card-dragging');
+          clearHighlights();
+        }
+        function onMove(e2) {
+          if (!dragging) {
+            if (Math.abs(e2.clientX - startX) < 6 && Math.abs(e2.clientY - startY) < 6) return;
+            startDrag();
+          }
+          moveGhost(e2.clientX, e2.clientY);
+          clearHighlights();
+          const col = dropColAt(e2.clientX, e2.clientY);
+          if (col) col.classList.add('board-col-drop-target');
+        }
+        function onUp(e2) {
+          const wasDragging = dragging;
+          const col = wasDragging ? dropColAt(e2.clientX, e2.clientY) : null;
+          cleanup();
+          const newStatus = col && col.dataset.status;
+          if (wasDragging && newStatus && newStatus !== p.status) {
+            api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) }).then(() => render('projects'));
+          }
+        }
+        function onCancel() { cleanup(); }
+
+        card.setPointerCapture(e.pointerId);
+        card.addEventListener('pointermove', onMove);
+        card.addEventListener('pointerup', onUp);
+        card.addEventListener('pointercancel', onCancel);
+      });
+    }
+
     STATUSES.forEach((s, i) => {
       const col = el(`
-        <div class="board-col">
+        <div class="board-col" data-status="${s.key}">
           <div class="board-col-head"><span>${esc(s.label)}</span><span class="board-col-count">${projects.filter((p) => p.status === s.key).length}</span></div>
           <div class="board-col-body"></div>
         </div>
@@ -1248,6 +1320,7 @@
           openModal('Modifica progetto', form);
         });
         card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('project', p.id, p.title));
+        attachCardDrag(card, p);
         card.querySelector('[data-del]').addEventListener('click', async () => {
           if (!confirm('Spostare questo progetto nel cestino?')) return;
           await api(`/projects/${p.id}`, { method: 'DELETE' });

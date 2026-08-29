@@ -462,6 +462,13 @@ body.no-scroll { overflow: hidden; }
 .board-card { background: var(--surface); border: 1px solid var(--border-soft); padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
 .board-card-title { margin: 0; font-size: 0.87rem; font-weight: 600; }
 .board-card-actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 4px; }
+.board-card { cursor: grab; }
+.board-card.board-card-dragging { opacity: 0.4; }
+.board-col.board-col-drop-target { outline: 2px dashed var(--accent-soft); outline-offset: -2px; background: var(--accent-bg); }
+.board-card-ghost {
+  position: fixed; top: 0; left: 0; z-index: 500; pointer-events: none;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.35); opacity: 0.95; transform: rotate(-1deg);
+}
 .board-progress {
   height: 9px; background: var(--surface);
   box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
