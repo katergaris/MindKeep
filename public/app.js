@@ -71,6 +71,12 @@
     try { return new Date(d).toLocaleDateString('it-IT'); } catch (e) { return d; }
   }
 
+  // Tempo concreto invece della sola data (countdown, non solo calendario):
+  // riusato da Scadenze e dalla scadenza dei Progetti in Bacheca.
+  function daysUntil(dateStr) {
+    return Math.round((new Date(dateStr) - new Date()) / 86400000);
+  }
+
   function parseTags(form) {
     return form.tags.value.split(',').map((t) => t.trim()).filter(Boolean);
   }
@@ -782,7 +788,7 @@
       .slice()
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .forEach((r) => {
-        const days = Math.round((new Date(r.date) - new Date()) / 86400000);
+        const days = daysUntil(r.date);
         const dayLabel = days === 0 ? 'oggi' : days > 0 ? `tra ${days} giorn${days === 1 ? 'o' : 'i'}` : `passata da ${-days} giorn${days === -1 ? 'o' : 'i'}`;
         const row = el(`
           <div class="trash-row row-card">
@@ -1027,13 +1033,26 @@
       const body = col.querySelector('.board-col-body');
       projects.filter((p) => p.status === s.key).forEach((p) => {
         const { done, total } = checklistProgress(p.checklist);
+        const pct = total ? Math.round((done / total) * 100) : 0;
         const totalBudget = budgetTotal(p.budget);
+        const budgetTitle = (p.budget || []).map((b) => `${b.label}: ${fmtMoney(b.amount)}`).join(', ');
+        let deadlineChip = '';
+        if (p.deadline) {
+          const days = daysUntil(p.deadline);
+          const label = days === 0 ? 'Scade oggi' : days > 0 ? `Scade tra ${days} giorn${days === 1 ? 'o' : 'i'}` : `Scaduto da ${-days} giorn${days === -1 ? 'o' : 'i'}`;
+          const kind = days < 0 ? 'late' : days <= 3 ? 'soon' : 'far';
+          deadlineChip = `<span class="chip-deadline chip-deadline-${kind}">${esc(label)}</span>`;
+        }
         const card = el(`
           <div class="board-card">
             <p class="board-card-title">${esc(p.title)}</p>
-            ${total ? `<p class="card-sub">${done}/${total} completati</p>` : ''}
-            ${p.deadline ? `<p class="card-sub">Scadenza: ${fmtDate(p.deadline)}</p>` : ''}
-            ${totalBudget ? `<p class="card-sub">Budget: ${fmtMoney(totalBudget)}</p>` : ''}
+            ${total ? `
+              <div class="board-progress" title="${done}/${total} completati"><div class="board-progress-fill" style="width:${pct}%"></div></div>
+              <p class="card-sub">${done}/${total} completati</p>
+            ` : ''}
+            ${deadlineChip}
+            ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">Budget: ${fmtMoney(totalBudget)}</p>` : ''}
+            ${(p.contacts || []).length ? `<p class="card-sub">👥 ${escTrim(p.contacts.join(', '), 60)}</p>` : ''}
             <div class="board-card-actions">
               <button type="button" data-prev ${i === 0 ? 'disabled' : ''} title="Sposta indietro">←</button>
               <button type="button" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="Sposta avanti">→</button>

@@ -462,6 +462,15 @@ body.no-scroll { overflow: hidden; }
 .board-card { background: var(--surface); border: 1px solid var(--border-soft); padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
 .board-card-title { margin: 0; font-size: 0.87rem; font-weight: 600; }
 .board-card-actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 4px; }
+.board-progress {
+  height: 9px; background: var(--surface);
+  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+}
+.board-progress-fill { height: 100%; background: var(--accent-soft); }
+.chip-deadline { display: inline-flex; width: fit-content; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; }
+.chip-deadline-far { background: var(--surface-2); color: var(--text-muted); }
+.chip-deadline-soon { background: #ffe9b0; color: #8a5a00; }
+.chip-deadline-late { background: var(--danger-bg); color: var(--danger-soft); }
 .board-card-actions button { background: var(--win-face); border: none; box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2); color: var(--text-muted); cursor: pointer; font: inherit; padding: 3px 8px; font-size: 0.78rem; }
 .board-card-actions button:hover:not(:disabled) { color: var(--accent-soft); }
 .board-card-actions button:disabled { opacity: 0.35; cursor: default; }
