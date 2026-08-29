@@ -4,13 +4,13 @@ Spazio personale self-hosted per idee, progetti, password, account e documenti �
 
 ## Cosa contiene
 
-- **Flusso** — un unico flusso per idee, scadenze, documenti e aggiornamenti ai progetti, con comandi rapidi (`/idea` `/doc` `/scadenza` `/progetto`), tag e collegamento ai fascicoli mentre scrivi; include anche una vista Tabella e una Bacheca (kanban progetti), oltre a scadenze e panoramica delle sezioni
-- **Idee** — note libere con tag e `#hashtag`
-- **Progetti** — stato (da fare / in corso / fatto), checklist, scadenza, persone/contatti e budget
+- **Note** — libere, con tag, `#hashtag` e checklist spuntabile
+- **Progetti** — stato (da fare / in corso / fatto), checklist, scadenza, persone/contatti e budget, in una Bacheca kanban
 - **Vault password** — voci cifrate (AES-256-GCM), con **import da CSV**
 - **Abbonamenti** — account digitali o abbonamenti cartacei/fisici, con campi propri per ciascuno e data di rinnovo
 - **Drive** — upload documenti, organizzati in cartelle, con nome personalizzato, anteprima (immagini e PDF) e scadenza opzionale
-- **Fascicoli** — collegano insieme idee, progetti, voci del vault, abbonamenti, documenti e scadenze sullo stesso tema
+- **Cartelle** — collegano insieme note, progetti, voci del vault, abbonamenti, documenti e scadenze sullo stesso tema
+- **Scadenze e Calendario** — elenco piatto o vista mensile, con notifiche push opzionali (anche ad app chiusa) quando una scadenza arriva a termine
 - **Ricerca globale** — cerca in tutte le sezioni insieme
 - **Cestino** — eliminazione soft con possibilità di ripristino
 - **Backup** — esporta un file .zip con database e documenti caricati
