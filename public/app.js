@@ -190,11 +190,8 @@
     if (e.key !== 'Escape') return;
     closePreview();
     closeModal();
-    const backdrop = document.getElementById('sheet-backdrop');
-    if (backdrop && !backdrop.classList.contains('hidden')) {
-      backdrop.classList.add('hidden');
-      document.body.classList.remove('no-scroll');
-    }
+    if (typeof closeStartMenu === 'function') closeStartMenu();
+    if (typeof closeQuickCapture === 'function') closeQuickCapture();
   });
 
   function el(html) {
@@ -329,321 +326,380 @@
     location.reload();
   }
 
-  document.getElementById('logout-btn').addEventListener('click', logout);
-
-  let sidebarBrandDecoded = false;
   function startApp() {
     authScreen.classList.add('hidden');
     appRoot.classList.remove('hidden');
-    if (!sidebarBrandDecoded) {
-      sidebarBrandDecoded = true;
-      decodeReveal(document.getElementById('sidebar-brand-name'), 'Mindkeep');
-    }
-    render('flusso');
+    buildDesktop();
   }
 
   // ---------------- Navigation ----------------
-  // Icone pixel-art (griglia 8x8, stile retro a 8 bit): ogni stringa e' una
-  // riga, '#' un pixel acceso. Niente file o servizi esterni: solo <rect>
-  // generati da questa mappa, un pittogramma con un significato per voce
-  // invece di un tratto astratto.
-  const ICONS = {
-    flusso:     ['................', '................', '...###..........', '...####.........', '...#####........', '...######.......', '...#######......', '...########.....', '...########.....', '...#######......', '...######.......', '...#####........', '...####.........', '...###..........', '................', '................'],
-    ideas:      ['................', '................', '......####......', '.....######.....', '....########....', '....########....', '....########....', '....########....', '.....######.....', '......####......', '......####......', '................', '.....######.....', '................', '......####......', '................'],
-    projects:   ['................', '................', '.####...........', '.####..########.', '.####..########.', '.####...........', '................', '.####...........', '.####..########.', '.####..########.', '.####...........', '................', '.####...........', '.####..########.', '.####..########.', '.####...........'],
-    vault:      ['................', '.......###......', '......#####.....', '.....#######....', '....###...###...', '....###...###...', '....###...###...', '....#########...', '...###########..', '...###########..', '...###########..', '...###########..', '...###########..', '...###########..', '...###########..', '................'],
-    accounts:   ['................', '................', '.......###......', '......#####.....', '.....#######....', '.....#######....', '.....#######....', '......#####.....', '.......###......', '......#####.....', '....#########...', '...###########..', '..#############.', '..#############.', '..#############.', '................'],
-    drive:      ['................', '................', '..##########....', '..#.........#...', '..#..######..#..', '..#..#....#..#..', '..#..#....#..#..', '..#..######..#..', '..#..........#..', '..#..######..#..', '..#..######..#..', '..#..######..#..', '..#..######..#..', '..############..', '................', '................'],
-    dossiers:   ['................', '................', '................', '................', '..#####.........', '..#####.........', '..#############.', '..#...........#.', '..#...........#.', '..#...........#.', '..#...........#.', '..#...........#.', '..#...........#.', '..#############.', '................', '................'],
-    trash:      ['................', '......####......', '......####......', '...##########...', '...##########...', '....########....', '....#......#....', '....#.#.#.##....', '....#.#.#.##....', '....#.#.#.##....', '....#.#.#.##....', '....#.#.#.##....', '....#.#.#.##....', '....#......#....', '....########....', '................'],
-    security:   ['................', '..#############.', '..#############.', '..#############.', '..#############.', '..#####..######.', '..###.......###.', '..###.......###.', '..#####..######.', '..#####..######.', '...###########..', '....#########...', '......#####.....', '.......###......', '........#.......', '................'],
-    piu:        ['................', '................', '................', '................', '................', '................', '................', '..###..###..###.', '..###..###..###.', '..###..###..###.', '................', '................', '................', '................', '................', '................'],
-    cerca:      ['................', '................', '.....###........', '....#####.......', '...#######......', '..###...###.....', '..###...###.....', '..###...###.....', '...#######......', '....#######.....', '.....###.###....', '..........###...', '...........###..', '............###.', '.............###', '..............#.'],
-    chiudi:     ['................', '................', '..##.........##.', '..###.......##..', '...###.....##...', '....###...##....', '.....###.##.....', '......####......', '.......###......', '......#####.....', '.....##..###....', '....##....###...', '...##......###..', '..##........###.', '..#..........#..', '................'],
-    backup:     ['................', '.......##.......', '.......##.......', '.......##.......', '.......##.......', '.......##.......', '....##.##.##....', '.....######.....', '......####......', '.......##.......', '..############..', '..#..........#..', '..#..........#..', '..#..........#..', '..############..', '................'],
-    esci:       ['................', '................', '..#######.......', '..#.....#.......', '..#.....#.##....', '..#.....#..##...', '..#.....#...##..', '..#.....#.#####.', '..#.....#.#####.', '..#.....#...##..', '..#.....#..##...', '..#.....#.##....', '..#.....#.......', '..#######.......', '................', '................'],
+  // Icone Windows 95: piene e colorate (stile Program Manager), non il
+  // vecchio tratto monocromo a 8 bit — segnalato poco calzante per questo tema.
+  const APP_ICON_PATHS = {
+    projects: '<rect x="3" y="2.5" width="14" height="16" rx="1" fill="#e9dfc4" stroke="#5c4a1e" stroke-width="0.8"/><rect x="7" y="1" width="6" height="3" rx="1" fill="#9a9aa2" stroke="#4a4a4a" stroke-width="0.6"/><rect x="6" y="7.2" width="8" height="1.6" fill="#4a7fc9"/><rect x="6" y="10.6" width="8" height="1.6" fill="#4a7fc9"/><rect x="6" y="14" width="5" height="1.6" fill="#e0743c"/>',
+    ideas: '<rect x="4" y="2" width="12" height="16" fill="#fff6d8" stroke="#8a7a3a" stroke-width="0.8"/><path d="M12 2 L16 6 L12 6 Z" fill="#e8d48c" stroke="#8a7a3a" stroke-width="0.6"/><rect x="6" y="9" width="8" height="1.4" fill="#a89860"/><rect x="6" y="12" width="8" height="1.4" fill="#a89860"/><rect x="6" y="15" width="5" height="1.4" fill="#a89860"/>',
+    vault: '<path d="M6 9V6.5a4 4 0 0 1 8 0V9" fill="none" stroke="#b8860b" stroke-width="2"/><rect x="4.5" y="9" width="11" height="9" rx="1.2" fill="#b0b0b8" stroke="#4a4a52" stroke-width="0.8"/><circle cx="10" cy="13" r="1.3" fill="#4a4a52"/><rect x="9.3" y="13" width="1.4" height="2.6" fill="#4a4a52"/>',
+    accounts: '<rect x="2" y="4.5" width="16" height="11" rx="1.2" fill="#3a6ea5" stroke="#1f3a5c" stroke-width="0.8"/><rect x="2" y="7.5" width="16" height="2.6" fill="#1f3a5c"/><rect x="4" y="12" width="6" height="1.6" fill="#e8c96b"/>',
+    drive: '<rect x="3" y="2.5" width="14" height="15" rx="0.6" fill="#3a4a8a" stroke="#1a2450" stroke-width="0.8"/><rect x="6" y="3" width="8" height="5" fill="#c8ccd8" stroke="#4a4a52" stroke-width="0.5"/><rect x="7" y="3.6" width="2.4" height="3.8" fill="#8890a0"/><rect x="5" y="12" width="10" height="4" fill="#e8eaf0" stroke="#4a4a52" stroke-width="0.5"/>',
+    dossiers: '<path d="M2 5h7l2 2.5h9v9.5H2z" fill="#e3b23c" stroke="#8a6414" stroke-width="0.8"/><path d="M2 5h7l2 2.5H2z" fill="#f3cf72" stroke="#8a6414" stroke-width="0.8"/>',
+    reminders: '<circle cx="10" cy="10.5" r="7.5" fill="#f5f5f5" stroke="#4a4a52" stroke-width="1"/><path d="M10 6v5l3.2 2" fill="none" stroke="#000080" stroke-width="1.4" stroke-linecap="round"/><rect x="7.5" y="1" width="5" height="1.6" fill="#8a8a92"/>',
+    trash: '<path d="M4 6h12l-1 11H5z" fill="#c8c8ce" stroke="#4a4a52" stroke-width="0.8"/><rect x="3" y="4.2" width="14" height="2" fill="#a8a8b0" stroke="#4a4a52" stroke-width="0.6"/><rect x="8" y="2" width="4" height="2.2" fill="#a8a8b0" stroke="#4a4a52" stroke-width="0.6"/><line x1="7.5" y1="8.5" x2="8" y2="14.5" stroke="#8a8a92" stroke-width="1"/><line x1="10" y1="8.5" x2="10" y2="14.5" stroke="#8a8a92" stroke-width="1"/><line x1="12.5" y1="8.5" x2="12" y2="14.5" stroke="#8a8a92" stroke-width="1"/>',
+    security: '<path d="M10 1.5 16 3.8v5.3c0 4.4-2.6 7.5-6 8.9-3.4-1.4-6-4.5-6-8.9V3.8z" fill="#4a7fc9" stroke="#1f3a5c" stroke-width="0.8"/><path d="M7 10l2 2.2 4-4.5" fill="none" stroke="#fff" stroke-width="1.3"/>',
+    esci: '<rect x="3" y="2" width="8" height="16" fill="#a5713a" stroke="#5c3a1a" stroke-width="0.8"/><circle cx="8.6" cy="10" r="0.8" fill="#3a2410"/><path d="M12 6l4 4-4 4" fill="none" stroke="#c0392b" stroke-width="1.6"/><line x1="9" y1="10" x2="16" y2="10" stroke="#c0392b" stroke-width="1.6"/>',
   };
 
-  function icona(nome) {
-    const bitmap = ICONS[nome];
-    if (!bitmap) return '';
-    let rects = '';
-    bitmap.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        if (row[x] === '#') rects += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
-      }
-    });
-    return `<svg class="icon" viewBox="0 0 16 16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+  function appIcon(nome, size = 18) {
+    const inner = APP_ICON_PATHS[nome];
+    if (!inner) return '';
+    return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" aria-hidden="true">${inner}</svg>`;
   }
 
-  // Elenco unico delle sezioni: da qui nascono sia il menu laterale del
-  // computer sia la barra in basso e il foglio del telefono, cosi' non possono
-  // piu' andare fuori sincrono.
+  // Icone vettoriali "pulite" (tratto, non pixel-art): usate solo per il
+  // tasto di ricerca del telefono, l'unico punto in cui il blocco a 8 bit era
+  // stato segnalato illeggibile a quella dimensione (22px). Il resto della
+  // navigazione resta nello stile retro a blocchi.
+  const VECTOR_ICONS = {
+    cerca: '<circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/>',
+    chiudi: '<path d="M6 6l12 12M18 6L6 18"/>',
+  };
+  function iconaLinea(nome) {
+    return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${VECTOR_ICONS[nome] || ''}</svg>`;
+  }
+
+  // Elenco unico delle app: alimenta il menu Avvio (computer e telefono).
   const SECTIONS = [
-    { view: 'flusso', label: 'Flusso', tab: true },
-    { view: 'ideas', label: 'Idee', tab: true },
-    { view: 'projects', label: 'Progetti', tab: true },
-    { view: 'vault', label: 'Vault', tab: true },
-    { view: 'accounts', label: 'Abbonamenti', tab: true },
-    { view: 'drive', label: 'Drive', tab: true },
-    { view: 'dossiers', label: 'Fascicoli', tab: true },
-    { view: 'trash', label: 'Cestino', tab: true },
-    { view: 'security', label: 'Sicurezza', tab: true },
+    { view: 'projects', label: 'Progetti' },
+    { view: 'ideas', label: 'Note' },
+    { view: 'vault', label: 'Vault' },
+    { view: 'accounts', label: 'Abbonamenti' },
+    { view: 'drive', label: 'Drive' },
+    { view: 'dossiers', label: 'Cartelle' },
+    { view: 'reminders', label: 'Scadenze' },
+    { view: 'trash', label: 'Cestino' },
+    { view: 'security', label: 'Sicurezza' },
   ];
+  // Voci di configurazione separate da quelle d'uso quotidiano con un
+  // divisore nel menu Avvio, per ridurre le scelte a parita' di sguardo.
+  const SETTINGS_VIEWS = new Set(['trash', 'security']);
 
-  const nav = document.getElementById('nav');
-  const viewRoot = document.getElementById('view-root');
-  const tabbar = document.getElementById('tabbar');
-  const sheet = document.getElementById('sheet');
-  const sheetBackdrop = document.getElementById('sheet-backdrop');
+  // Sezione in cui vive ciascun tipo di elemento collegato a una cartella o
+  // trovato dalla ricerca globale: usata per aprire l'elemento cliccandolo.
+  const TYPE_TO_VIEW = { document: 'drive', idea: 'ideas', project: 'projects', account: 'accounts', vault: 'vault', reminder: 'reminders', dossier: 'dossiers' };
+  // Conteggi per tipo mostrati nel riepilogo di una cartella (Cartelle > Apri).
+  const TREE_TYPE_LABELS = { document: 'documenti', idea: 'note', project: 'progetti', account: 'account', vault: 'vault', reminder: 'scadenze' };
 
-  // Menu laterale (schermo largo): raggruppato Flusso / Fascicoli / Archivi.
-  // Tabbar e foglio restano piatti (SECTIONS), invariati sotto.
-  const FLUSSO_FILTERS = [
-    { filter: 'oggi', label: 'oggi' },
-    { filter: 'settimana', label: 'questa settimana' },
-    { filter: 'senza-fascicolo', label: 'senza fascicolo' },
-  ];
+  const VIEW_LABELS = Object.fromEntries(SECTIONS.map((s) => [s.view, s.label]));
 
-  const flussoSection = SECTIONS.find((s) => s.view === 'flusso');
-  const flussoGroup = el('<div class="sidebar-group"></div>');
-  flussoGroup.appendChild(el('<div class="sidebar-group-title">Flusso</div>'));
-  flussoGroup.appendChild(el(`
-    <button class="nav-item" data-view="flusso">${icona('flusso')}<span>${esc(flussoSection.label)}</span></button>
-  `));
-  FLUSSO_FILTERS.forEach((f) => {
-    const row = el(`<button class="sub-nav-item" data-filter="${f.filter}"><span>${esc(f.label)}</span></button>`);
-    row.addEventListener('click', () => { closeSheet(); render('flusso', { filter: f.filter }); });
-    flussoGroup.appendChild(row);
-  });
-  nav.appendChild(flussoGroup);
+  // ---------------- Menu Avvio ----------------
+  const startMenu = document.getElementById('start-menu');
+  const btnStart = document.getElementById('btn-start');
 
-  const fascicoliGroup = el('<div class="sidebar-group"></div>');
-  fascicoliGroup.appendChild(el('<div class="sidebar-group-title">Fascicoli</div>'));
-  const dossierTree = el('<div id="sidebar-dossier-tree"></div>');
-  fascicoliGroup.appendChild(dossierTree);
-  nav.appendChild(fascicoliGroup);
-
-  // Conteggi per tipo mostrati sotto ogni fascicolo espanso.
-  const TREE_TYPE_LABELS = { document: 'documenti', idea: 'idee', project: 'progetti', account: 'account', vault: 'vault', reminder: 'scadenze' };
-  // Sezione in cui vive ciascun tipo di elemento collegato a un fascicolo:
-  // usata per aprire l'elemento cliccandolo, invece di poterlo solo scollegare.
-  const TYPE_TO_VIEW = { document: 'drive', idea: 'ideas', project: 'projects', account: 'accounts', vault: 'vault', reminder: 'flusso', dossier: 'dossiers' };
-  const expandedDossiers = new Set();
-
-  async function refreshSidebarDossiers() {
-    let dossiers;
-    try { dossiers = await api('/dossiers'); } catch (err) { return; }
-    dossierTree.innerHTML = '';
-    if (!dossiers.length) {
-      dossierTree.appendChild(el('<div class="tree-empty">Nessun fascicolo ancora.</div>'));
-      return;
-    }
-    dossiers.forEach((d) => {
-      const wrap = el('<div></div>');
-      const open = expandedDossiers.has(d.id);
-      const row = el(`
-        <button type="button" class="tree-dossier">
-          <span class="tree-dossier-toggle ${open ? 'open' : ''}">▸</span>
-          <span class="tree-dossier-dot">◆</span>
-          <span class="tree-dossier-label">${esc(d.title)}</span>
-          <span class="tree-dossier-count">${d.items.length}</span>
-        </button>
-      `);
-      const subWrap = el(`<div class="${open ? '' : 'hidden'}"></div>`);
-      const groups = {};
-      d.items.forEach((it) => { (groups[it.type] = groups[it.type] || []).push(it); });
-      const groupKeys = Object.keys(groups);
-      if (!groupKeys.length) {
-        subWrap.appendChild(el('<div class="tree-empty">Nessun elemento collegato.</div>'));
-      } else {
-        groupKeys.forEach((type) => {
-          const subRow = el(`
-            <button type="button" class="tree-sub">
-              <span class="tree-sub-dot">·</span><span>${esc(TREE_TYPE_LABELS[type] || type)}</span>
-              <span class="tree-sub-count">${groups[type].length}</span>
-            </button>
-          `);
-          subRow.addEventListener('click', () => { closeSheet(); render('dossiers', { highlight: d.id }); });
-          subWrap.appendChild(subRow);
-        });
+  function buildStartMenu() {
+    startMenu.innerHTML = '';
+    const sidebar = el('<div class="start-menu-sidebar">MINDKEEP</div>');
+    const items = el('<div class="start-menu-items"></div>');
+    SECTIONS.forEach((s, i) => {
+      const prev = SECTIONS[i - 1];
+      if (SETTINGS_VIEWS.has(s.view) && (!prev || !SETTINGS_VIEWS.has(prev.view))) {
+        items.appendChild(el('<div class="menu-divider"></div>'));
       }
-      row.querySelector('.tree-dossier-toggle').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const nowHidden = subWrap.classList.toggle('hidden');
-        row.querySelector('.tree-dossier-toggle').classList.toggle('open', !nowHidden);
-        if (nowHidden) expandedDossiers.delete(d.id); else expandedDossiers.add(d.id);
+      const row = el(`<div class="menu-row" data-view="${s.view}">${appIcon(s.view)}<span>${esc(s.label)}</span></div>`);
+      row.addEventListener('click', () => { closeStartMenu(); render(s.view); });
+      items.appendChild(row);
+    });
+    items.appendChild(el('<div class="menu-divider"></div>'));
+    const esci = el(`<div class="menu-row">${appIcon('esci')}<span>Esci</span></div>`);
+    esci.addEventListener('click', () => { closeStartMenu(); logout(); });
+    items.appendChild(esci);
+    startMenu.appendChild(sidebar);
+    startMenu.appendChild(items);
+  }
+  buildStartMenu();
+
+  function openStartMenu() {
+    startMenu.classList.remove('hidden');
+    btnStart.classList.add('pressed');
+  }
+  function closeStartMenu() {
+    startMenu.classList.add('hidden');
+    btnStart.classList.remove('pressed');
+  }
+  btnStart.addEventListener('click', () => {
+    if (startMenu.classList.contains('hidden')) openStartMenu(); else closeStartMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (startMenu.classList.contains('hidden')) return;
+    if (startMenu.contains(e.target) || btnStart.contains(e.target)) return;
+    closeStartMenu();
+  });
+  // wm.js chiede di aprire il menu Avvio quando l'utente tocca "Affianca" su
+  // mobile, per scegliere la seconda app da mettere in split.
+  window.addEventListener('mindkeep:request-start-menu', openStartMenu);
+
+  // ---------------- Desktop: sfondo, cartelle e note recenti come icone ----------------
+  // Lo sfondo e' una preferenza solo del dispositivo (localStorage), non un
+  // dato di Mindkeep: niente migrazione, niente sincronizzazione fra dispositivi.
+  const WALLPAPERS = {
+    classico: { label: 'Classico' },
+    'vaporwave-tramonto': { label: 'Vaporwave — Tramonto', url: '/wallpapers/wp-tramonto.jpg' },
+    'vaporwave-palma': { label: 'Vaporwave — Palma', url: '/wallpapers/wp-palma.jpg' },
+    grigio: { label: 'Grigio', color: '#6b6b76' },
+  };
+  const desktopWallpaperEl = document.getElementById('desktop-wallpaper');
+  const desktopIconsEl = document.getElementById('desktop-icons');
+
+  function currentWallpaper() {
+    return localStorage.getItem('mindkeep-wallpaper') || 'classico';
+  }
+
+  function applyWallpaper(name) {
+    const wp = WALLPAPERS[name] || WALLPAPERS.classico;
+    desktopWallpaperEl.innerHTML = '';
+    if (wp.url) {
+      desktopWallpaperEl.style.background = `url(${wp.url}) center/cover`;
+    } else if (wp.color) {
+      desktopWallpaperEl.style.background = wp.color;
+    } else {
+      desktopWallpaperEl.style.background = '';
+      desktopWallpaperEl.appendChild(el('<img class="wallpaper-logo" src="/icon.svg" alt="" />'));
+    }
+    localStorage.setItem('mindkeep-wallpaper', name);
+  }
+
+  const POSTIT_CLASSES = ['postit-y', 'postit-p', 'postit-b'];
+
+  async function buildDesktop() {
+    applyWallpaper(currentWallpaper());
+    desktopIconsEl.innerHTML = '';
+    try {
+      const [dossiers, ideas] = await Promise.all([api('/dossiers'), api('/ideas')]);
+      dossiers.slice(0, 8).forEach((d) => {
+        const icon = el(`<button type="button" class="desktop-icon">${appIcon('dossiers', 40)}<span class="label"></span></button>`);
+        icon.querySelector('.label').textContent = d.title;
+        icon.addEventListener('click', () => render('dossiers', { highlight: d.id }));
+        desktopIconsEl.appendChild(icon);
       });
-      row.addEventListener('click', () => { closeSheet(); render('dossiers', { highlight: d.id }); });
-      wrap.appendChild(row);
-      wrap.appendChild(subWrap);
-      dossierTree.appendChild(wrap);
-    });
+      ideas.slice(0, 4).forEach((idea, i) => {
+        const note = el(`<button type="button" class="postit ${POSTIT_CLASSES[i % POSTIT_CLASSES.length]}"></button>`);
+        const text = idea.title || idea.body || '';
+        note.textContent = text.length > 90 ? text.slice(0, 90) + '…' : text;
+        note.addEventListener('click', () => render('ideas', { highlight: idea.id }));
+        desktopIconsEl.appendChild(note);
+      });
+    } catch (err) {
+      // desktop non critico: se le API falliscono restano solo lo sfondo e le finestre gia' aperte
+    }
   }
 
-  const archiviGroup = el('<div class="sidebar-group"></div>');
-  archiviGroup.appendChild(el('<div class="sidebar-group-title">Archivi</div>'));
-  SECTIONS.filter((s) => s.view !== 'flusso').forEach((s) => {
-    archiviGroup.appendChild(el(`
-      <button class="nav-item" data-view="${s.view}">${icona(s.view)}<span>${esc(s.label)}</span></button>
-    `));
-  });
-  nav.appendChild(archiviGroup);
+  // ---------------- Cattura veloce ("Nuovo" in barra) ----------------
+  // Prende il posto del vecchio composer di Flusso: sempre a un tocco,
+  // qualunque finestra sia aperta. Stessa logica /comandi e @cartella,
+  // in un riquadro invece che in una pagina intera.
+  const quickCaptureEl = document.getElementById('quick-capture');
+  const btnNuovo = document.getElementById('btn-nuovo');
+  let qcMenuEl = null, qcMenuItems = [], qcMenuActive = 0, qcMenuTrigger = null, qcSelectedDossier = null;
 
-  // Barra in basso (telefono): le sezioni piu' usate piu' "Altro"
-  SECTIONS.filter((s) => s.tab).forEach((s) => {
-    tabbar.appendChild(el(`
-      <button class="tab-item" data-view="${s.view}">${icona(s.view)}<span>${esc(s.label)}</span></button>
-    `));
-  });
-  const tabPiu = el(`<button class="tab-item" id="tab-piu">${icona('piu')}<span>Altro</span></button>`);
-  tabbar.appendChild(tabPiu);
-
-  // Foglio con l'elenco completo, cosi' nessuna sezione resta difficile da trovare
-  function buildSheet() {
-    sheet.innerHTML = '';
-    sheet.appendChild(el('<div class="sheet-handle" aria-hidden="true"></div>'));
-    sheet.appendChild(el('<h3 class="sheet-title">Tutte le sezioni</h3>'));
-    const list = el('<div class="sheet-list"></div>');
-    SECTIONS.forEach((s) => {
-      list.appendChild(el(`
-        <button class="sheet-item" data-view="${s.view}">${icona(s.view)}<span>${esc(s.label)}</span></button>
-      `));
-    });
-    sheet.appendChild(list);
-
-    const azioni = el('<div class="sheet-list sheet-actions"></div>');
-    azioni.appendChild(el(`
-      <a class="sheet-item" href="/api/backup" target="_blank" rel="noopener">${icona('backup')}<span>Esporta backup</span></a>
-    `));
-    const esci = el(`<button class="sheet-item" data-logout>${icona('esci')}<span>Esci</span></button>`);
-    esci.addEventListener('click', logout);
-    azioni.appendChild(esci);
-    sheet.appendChild(azioni);
-  }
-  buildSheet();
-
-  function openSheet() {
-    sheetBackdrop.classList.remove('hidden');
-    document.body.classList.add('no-scroll');
-  }
-  function closeSheet() {
-    sheetBackdrop.classList.add('hidden');
-    document.body.classList.remove('no-scroll');
-  }
-
-  tabPiu.addEventListener('click', openSheet);
-  sheetBackdrop.addEventListener('click', (e) => { if (e.target === sheetBackdrop) closeSheet(); });
-
-  // Un solo gestore per menu laterale, barra in basso e foglio.
-  [nav, tabbar, sheet].forEach((contenitore) => {
-    contenitore.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-view]');
-      if (!btn) return;
-      closeSheet();
-      render(btn.dataset.view);
-    });
-  });
-
-  function setActiveNav(view, opts = {}) {
-    document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
-    document.querySelectorAll('.sub-nav-item').forEach((b) => {
-      b.classList.toggle('active', view === 'flusso' && !!opts.filter && b.dataset.filter === opts.filter);
-    });
-    // Se la sezione attiva non e' fra quelle della barra, resta evidenziato "Altro".
-    tabPiu.classList.toggle('active', !SECTIONS.some((s) => s.tab && s.view === view));
-  }
-
-  // ---------------- Breadcrumb + tab di vista ----------------
-  const crumbbar = document.getElementById('crumbbar');
-  const VIEW_LABELS = Object.fromEntries(SECTIONS.map((s) => [s.view, s.label.toLowerCase()]));
-  const FLUSSO_FILTER_LABELS = { oggi: 'oggi', settimana: 'questa settimana', 'senza-fascicolo': 'senza fascicolo' };
-  const VIEW_TABS = [
-    { key: 'flusso', label: 'flusso' },
-    { key: 'tabella', label: 'tabella' },
-    { key: 'bacheca', label: 'bacheca' },
-    { key: 'orbita', label: 'orbita' },
+  const QC_COMMANDS = [
+    { token: '/nota', desc: 'nota veloce' },
+    { token: '/doc', desc: 'carica documento' },
+    { token: '/scadenza', desc: 'nuovo promemoria' },
+    { token: '/progetto', desc: 'nuovo progetto' },
   ];
 
-  function updateCrumb(view, opts = {}) {
-    crumbbar.innerHTML = '';
-    const path = el('<div class="crumb-path"></div>');
-    path.appendChild(el('<span>~</span>'));
-    path.appendChild(el('<span class="crumb-sep">/</span>'));
-    path.appendChild(el(`<span${opts.filter ? '' : ' class="crumb-current"'}>${esc(VIEW_LABELS[view] || view)}</span>`));
-    if (view === 'flusso' && opts.filter) {
-      path.appendChild(el('<span class="crumb-sep">/</span>'));
-      path.appendChild(el(`<span class="crumb-current">${esc(FLUSSO_FILTER_LABELS[opts.filter] || opts.filter)}</span>`));
-    }
-    crumbbar.appendChild(path);
-
-    if (view === 'flusso') {
-      const activeTab = opts.tab || 'flusso';
-      const tabs = el('<div class="view-tabs"></div>');
-      VIEW_TABS.forEach((t) => {
-        const btn = el(`<button type="button" class="view-tab ${t.key === activeTab ? 'active' : ''}">${esc(t.label)}</button>`);
-        btn.addEventListener('click', () => {
-          if (t.key === activeTab) return;
-          render('flusso', { filter: opts.filter, tab: t.key === 'flusso' ? undefined : t.key });
-        });
-        tabs.appendChild(btn);
-      });
-      crumbbar.appendChild(tabs);
-    }
+  function closeQuickCapture() {
+    quickCaptureEl.classList.add('hidden');
+    quickCaptureEl.innerHTML = '';
+    btnNuovo.classList.remove('pressed');
+    qcMenuEl = null; qcMenuItems = []; qcMenuTrigger = null; qcSelectedDossier = null;
   }
+
+  async function openQuickCapture() {
+    closeStartMenu();
+    quickCaptureEl.innerHTML = '';
+    const dossiers = await api('/dossiers').catch(() => []);
+    const composer = el(`
+      <div class="composer">
+        <textarea id="qc-text" placeholder="Scrivi una nota — o / per un altro tipo, @ per una cartella, # per un tag" rows="2"></textarea>
+        <div id="qc-link-badge"></div>
+        <div class="composer-row">
+          <button type="button" class="btn btn-primary" id="qc-save">Salva</button>
+        </div>
+        <div class="composer-hint">
+          <span>/ per il tipo · @ per collegare una cartella · # per un tag</span>
+        </div>
+      </div>
+    `);
+    quickCaptureEl.appendChild(composer);
+    quickCaptureEl.classList.remove('hidden');
+    btnNuovo.classList.add('pressed');
+
+    const textarea = composer.querySelector('#qc-text');
+    const linkBadgeWrap = composer.querySelector('#qc-link-badge');
+    const ideasForTags = await api('/ideas').catch(() => []);
+    const knownTags = [...new Set(ideasForTags.flatMap((x) => x.tags || []))].sort();
+
+    function renderLinkBadge() {
+      linkBadgeWrap.innerHTML = '';
+      if (!qcSelectedDossier) return;
+      const badge = el(`<span class="composer-link-badge">→ ${esc(qcSelectedDossier.title)} <button type="button" title="Rimuovi">✕</button></span>`);
+      badge.querySelector('button').addEventListener('click', () => { qcSelectedDossier = null; renderLinkBadge(); });
+      linkBadgeWrap.appendChild(badge);
+    }
+
+    function closeQcMenu() {
+      if (qcMenuEl) { qcMenuEl.remove(); qcMenuEl = null; }
+      qcMenuItems = []; qcMenuTrigger = null;
+    }
+    function highlightQcMenu() {
+      if (!qcMenuEl) return;
+      qcMenuEl.querySelectorAll('.composer-menu-item').forEach((n, i) => n.classList.toggle('active', i === qcMenuActive));
+    }
+    function openQcMenu(items) {
+      if (qcMenuEl) { qcMenuEl.remove(); qcMenuEl = null; }
+      if (!items.length) { qcMenuItems = []; return; }
+      qcMenuItems = items; qcMenuActive = 0;
+      qcMenuEl = el('<div class="composer-menu"></div>');
+      items.forEach((it, i) => {
+        const row = el(`<div class="composer-menu-item ${i === 0 ? 'active' : ''}"><span class="cmi-token">${esc(it.token)}</span><span class="cmi-desc">${esc(it.desc)}</span></div>`);
+        row.addEventListener('mousedown', (e) => { e.preventDefault(); selectQcMenuItem(i); });
+        qcMenuEl.appendChild(row);
+      });
+      composer.appendChild(qcMenuEl);
+    }
+    function qcCurrentTrigger() {
+      const pos = textarea.selectionStart;
+      const upToCaret = textarea.value.slice(0, pos);
+      const match = upToCaret.match(/(^|\s)([/@#][^\s]*)$/);
+      if (!match) return null;
+      const tokenStart = pos - match[2].length;
+      return { type: match[2][0], query: match[2].slice(1).toLowerCase(), start: tokenStart, end: pos };
+    }
+    function updateQcMenu() {
+      const trigger = qcCurrentTrigger();
+      qcMenuTrigger = trigger;
+      if (!trigger) { closeQcMenu(); return; }
+      if (trigger.type === '/') {
+        openQcMenu(QC_COMMANDS.filter((c) => c.token.slice(1).startsWith(trigger.query)));
+      } else if (trigger.type === '@') {
+        openQcMenu(dossiers.filter((d) => d.title.toLowerCase().includes(trigger.query)).map((d) => ({ token: '@' + d.title, desc: 'cartella', dossier: d })));
+      } else {
+        openQcMenu(knownTags.filter((t) => t.toLowerCase().startsWith(trigger.query)).map((t) => ({ token: '#' + t, desc: 'tag' })));
+      }
+    }
+    async function selectQcMenuItem(i) {
+      const item = qcMenuItems[i];
+      const trigger = qcMenuTrigger;
+      closeQcMenu();
+      if (!item || !trigger) return;
+      if (trigger.type === '#') {
+        const before = textarea.value.slice(0, trigger.start);
+        const after = textarea.value.slice(trigger.end);
+        const needsSpace = !/^\s/.test(after);
+        textarea.value = before + item.token + (needsSpace ? ' ' : '') + after;
+        const caret = before.length + item.token.length + (needsSpace ? 1 : 0);
+        textarea.focus(); textarea.setSelectionRange(caret, caret);
+        return;
+      }
+      const before = textarea.value.slice(0, trigger.start);
+      const after = textarea.value.slice(trigger.end);
+      textarea.value = before + after;
+      const caret = before.length;
+      textarea.focus(); textarea.setSelectionRange(caret, caret);
+      if (trigger.type === '@') { qcSelectedDossier = item.dossier; renderLinkBadge(); return; }
+      if (item.token === '/nota') return;
+      if (item.token === '/scadenza') {
+        const form = reminderModal();
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+          closeModal(); toast('Scadenza salvata'); closeQuickCapture(); render('reminders');
+        });
+        form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+        openModal('Nuova scadenza', form);
+        return;
+      }
+      if (item.token === '/doc') {
+        closeQuickCapture();
+        await render('drive');
+        const btn = document.getElementById('new-doc');
+        if (btn) btn.click();
+        return;
+      }
+      if (item.token === '/progetto') {
+        closeQuickCapture();
+        await render('projects');
+        const btn = document.getElementById('new-project');
+        if (btn) btn.click();
+      }
+    }
+
+    textarea.addEventListener('input', updateQcMenu);
+    textarea.addEventListener('click', updateQcMenu);
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveQc(); return; }
+      if (!qcMenuEl) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); qcMenuActive = (qcMenuActive + 1) % qcMenuItems.length; highlightQcMenu(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); qcMenuActive = (qcMenuActive - 1 + qcMenuItems.length) % qcMenuItems.length; highlightQcMenu(); }
+      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); selectQcMenuItem(qcMenuActive); }
+      else if (e.key === 'Escape') { closeQcMenu(); }
+    });
+
+    let qcSaving = false;
+    async function saveQc() {
+      const text = textarea.value.trim();
+      if (!text || qcSaving) return;
+      qcSaving = true;
+      composer.querySelector('#qc-save').disabled = true;
+      try {
+        const title = text.length > 80 ? text.slice(0, 80) + '…' : text;
+        const tags = [...new Set((text.match(/#([a-zA-Z0-9_-]+)/g) || []).map((t) => t.slice(1)))];
+        const idea = await api('/ideas', { method: 'POST', body: JSON.stringify({ title, body: text, tags }) });
+        if (qcSelectedDossier) {
+          await api(`/dossiers/${qcSelectedDossier.id}/links`, { method: 'POST', body: JSON.stringify({ item_type: 'idea', item_id: idea.id }) });
+        }
+        toast('Nota salvata');
+        closeQuickCapture();
+        buildDesktop();
+      } finally {
+        qcSaving = false;
+      }
+    }
+    composer.querySelector('#qc-save').addEventListener('click', saveQc);
+    textarea.focus();
+  }
+
+  btnNuovo.addEventListener('click', () => {
+    if (quickCaptureEl.classList.contains('hidden')) openQuickCapture(); else closeQuickCapture();
+  });
+  document.addEventListener('click', (e) => {
+    if (quickCaptureEl.classList.contains('hidden')) return;
+    if (quickCaptureEl.contains(e.target) || btnNuovo.contains(e.target)) return;
+    closeQuickCapture();
+  });
 
   const views = {}; // popolate piu' sotto
 
-  // Chiusura del menu "/", "@", "#" del composer al click fuori: un solo
-  // listener sul documento, riassegnato da views.flusso ad ogni render.
-  // Prima veniva registrato un nuovo listener ad ogni visita del Flusso e
-  // non veniva mai rimosso, accumulandosi per tutta la sessione.
-  let composerMenuOutsideClick = null;
-  document.addEventListener('click', (e) => {
-    if (composerMenuOutsideClick) composerMenuOutsideClick(e);
-  });
+  const WINDOW_SIZES = { vault: { w: 1040, h: 640 }, dossiers: { w: 760, h: 560 } };
+
+  function windowId(view) { return 'win-' + view; }
 
   async function render(view, opts = {}) {
-    setActiveNav(view, opts);
-    updateCrumb(view, opts);
-    viewRoot.innerHTML = '';
-    const loading = el('<div class="empty-state">Carico…</div>');
-    viewRoot.appendChild(loading);
-    try {
-      await views[view](viewRoot, opts);
-    } catch (err) {
-      viewRoot.innerHTML = '';
-      viewRoot.appendChild(el(`<div class="empty-state">Errore: ${esc(err.message)}</div>`));
-    }
-    refreshNavCounts();
-  }
-
-  // ---------------- Contatori nel menu laterale ----------------
-  // Chiamata ad ogni render(): dato lo scopo personale dell'app i volumi sono
-  // piccoli, quindi qualche chiamata in piu' per tenere i numeri aggiornati
-  // dopo ogni creazione/eliminazione e' un compromesso ragionevole.
-  async function refreshNavCounts() {
-    refreshSidebarDossiers();
-    let ideas, projects, vault, accounts, docs, dossiers, trash;
-    try {
-      [ideas, projects, vault, accounts, docs, dossiers, trash] = await Promise.all([
-        api('/ideas'), api('/projects'), api('/vault'), api('/accounts'), api('/drive'),
-        api('/dossiers'), api('/trash'),
-      ]);
-    } catch (err) {
-      return; // chrome non critico: se fallisce lasciamo lo stato precedente
-    }
-    const counts = {
-      ideas: ideas.length, projects: projects.length, vault: vault.length,
-      accounts: accounts.length, drive: docs.length, dossiers: dossiers.length, trash: trash.length,
-    };
-    document.querySelectorAll('.nav-item[data-view]').forEach((btn) => {
-      const c = counts[btn.dataset.view];
-      let badge = btn.querySelector('.nav-count');
-      if (c === undefined) { if (badge) badge.remove(); return; }
-      if (!badge) { badge = el('<span class="nav-count"></span>'); btn.appendChild(badge); }
-      badge.textContent = c;
+    const win = MindkeepWM.openWindow({
+      id: windowId(view),
+      title: VIEW_LABELS[view] || view,
+      icon: appIcon(view, 14),
+      defaultSize: WINDOW_SIZES[view] || { w: 760, h: 560 },
     });
+    const contentEl = win.contentEl;
+    contentEl.innerHTML = '';
+    contentEl.appendChild(el('<div class="empty-state">Carico…</div>'));
+    try {
+      await views[view](contentEl, opts);
+    } catch (err) {
+      contentEl.innerHTML = '';
+      contentEl.appendChild(el(`<div class="empty-state">Errore: ${esc(err.message)}</div>`));
+    }
   }
 
   // ---------------- Collegamento a fascicolo (riutilizzabile) ----------------
@@ -651,7 +707,7 @@
     const dossiers = await api('/dossiers');
     const wrap = el('<div></div>');
     if (!dossiers.length) {
-      wrap.appendChild(el('<p class="card-sub">Non hai ancora nessun fascicolo. Creane uno dalla sezione Fascicoli.</p>'));
+      wrap.appendChild(el('<p class="card-sub">Non hai ancora nessuna cartella. Creane una dalla sezione Cartelle.</p>'));
     } else {
       dossiers.forEach((d) => {
         const row = el(`
@@ -671,161 +727,12 @@
         wrap.appendChild(row);
       });
     }
-    openModal('Collega a un fascicolo', wrap);
+    openModal('Collega a una cartella', wrap);
   }
 
   // ==================================================================
-  // FLUSSO (composer + feed unico, con scadenze/fascicoli/statistiche a lato)
+  // SCADENZE (promemoria — elenco minimo; il calendario vero e' lavoro futuro)
   // ==================================================================
-  function dayLabel(dateStr) {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const startOf = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
-    const diffDays = Math.round((startOf(now) - startOf(d)) / 86400000);
-    const giorni = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
-    if (diffDays === 0) return `OGGI · ${giorni[d.getDay()].toUpperCase()} ${d.getDate()}`;
-    if (diffDays === 1) return 'IERI';
-    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' }).toUpperCase();
-  }
-
-  function fmtTime(dateStr) {
-    try { return new Date(dateStr).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
-    catch (e) { return ''; }
-  }
-
-  const FLUSSO_API_TYPE = { idea: 'idea', progetto: 'project', account: 'account', documento: 'document', scadenza: 'reminder' };
-  // Percorso REST (e vista di destinazione) per ciascun tipo di elemento del flusso:
-  // "documento" e' l'unico dove il nome del tipo non coincide col nome della sezione/rotta.
-  // "scadenza" non ha una sezione propria: vive solo nel flusso.
-  const FLUSSO_SECTION = { idea: 'ideas', progetto: 'projects', account: 'accounts', documento: 'drive', scadenza: 'reminders' };
-
-  function entryLabel(item) {
-    return item.title || item.service || item.display_name || item.original_name || item.label || '';
-  }
-
-  // Evidenzia i "#tag" dentro un testo gia' passato da escTrim/esc (sicuro:
-  // i caratteri delle entita' HTML non fanno parte di \w, quindi non si spezzano).
-  function hashtagify(escapedStr) {
-    return escapedStr.replace(/#([a-zA-Z0-9_-]+)/g, '<span class="entry-hashtag">#$1</span>');
-  }
-
-  // Riusata sia dalle card del flusso sia dalla Vista Tabella: apre il modo di
-  // modifica giusto per ciascun tipo di elemento (idea/scadenza inline, gli
-  // altri hanno la loro sezione dedicata).
-  function editFlussoEntry(item) {
-    if (item.kind === 'idea') {
-      const form = ideaModal(item);
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const tags = parseTags(form);
-        await api(`/ideas/${item.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags }) });
-        closeModal(); toast('Idea aggiornata'); render('flusso');
-      });
-      form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Modifica idea', form);
-    } else if (item.kind === 'scadenza') {
-      const form = reminderModal(item);
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await api(`/reminders/${item.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
-        closeModal(); toast('Scadenza aggiornata'); render('flusso');
-      });
-      form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Modifica scadenza', form);
-    } else {
-      // account/progetto/documento: la modifica completa vive gia' nella loro sezione.
-      render(FLUSSO_SECTION[item.kind]);
-    }
-  }
-
-  async function deleteFlussoEntry(item) {
-    if (!confirm('Spostare questo elemento nel cestino?')) return;
-    await api(`/${FLUSSO_SECTION[item.kind]}/${item.id}`, { method: 'DELETE' });
-    toast('Spostato nel cestino'); render('flusso');
-  }
-
-  function renderEntryCard(item, linkIndex) {
-    const apiType = FLUSSO_API_TYPE[item.kind];
-    const links = linkIndex.get(`${apiType}:${item.id}`) || [];
-
-    const card = el('<div class="entry-block"></div>');
-    const body = el('<div class="entry-card-body"></div>');
-    body.appendChild(el(`
-      <div class="entry-meta">
-        <span class="entry-type">[${esc(item.kind)}]</span>
-        <span class="entry-time">${fmtTime(item.created_at)}</span>
-        ${links[0] ? `<span class="entry-fascicolo">◆ ${esc(links[0].title)}</span>` : ''}
-      </div>
-    `));
-
-    if (item.kind === 'idea') {
-      body.appendChild(el(`<div class="entry-text">${hashtagify(escTrim(item.body || item.title, 260))}</div>`));
-      if ((item.tags || []).length) {
-        body.appendChild(el(`<div class="tag-row" style="margin-top:9px">${item.tags.map((t) => `<span class="tag tag-neutral">${esc(t)}</span>`).join('')}</div>`));
-      }
-    } else if (item.kind === 'documento') {
-      body.appendChild(el(`<div class="entry-text">Caricato: ${escTrim(item.display_name || item.original_name, 160)}</div>`));
-      const ext = (item.original_name.includes('.') ? item.original_name.split('.').pop() : '').toUpperCase().slice(0, 4);
-      const previewable = PREVIEWABLE_MIME.has(item.mime);
-      const isImage = (item.mime || '').startsWith('image/');
-      const docBox = el(`
-        <div class="entry-doc${previewable ? ' entry-doc-clickable' : ''}">
-          ${isImage
-            ? `<img class="entry-doc-thumb" src="/api/drive/${item.id}/view" alt="" />`
-            : `<span class="entry-doc-ext">${esc(ext || 'FILE')}</span>`}
-          <div style="flex:1;min-width:0">
-            <div class="entry-doc-name">${esc(item.display_name || item.original_name)}</div>
-            ${item.display_name ? `<div class="entry-doc-original">${esc(item.original_name)}</div>` : ''}
-            <div class="entry-doc-meta">${fmtSize(item.size)}${item.folder ? ' · ' + esc(item.folder) : ''}</div>
-          </div>
-        </div>
-      `);
-      if (previewable) docBox.addEventListener('click', () => openDocumentPreview(item));
-      body.appendChild(docBox);
-    } else if (item.kind === 'progetto') {
-      body.appendChild(el(`<div class="entry-text">${esc(item.title)}${item.deadline ? ' — scade ' + fmtDate(item.deadline) : ''}</div>`));
-      const { done, total } = checklistProgress(item.checklist);
-      if (total) {
-        const pct = Math.round((done / total) * 100);
-        body.appendChild(el(`
-          <div class="entry-progress">
-            <div class="entry-progress-track"><div class="entry-progress-fill" style="width:${pct}%"></div></div>
-            <span class="entry-progress-label">${done}/${total}</span>
-          </div>
-        `));
-      } else {
-        body.appendChild(el(`<span class="status-pill status-${item.status}" style="margin-top:6px">${item.status.replace('_', ' ')}</span>`));
-      }
-    } else if (item.kind === 'account') {
-      body.appendChild(el(`<div class="entry-text">${esc(item.service)}${item.renewal_date ? ' — rinnovo ' + fmtDate(item.renewal_date) : ''}</div>`));
-    } else if (item.kind === 'scadenza') {
-      body.appendChild(el(`<div class="entry-text">${esc(item.label)}${item.date ? ' — scade ' + fmtDate(item.date) : ''}</div>`));
-      if (item.notes) body.appendChild(el(`<div class="card-sub" style="margin-top:6px">${escTrim(item.notes, 160)}</div>`));
-    }
-    card.appendChild(body);
-
-    const actions = el('<div class="entry-actions"></div>');
-    const collega = el('<button type="button">Collega</button>');
-    collega.addEventListener('click', () => openLinkToDossierModal(apiType, item.id, entryLabel(item)));
-    actions.appendChild(collega);
-
-    const modifica = el('<button type="button">Modifica</button>');
-    modifica.addEventListener('click', () => editFlussoEntry(item));
-    actions.appendChild(modifica);
-
-    const elimina = el('<button type="button">Elimina</button>');
-    elimina.addEventListener('click', () => deleteFlussoEntry(item));
-    actions.appendChild(elimina);
-
-    if (links.length) {
-      actions.appendChild(el(`<span class="entry-actions-meta">${links.length} collegament${links.length === 1 ? 'o' : 'i'}</span>`));
-    } else if (item.kind === 'documento') {
-      actions.appendChild(el(`<a href="/api/drive/${item.id}/download" class="entry-actions-meta" style="text-decoration:none">apri</a>`));
-    }
-    card.appendChild(actions);
-    return card;
-  }
-
   function reminderModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
@@ -846,700 +753,75 @@
     return form;
   }
 
-  // ---- Vista Tabella: stessi elementi del flusso (stesso filtro attivo), come elenco ----
-  function renderFlussoTabella(root, entries, linkIndex) {
-    if (!entries.length) {
-      root.appendChild(el('<div class="empty-state">Nessun elemento da mostrare.</div>'));
-      return;
-    }
-    const wrap = el('<div class="table-scroll"></div>');
-    const table = el(`
-      <table class="data-table">
-        <thead><tr><th>Tipo</th><th>Testo</th><th>Quando</th><th>Fascicolo</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-    `);
-    const tbody = table.querySelector('tbody');
-    // Un <tr> costruito da solo con el() viene scartato dal parser HTML (fuori
-    // da un <table> non e' un elemento valido): le righe vanno scritte tutte
-    // insieme dentro il <tbody>, che e' gia' nel contesto giusto.
-    tbody.innerHTML = entries.map((item) => {
-      const apiType = FLUSSO_API_TYPE[item.kind];
-      const links = linkIndex.get(`${apiType}:${item.id}`) || [];
-      return `
-        <tr>
-          <td class="dt-type">[${esc(item.kind)}]</td>
-          <td class="dt-label">${esc(entryLabel(item))}</td>
-          <td class="dt-date">${fmtTime(item.created_at)}</td>
-          <td class="dt-fascicolo">${links[0] ? esc(links[0].title) : '—'}</td>
-          <td class="dt-actions"><button type="button" data-del title="Elimina">✕</button></td>
-        </tr>
-      `;
-    }).join('');
-    [...tbody.children].forEach((row, i) => {
-      const item = entries[i];
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('[data-del]')) return;
-        editFlussoEntry(item);
-      });
-      row.querySelector('[data-del]').addEventListener('click', (e) => { e.stopPropagation(); deleteFlussoEntry(item); });
-    });
-    wrap.appendChild(table);
-    root.appendChild(wrap);
-  }
-
-  // ---- Vista Bacheca: i progetti in kanban, spostabili tra gli stati che hanno gia' ----
-  function renderFlussoBacheca(root, projects) {
-    const header = el('<div class="view-header-actions" style="margin-bottom:14px;justify-content:flex-end"><button class="btn btn-primary" id="bacheca-new-project">+ Nuovo progetto</button></div>');
-    header.querySelector('#bacheca-new-project').addEventListener('click', () => {
-      const form = projectModal();
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const tags = parseTags(form);
-        const contacts = parseContacts(form);
-        const budget = parseBudgetLines(form.budget.value);
-        const checklist = collectChecklist(form, []);
-        await api('/projects', { method: 'POST', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-        closeModal(); toast('Progetto creato'); render('flusso', { tab: 'bacheca' });
-      });
-      form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuovo progetto', form);
-    });
-    root.appendChild(header);
-
-    if (!projects.length) {
-      root.appendChild(el('<div class="empty-state">Nessun progetto ancora.</div>'));
-      return;
-    }
-    const STATUSES = [
-      { key: 'da_fare', label: 'Da fare' },
-      { key: 'in_corso', label: 'In corso' },
-      { key: 'fatto', label: 'Fatto' },
-    ];
-    const board = el('<div class="board"></div>');
-    STATUSES.forEach((s, i) => {
-      const col = el(`
-        <div class="board-col">
-          <div class="board-col-head"><span>${esc(s.label)}</span><span class="board-col-count">${projects.filter((p) => p.status === s.key).length}</span></div>
-          <div class="board-col-body"></div>
-        </div>
-      `);
-      const body = col.querySelector('.board-col-body');
-      projects.filter((p) => p.status === s.key).forEach((p) => {
-        const { done, total } = checklistProgress(p.checklist);
-        const card = el(`
-          <div class="board-card">
-            <p class="board-card-title">${esc(p.title)}</p>
-            ${total ? `<p class="card-sub">${done}/${total} completati</p>` : ''}
-            <div class="board-card-actions">
-              <button type="button" data-prev ${i === 0 ? 'disabled' : ''} title="Sposta indietro">←</button>
-              <button type="button" data-edit title="Apri">Apri</button>
-              <button type="button" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="Sposta avanti">→</button>
-            </div>
-          </div>
-        `);
-        async function moveTo(newStatus) {
-          await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
-          render('flusso', { tab: 'bacheca' });
-        }
-        card.querySelector('[data-prev]').addEventListener('click', () => moveTo(STATUSES[i - 1].key));
-        card.querySelector('[data-next]').addEventListener('click', () => moveTo(STATUSES[i + 1].key));
-        card.querySelector('[data-edit]').addEventListener('click', () => {
-          const form = projectModal(p);
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const tags = parseTags(form);
-            const contacts = parseContacts(form);
-            const budget = parseBudgetLines(form.budget.value);
-            const checklist = collectChecklist(form, p.checklist);
-            await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-            closeModal(); toast('Progetto aggiornato'); render('flusso', { tab: 'bacheca' });
-          });
-          form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-          openModal('Modifica progetto', form);
-        });
-        body.appendChild(card);
-      });
-      board.appendChild(col);
-    });
-    root.appendChild(board);
-  }
-
-  // ---- Vista Orbita: grafo dei fascicoli e di cio' che collegano, stile
-  // "graph view" di Obsidian. Simulazione a molle scritta a mano (repulsione
-  // fra tutti i nodi + attrazione lungo i collegamenti + gravita' verso il
-  // centro): niente libreria esterna, coerente col resto del progetto. ----
-  function renderFlussoOrbita(root, dossiers) {
-    const wrap = el(`
-      <div class="orbit-wrap">
-        <svg class="orbit-svg"></svg>
-        <p class="card-sub" style="margin-top:8px">Trascina un nodo per spostarlo, rotellina per zoomare, trascina lo sfondo per spostare la vista, click su un nodo per aprirlo.</p>
-      </div>
-    `);
-    root.appendChild(wrap);
-    const svg = wrap.querySelector('.orbit-svg');
-
-    const nodes = [];
-    const nodeIndex = new Map();
-    const edges = [];
-    const NS = 'http://www.w3.org/2000/svg';
-
-    dossiers.forEach((d) => {
-      const node = {
-        key: `dossier:${d.id}`, kind: 'dossier', view: 'dossiers', id: d.id, label: d.title,
-        x: 0, y: 0, vx: 0, vy: 0, r: 12 + Math.min(d.items.length, 10) * 1.4,
-      };
-      nodes.push(node);
-      nodeIndex.set(node.key, node);
-    });
-    dossiers.forEach((d) => {
-      d.items.forEach((item) => {
-        const key = `${item.type}:${item.id}`;
-        let node = nodeIndex.get(key);
-        if (!node) {
-          node = { key, kind: item.type, view: TYPE_TO_VIEW[item.type] || 'flusso', id: item.id, label: item.label, x: 0, y: 0, vx: 0, vy: 0, r: 8 };
-          nodes.push(node);
-          nodeIndex.set(key, node);
-        }
-        edges.push({ a: nodeIndex.get(`dossier:${d.id}`), b: node });
-      });
-    });
-
-    if (!nodes.length) {
-      wrap.innerHTML = '<div class="empty-state">Nessuna connessione ancora: collega qualche elemento a un fascicolo per vederla qui.</div>';
-      return;
-    }
-
-    // Posizioni iniziali su un cerchio, cosi' non partono tutte sovrapposte nello stesso punto.
-    const W = 800, H = 560;
-    nodes.forEach((n, i) => {
-      const angle = (i / nodes.length) * Math.PI * 2;
-      n.x = W / 2 + Math.cos(angle) * 220;
-      n.y = H / 2 + Math.sin(angle) * 220;
-    });
-
-    const view = { x: 0, y: 0, w: W, h: H };
-    function applyViewBox() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }
-    applyViewBox();
-
-    const g = document.createElementNS(NS, 'g');
-    svg.appendChild(g);
-    const edgeEls = edges.map(() => {
-      const line = document.createElementNS(NS, 'line');
-      line.setAttribute('class', 'orbit-edge');
-      g.appendChild(line);
-      return line;
-    });
-    const nodeEls = nodes.map((n) => {
-      const nodeG = document.createElementNS(NS, 'g');
-      nodeG.setAttribute('class', `orbit-node orbit-node-${n.kind === 'dossier' ? 'dossier' : 'item'}`);
-      const circle = document.createElementNS(NS, 'circle');
-      circle.setAttribute('r', n.r);
-      const text = document.createElementNS(NS, 'text');
-      text.setAttribute('class', 'orbit-label');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('y', n.r + 12);
-      text.textContent = n.label.length > 20 ? n.label.slice(0, 19) + '…' : n.label;
-      nodeG.appendChild(circle);
-      nodeG.appendChild(text);
-      g.appendChild(nodeG);
-      return nodeG;
-    });
-
-    // ---- interazione: trascina un nodo (fermo mentre lo tieni), clicca per aprirlo ----
-    let dragging = null;
-    let moved = false;
-    function svgPoint(evt) {
-      const pt = svg.createSVGPoint();
-      pt.x = evt.clientX;
-      pt.y = evt.clientY;
-      const ctm = svg.getScreenCTM();
-      if (!ctm) return { x: 0, y: 0 };
-      const p = pt.matrixTransform(ctm.inverse());
-      return { x: p.x, y: p.y };
-    }
-    nodeEls.forEach((nodeG, i) => {
-      const n = nodes[i];
-      nodeG.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        dragging = n;
-        moved = false;
-        nodeG.setPointerCapture(e.pointerId);
-      });
-      nodeG.addEventListener('pointermove', (e) => {
-        if (dragging !== n) return;
-        const p = svgPoint(e);
-        n.x = p.x; n.y = p.y; n.vx = 0; n.vy = 0;
-        moved = true;
-      });
-      nodeG.addEventListener('pointerup', () => {
-        dragging = null;
-        if (!moved) render(n.view, { highlight: n.id });
-      });
-    });
-
-    // ---- sfondo: trascina per spostare la vista; rotellina (mouse) o
-    // pizzico a due dita (tocco: la rotellina non esiste sul telefono) per
-    // zoomare ----
-    function zoomTo(newW) {
-      newW = Math.min(Math.max(newW, 200), 3000);
-      const newH = newW * (H / W);
-      view.x += (view.w - newW) / 2;
-      view.y += (view.h - newH) / 2;
-      view.w = newW; view.h = newH;
-      applyViewBox();
-    }
-
-    let panStart = null;
-    const activePointers = new Map(); // pointerId -> {x,y} in coordinate schermo, per il pizzico a due dita
-    let pinchStart = null;
-
-    function endPointer(e) {
-      activePointers.delete(e.pointerId);
-      pinchStart = null;
-      if (activePointers.size === 1) {
-        const p = [...activePointers.values()][0];
-        panStart = { x: p.x, y: p.y, vx: view.x, vy: view.y };
-      } else {
-        panStart = null;
-      }
-    }
-
-    svg.addEventListener('pointerdown', (e) => {
-      if (e.target !== svg) return;
-      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (activePointers.size === 1) {
-        panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
-      } else if (activePointers.size === 2) {
-        panStart = null;
-        const pts = [...activePointers.values()];
-        pinchStart = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1, w: view.w };
-      }
-    });
-    window.addEventListener('pointermove', (e) => {
-      if (!activePointers.has(e.pointerId)) return;
-      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (activePointers.size >= 2 && pinchStart) {
-        const pts = [...activePointers.values()];
-        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
-        zoomTo(pinchStart.w * (pinchStart.dist / dist));
-      } else if (panStart) {
-        const scale = view.w / svg.clientWidth;
-        view.x = panStart.vx - (e.clientX - panStart.x) * scale;
-        view.y = panStart.vy - (e.clientY - panStart.y) * scale;
-        applyViewBox();
-      }
-    });
-    window.addEventListener('pointerup', endPointer);
-    window.addEventListener('pointercancel', endPointer);
-    svg.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      zoomTo(view.w * (e.deltaY > 0 ? 1.1 : 0.9));
-    }, { passive: false });
-
-    // ---- simulazione: repulsione fra tutti i nodi + molla lungo gli archi + gravita' verso il centro ----
-    const REPULSION = 12000, SPRING_LENGTH = 90, SPRING_K = 0.02, DAMPING = 0.82, CENTER_K = 0.0005;
-    function tick() {
-      if (!document.body.contains(svg)) return; // vista lasciata: si ferma da sola
-
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const a = nodes[i], b = nodes[j];
-          const dx = a.x - b.x, dy = a.y - b.y;
-          const distSq = Math.max(dx * dx + dy * dy, 1);
-          const dist = Math.sqrt(distSq);
-          const force = REPULSION / distSq;
-          const fx = (dx / dist) * force, fy = (dy / dist) * force;
-          if (a !== dragging) { a.vx += fx; a.vy += fy; }
-          if (b !== dragging) { b.vx -= fx; b.vy -= fy; }
-        }
-      }
-      edges.forEach(({ a, b }) => {
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        const force = (dist - SPRING_LENGTH) * SPRING_K;
-        const fx = (dx / dist) * force, fy = (dy / dist) * force;
-        if (a !== dragging) { a.vx += fx; a.vy += fy; }
-        if (b !== dragging) { b.vx -= fx; b.vy -= fy; }
-      });
-      nodes.forEach((n) => {
-        if (n === dragging) return;
-        n.vx += (W / 2 - n.x) * CENTER_K;
-        n.vy += (H / 2 - n.y) * CENTER_K;
-        n.vx *= DAMPING; n.vy *= DAMPING;
-        n.x += n.vx; n.y += n.vy;
-      });
-
-      nodeEls.forEach((nodeG, i) => nodeG.setAttribute('transform', `translate(${nodes[i].x},${nodes[i].y})`));
-      edgeEls.forEach((line, i) => {
-        line.setAttribute('x1', edges[i].a.x); line.setAttribute('y1', edges[i].a.y);
-        line.setAttribute('x2', edges[i].b.x); line.setAttribute('y2', edges[i].b.y);
-      });
-      requestAnimationFrame(tick);
-    }
-    tick();
-  }
-
-  views.flusso = async (root, opts = {}) => {
-    // Oggi arriva qui solo per le scadenze (uniche col flusso come unica "casa"):
-    // gli altri tipi hanno una sezione propria e usano il loro highlight interno.
-    const highlightId = opts.highlight != null ? String(opts.highlight) : null;
-    const [ideas, projects, accounts, documents, dossiers, upcoming, allReminders, vault] = await Promise.all([
-      api('/ideas'), api('/projects'), api('/accounts'), api('/drive'),
-      api('/dossiers'), api('/search/reminders/upcoming?days=45'), api('/reminders'), api('/vault'),
-    ]);
-
-    // Mappa elemento -> fascicoli a cui e' collegato: alimenta sia il chip
-    // "◆ nome" sotto ogni voce del flusso sia le statistiche a lato.
-    const linkIndex = new Map();
-    dossiers.forEach((d) => {
-      d.items.forEach((item) => {
-        const key = `${item.type}:${item.id}`;
-        if (!linkIndex.has(key)) linkIndex.set(key, []);
-        linkIndex.get(key).push({ id: d.id, title: d.title });
-      });
-    });
-
-    const allEntries = [
-      ...ideas.map((x) => ({ kind: 'idea', ...x })),
-      ...projects.map((x) => ({ kind: 'progetto', ...x })),
-      ...accounts.map((x) => ({ kind: 'account', ...x })),
-      ...documents.map((x) => ({ kind: 'documento', ...x })),
-      ...allReminders.map((x) => ({ kind: 'scadenza', ...x })),
-    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    // Sotto-filtri della sidebar (Flusso > oggi / questa settimana / senza fascicolo).
-    let entries = allEntries;
-    if (opts.filter === 'oggi') {
-      entries = entries.filter((x) => dayLabel(x.created_at).startsWith('OGGI'));
-    } else if (opts.filter === 'settimana') {
-      const weekAgo = Date.now() - 7 * 86400000;
-      entries = entries.filter((x) => new Date(x.created_at).getTime() >= weekAgo);
-    } else if (opts.filter === 'senza-fascicolo') {
-      entries = entries.filter((x) => !linkIndex.has(`${FLUSSO_API_TYPE[x.kind]}:${x.id}`));
-    }
-    entries = entries.slice(0, 60);
-
+  views.reminders = async (root, opts = {}) => {
+    const highlightId = opts.highlight ? String(opts.highlight) : null;
+    const reminders = await api('/reminders');
     root.innerHTML = '';
-    root.appendChild(el('<div class="view-header"><h2>Flusso</h2></div>'));
-
-    if (opts.tab === 'tabella') { renderFlussoTabella(root, entries, linkIndex); return; }
-    if (opts.tab === 'bacheca') { renderFlussoBacheca(root, projects); return; }
-    if (opts.tab === 'orbita') { renderFlussoOrbita(root, dossiers); return; }
-
-    const layout = el('<div class="flusso-layout"></div>');
-    const main = el('<div></div>');
-    const rail = el('<aside class="right-rail"></aside>');
-
-    // ---- composer a blocco: "/" per il tipo, "@" per collegare un fascicolo ----
-    let selectedDossier = null;
-    const composer = el(`
-      <div class="composer">
-        <textarea id="flusso-text" placeholder="Scrivi un'idea — o / per un altro tipo, @ per un fascicolo, # per un tag" rows="2"></textarea>
-        <div id="flusso-link-badge"></div>
-        <div class="composer-row">
-          <button type="button" class="chip" data-insert="/idea">/idea</button>
-          <button type="button" class="chip" data-insert="/doc">/doc</button>
-          <button type="button" class="chip" data-insert="/scadenza">/scadenza</button>
-          <button type="button" class="chip" data-insert="/progetto">/progetto</button>
-          <button type="button" class="chip chip-fascicolo" data-insert="@">@fascicolo</button>
-          <button type="button" class="chip" data-insert="#">#tag</button>
-          <button type="button" class="btn btn-primary" id="flusso-save">Salva</button>
-        </div>
-        <div class="composer-hint">
-          <span class="composer-hint-kb"><span class="kb">Ctrl</span>+<span class="kb">Invio</span> salva</span>
-          <span>/ per il tipo · @ per collegare un fascicolo · # per un tag</span>
-        </div>
-      </div>
-    `);
-    const textarea = composer.querySelector('#flusso-text');
-    const linkBadgeWrap = composer.querySelector('#flusso-link-badge');
-    // Tag gia' usati nelle idee esistenti, suggeriti mentre si scrive "#".
-    const knownTags = [...new Set(ideas.flatMap((x) => x.tags || []))].sort();
-
-    function renderLinkBadge() {
-      linkBadgeWrap.innerHTML = '';
-      if (!selectedDossier) return;
-      const badge = el(`<span class="composer-link-badge">→ ${esc(selectedDossier.title)} <button type="button" title="Rimuovi">✕</button></span>`);
-      badge.querySelector('button').addEventListener('click', () => { selectedDossier = null; renderLinkBadge(); });
-      linkBadgeWrap.appendChild(badge);
-    }
-
-    // ---- autocomplete /comandi e @fascicolo ----
-    const COMMANDS = [
-      { token: '/idea', desc: 'nota veloce' },
-      { token: '/doc', desc: 'carica documento' },
-      { token: '/scadenza', desc: 'nuovo promemoria' },
-      { token: '/progetto', desc: 'nuovo progetto' },
-    ];
-    let menuEl = null;
-    let menuItems = [];
-    let menuActive = 0;
-    let menuTrigger = null;
-
-    function closeMenu() {
-      if (menuEl) { menuEl.remove(); menuEl = null; }
-      menuItems = [];
-      menuTrigger = null;
-    }
-
-    function highlightMenu() {
-      if (!menuEl) return;
-      menuEl.querySelectorAll('.composer-menu-item').forEach((n, i) => n.classList.toggle('active', i === menuActive));
-    }
-
-    async function selectMenuItem(i) {
-      const item = menuItems[i];
-      const trigger = menuTrigger;
-      closeMenu();
-      if (!item || !trigger) return;
-
-      if (trigger.type === '#') {
-        // il tag e' testo vero e proprio: si completa restando nella frase,
-        // non viene rimosso come i comandi "/" e le menzioni "@".
-        const before = textarea.value.slice(0, trigger.start);
-        const after = textarea.value.slice(trigger.end);
-        const needsSpace = !/^\s/.test(after);
-        textarea.value = before + item.token + (needsSpace ? ' ' : '') + after;
-        const caret = before.length + item.token.length + (needsSpace ? 1 : 0);
-        textarea.focus();
-        textarea.setSelectionRange(caret, caret);
-        return;
-      }
-
-      // rimuove il token digitato ("/xxx" o "@xxx") dal testo, mantenendo il resto
-      const before = textarea.value.slice(0, trigger.start);
-      const after = textarea.value.slice(trigger.end);
-      textarea.value = before + after;
-      const caret = before.length;
-      textarea.focus();
-      textarea.setSelectionRange(caret, caret);
-
-      if (trigger.type === '@') {
-        selectedDossier = item.dossier;
-        renderLinkBadge();
-        return;
-      }
-      if (item.token === '/idea') return; // e' gia' il tipo di default
-      if (item.token === '/scadenza') {
-        const form = reminderModal();
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
-          closeModal(); toast('Scadenza salvata'); render('flusso', opts);
-        });
-        form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Nuova scadenza', form);
-        return;
-      }
-      if (item.token === '/doc') {
-        await render('drive');
-        const btn = document.getElementById('new-doc');
-        if (btn) btn.click();
-        return;
-      }
-      if (item.token === '/progetto') {
-        await render('projects');
-        const btn = document.getElementById('new-project');
-        if (btn) btn.click();
-      }
-    }
-
-    function openMenu(items) {
-      if (menuEl) { menuEl.remove(); menuEl = null; }
-      if (!items.length) { menuItems = []; return; }
-      menuItems = items;
-      menuActive = 0;
-      menuEl = el('<div class="composer-menu"></div>');
-      items.forEach((it, i) => {
-        const row = el(`
-          <div class="composer-menu-item ${i === 0 ? 'active' : ''}">
-            <span class="cmi-token">${esc(it.token)}</span><span class="cmi-desc">${esc(it.desc)}</span>
-          </div>
-        `);
-        row.addEventListener('mousedown', (e) => { e.preventDefault(); selectMenuItem(i); });
-        menuEl.appendChild(row);
-      });
-      composer.appendChild(menuEl);
-    }
-
-    function currentTrigger() {
-      const pos = textarea.selectionStart;
-      const upToCaret = textarea.value.slice(0, pos);
-      const match = upToCaret.match(/(^|\s)([/@#][^\s]*)$/);
-      if (!match) return null;
-      const tokenStart = pos - match[2].length;
-      return { type: match[2][0], query: match[2].slice(1).toLowerCase(), start: tokenStart, end: pos };
-    }
-
-    function updateMenu() {
-      const trigger = currentTrigger();
-      menuTrigger = trigger;
-      if (!trigger) { closeMenu(); return; }
-      if (trigger.type === '/') {
-        openMenu(COMMANDS.filter((c) => c.token.slice(1).startsWith(trigger.query)));
-      } else if (trigger.type === '@') {
-        openMenu(
-          dossiers
-            .filter((d) => d.title.toLowerCase().includes(trigger.query))
-            .map((d) => ({ token: '@' + d.title, desc: 'fascicolo', dossier: d }))
-        );
-      } else {
-        openMenu(
-          knownTags
-            .filter((t) => t.toLowerCase().startsWith(trigger.query))
-            .map((t) => ({ token: '#' + t, desc: 'tag' }))
-        );
-      }
-    }
-
-    textarea.addEventListener('input', updateMenu);
-    textarea.addEventListener('click', updateMenu);
-    textarea.addEventListener('keydown', (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveEntry(); return; }
-      if (!menuEl) return;
-      if (e.key === 'ArrowDown') { e.preventDefault(); menuActive = (menuActive + 1) % menuItems.length; highlightMenu(); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); menuActive = (menuActive - 1 + menuItems.length) % menuItems.length; highlightMenu(); }
-      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); selectMenuItem(menuActive); }
-      else if (e.key === 'Escape') { closeMenu(); }
-    });
-    composerMenuOutsideClick = (e) => {
-      if (menuEl && !composer.contains(e.target)) closeMenu();
-    };
-
-    // Chip sotto il testo: scorciatoie che inseriscono il trigger e aprono subito il menu.
-    composer.querySelectorAll('[data-insert]').forEach((chip) => {
-      chip.addEventListener('click', () => {
-        const insert = chip.dataset.insert;
-        const pos = textarea.selectionStart;
-        const needsSpace = pos > 0 && !/\s/.test(textarea.value[pos - 1] || '');
-        const prefix = needsSpace ? ' ' : '';
-        textarea.value = textarea.value.slice(0, pos) + prefix + insert + textarea.value.slice(pos);
-        const caret = pos + prefix.length + insert.length;
-        textarea.focus();
-        textarea.setSelectionRange(caret, caret);
-        updateMenu();
-      });
-    });
-
-    let saving = false;
-    async function saveEntry() {
-      const text = textarea.value.trim();
-      if (!text || saving) return;
-      saving = true;
-      const saveBtn = composer.querySelector('#flusso-save');
-      saveBtn.disabled = true;
-      try {
-        const title = text.length > 80 ? text.slice(0, 80) + '…' : text;
-        // I tag restano nel testo (come su Twitter/Notion): li estraiamo solo
-        // per popolare il campo "tags" gia' usato altrove per filtrare/raggruppare.
-        const tags = [...new Set((text.match(/#([a-zA-Z0-9_-]+)/g) || []).map((t) => t.slice(1)))];
-        const idea = await api('/ideas', { method: 'POST', body: JSON.stringify({ title, body: text, tags }) });
-        if (selectedDossier) {
-          await api(`/dossiers/${selectedDossier.id}/links`, { method: 'POST', body: JSON.stringify({ item_type: 'idea', item_id: idea.id }) });
-        }
-        toast('Aggiunto al flusso');
-        render('flusso', opts);
-      } finally {
-        saving = false;
-        saveBtn.disabled = false;
-      }
-    }
-    composer.querySelector('#flusso-save').addEventListener('click', saveEntry);
-    main.appendChild(composer);
-
-    // ---- feed ----
-    if (!entries.length) {
-      main.appendChild(el('<div class="empty-state">Il flusso e\' vuoto: scrivi qualcosa qui sopra.</div>'));
-    } else {
-      let lastLabel = null;
-      entries.forEach((item) => {
-        const label = dayLabel(item.created_at);
-        if (label !== lastLabel) {
-          main.appendChild(el(`<div class="day-label">${esc(label)}</div>`));
-          lastLabel = label;
-        }
-        const card = renderEntryCard(item, linkIndex);
-        // Solo le scadenze arrivano qui con un highlight (vedi TYPE_TO_VIEW):
-        // e' l'unico tipo di elemento del flusso senza una sezione propria.
-        if (highlightId && item.kind === 'scadenza' && String(item.id) === highlightId) card.classList.add('card-highlight');
-        main.appendChild(card);
-      });
-    }
-    layout.appendChild(main);
-    if (highlightId) {
-      const target = main.querySelector('.card-highlight');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // ---- right rail (statistiche sull'intero flusso, non sul sotto-filtro attivo) ----
-    const deadlinesBlock = el('<div class="rail-block"><h6>Scadenze</h6></div>');
-    if (!upcoming.length) {
-      deadlinesBlock.appendChild(el('<p class="card-sub">Nessuna scadenza nei prossimi 45 giorni.</p>'));
-    } else {
-      upcoming.slice(0, 6).forEach((r) => {
-        const days = Math.round((new Date(r.date) - new Date()) / 86400000);
-        const cls = days < 0 ? 'overdue' : days <= 7 ? 'soon' : '';
-        const row = el(`
-          <button type="button" class="rail-deadline">
-            <span class="rail-deadline-days ${cls}">${days < 0 ? days : '+' + days}</span>
-            <span>${esc(r.label)}</span>
-          </button>
-        `);
-        row.addEventListener('click', () => render(TYPE_TO_VIEW[r.type], { highlight: r.id }));
-        deadlinesBlock.appendChild(row);
-      });
-    }
-    rail.appendChild(deadlinesBlock);
-
-    const dossiersBlock = el('<div class="rail-block"><h6>Fascicoli attivi</h6></div>');
-    if (!dossiers.length) {
-      dossiersBlock.appendChild(el('<p class="card-sub">Nessun fascicolo ancora.</p>'));
-    } else {
-      [...dossiers].sort((a, b) => b.items.length - a.items.length).slice(0, 6).forEach((d, i) => {
-        const row = el(`
-          <button type="button" class="rail-dossier ${i === 0 ? 'top' : ''}">
-            <span class="rail-dossier-dot">◆</span><span class="rail-dossier-label">${esc(d.title)}</span><span class="rail-dossier-count">${d.items.length}</span>
-          </button>
-        `);
-        row.addEventListener('click', () => render('dossiers', { highlight: d.id }));
-        dossiersBlock.appendChild(row);
-      });
-    }
-    rail.appendChild(dossiersBlock);
-
-    const weekBlock = el('<div class="rail-block"><h6>Questa settimana</h6></div>');
-    const weekAgo = Date.now() - 7 * 86400000;
-    const recent = allEntries.filter((x) => new Date(x.created_at).getTime() >= weekAgo);
-    const unlinked = allEntries.filter((x) => !linkIndex.has(`${FLUSSO_API_TYPE[x.kind]}:${x.id}`)).length;
-    weekBlock.appendChild(el(`
-      <div class="rail-stats">
-        <div>${recent.filter((x) => x.kind === 'idea').length} note · ${recent.filter((x) => x.kind === 'documento').length} documenti</div>
-        <div>${recent.filter((x) => x.kind === 'progetto').length} progetti mossi</div>
-        <div>${unlinked} voci senza fascicolo</div>
+    root.appendChild(el(`
+      <div class="view-header">
+        <h2>Scadenze</h2>
+        <div class="view-header-actions"><button class="btn btn-primary" id="new-reminder">+ Nuova scadenza</button></div>
       </div>
     `));
-    rail.appendChild(weekBlock);
 
-    const overviewBlock = el('<div class="rail-block"><h6>Panoramica</h6></div>');
-    const overview = [
-      ['Idee', 'ideas', ideas.length], ['Progetti', 'projects', projects.length], ['Voci vault', 'vault', vault.length],
-      ['Abbonamenti', 'accounts', accounts.length], ['Documenti', 'drive', documents.length],
-    ];
-    overview.forEach(([label, view, count]) => {
-      const row = el(`<button type="button" class="rail-dossier"><span class="rail-dossier-label">${esc(label)}</span><span class="rail-dossier-count">${count}</span></button>`);
-      row.addEventListener('click', () => render(view));
-      overviewBlock.appendChild(row);
+    root.querySelector('#new-reminder').addEventListener('click', () => {
+      const form = reminderModal();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+        closeModal(); toast('Scadenza salvata'); render('reminders');
+      });
+      form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+      openModal('Nuova scadenza', form);
     });
-    rail.appendChild(overviewBlock);
 
-    layout.appendChild(rail);
-    root.appendChild(layout);
-    textarea.focus();
+    if (!reminders.length) {
+      root.appendChild(el('<div class="empty-state">Nessuna scadenza ancora.</div>'));
+      return;
+    }
+
+    reminders
+      .slice()
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .forEach((r) => {
+        const days = Math.round((new Date(r.date) - new Date()) / 86400000);
+        const dayLabel = days === 0 ? 'oggi' : days > 0 ? `tra ${days} giorn${days === 1 ? 'o' : 'i'}` : `passata da ${-days} giorn${days === -1 ? 'o' : 'i'}`;
+        const row = el(`
+          <div class="trash-row row-card">
+            <span>
+              <strong>${esc(r.label)}</strong>
+              <span class="card-sub" style="display:block">${fmtDate(r.date)} · ${esc(dayLabel)}${r.notes ? ' · ' + escTrim(r.notes, 80) : ''}</span>
+            </span>
+            <span class="card-actions" style="padding:0">
+              <button class="btn btn-sm" data-edit>Modifica</button>
+              <button class="btn btn-sm" data-link>Cartella</button>
+              <button class="btn btn-sm btn-danger" data-del>Elimina</button>
+            </span>
+          </div>
+        `);
+        row.querySelector('[data-edit]').addEventListener('click', () => {
+          const form = reminderModal(r);
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, notes: form.notes.value }) });
+            closeModal(); toast('Scadenza aggiornata'); render('reminders');
+          });
+          form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+          openModal('Modifica scadenza', form);
+        });
+        row.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('reminder', r.id, r.label));
+        row.querySelector('[data-del]').addEventListener('click', async () => {
+          if (!confirm('Spostare questa scadenza nel cestino?')) return;
+          await api(`/reminders/${r.id}`, { method: 'DELETE' });
+          toast('Scadenza eliminata'); render('reminders');
+        });
+        if (highlightId && String(r.id) === highlightId) row.classList.add('card-highlight');
+        root.appendChild(row);
+      });
   };
 
   // ==================================================================
-  // IDEE
+  // NOTE
   // ==================================================================
   function ideaModal(existing) {
     const form = el(`
@@ -1567,8 +849,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Idee</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-idea">+ Nuova idea</button></div>
+        <h2>Note</h2>
+        <div class="view-header-actions"><button class="btn btn-primary" id="new-idea">+ Nuova nota</button></div>
       </div>
     `));
 
@@ -1578,14 +860,14 @@
         e.preventDefault();
         const tags = parseTags(form);
         await api('/ideas', { method: 'POST', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags }) });
-        closeModal(); toast('Idea salvata'); render('ideas');
+        closeModal(); toast('Nota salvata'); render('ideas');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuova idea', form);
+      openModal('Nuova nota', form);
     });
 
     if (!ideas.length) {
-      root.appendChild(el('<div class="empty-state">Nessuna idea ancora. Butta giu\' la prima.</div>'));
+      root.appendChild(el('<div class="empty-state">Nessuna nota ancora. Butta giu\' la prima.</div>'));
       return;
     }
 
@@ -1598,7 +880,7 @@
           <div class="tag-row">${(idea.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-actions">
             <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Fascicolo</button>
+            <button class="btn btn-sm" data-link>Cartella</button>
             <button class="btn btn-sm btn-danger" data-del>Elimina</button>
           </div>
         </div>
@@ -1609,16 +891,16 @@
           e.preventDefault();
           const tags = parseTags(form);
           await api(`/ideas/${idea.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags }) });
-          closeModal(); toast('Idea aggiornata'); render('ideas');
+          closeModal(); toast('Nota aggiornata'); render('ideas');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Modifica idea', form);
+        openModal('Modifica nota', form);
       });
       card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('idea', idea.id, idea.title));
       card.querySelector('[data-del]').addEventListener('click', async () => {
-        if (!confirm('Spostare questa idea nel cestino?')) return;
+        if (!confirm('Spostare questa nota nel cestino?')) return;
         await api(`/ideas/${idea.id}`, { method: 'DELETE' });
-        toast('Idea eliminata'); render('ideas');
+        toast('Nota eliminata'); render('ideas');
       });
       if (highlightId && String(idea.id) === highlightId) card.classList.add('card-highlight');
       grid.appendChild(card);
@@ -1673,6 +955,8 @@
     return form.contacts.value.split(',').map((c) => c.trim()).filter(Boolean);
   }
 
+  // Bacheca: i progetti in kanban, spostabili tra gli stati con le frecce
+  // (nessun trascinamento reale ancora — arriva in un secondo momento).
   views.projects = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
     const projects = await api('/projects');
@@ -1704,53 +988,72 @@
       return;
     }
 
-    const grid = el('<div class="grid"></div>');
-    projects.forEach((p) => {
-      const { done, total } = checklistProgress(p.checklist);
-      const total_budget = budgetTotal(p.budget);
-      const card = el(`
-        <div class="card">
-          <span class="status-pill status-${p.status}">${p.status.replace('_', ' ')}</span>
-          <p class="card-title">${esc(p.title)}</p>
-          <p class="card-body">${escTrim(p.description, 160)}</p>
-          ${p.deadline ? `<p class="card-sub">Scadenza: ${fmtDate(p.deadline)}</p>` : ''}
-          ${total ? `<p class="card-sub">Checklist: ${done}/${total} completati</p>` : ''}
-          ${(p.contacts || []).length ? `<p class="card-sub">Persone: ${esc(p.contacts.join(', '))}</p>` : ''}
-          ${total_budget ? `<p class="card-sub">Budget: ${fmtMoney(total_budget)}</p>` : ''}
-          <div class="tag-row">${(p.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-          <div class="card-actions">
-            <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Fascicolo</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina</button>
-          </div>
+    const STATUSES = [
+      { key: 'da_fare', label: 'Da fare' },
+      { key: 'in_corso', label: 'In corso' },
+      { key: 'fatto', label: 'Fatto' },
+    ];
+    const board = el('<div class="board"></div>');
+    STATUSES.forEach((s, i) => {
+      const col = el(`
+        <div class="board-col">
+          <div class="board-col-head"><span>${esc(s.label)}</span><span class="board-col-count">${projects.filter((p) => p.status === s.key).length}</span></div>
+          <div class="board-col-body"></div>
         </div>
       `);
-      card.querySelector('[data-edit]').addEventListener('click', () => {
-        const form = projectModal(p);
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const tags = parseTags(form);
-          const contacts = parseContacts(form);
-          const budget = parseBudgetLines(form.budget.value);
-          const checklist = collectChecklist(form, p.checklist);
-          await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-          closeModal(); toast('Progetto aggiornato'); render('projects');
+      const body = col.querySelector('.board-col-body');
+      projects.filter((p) => p.status === s.key).forEach((p) => {
+        const { done, total } = checklistProgress(p.checklist);
+        const totalBudget = budgetTotal(p.budget);
+        const card = el(`
+          <div class="board-card">
+            <p class="board-card-title">${esc(p.title)}</p>
+            ${total ? `<p class="card-sub">${done}/${total} completati</p>` : ''}
+            ${p.deadline ? `<p class="card-sub">Scadenza: ${fmtDate(p.deadline)}</p>` : ''}
+            ${totalBudget ? `<p class="card-sub">Budget: ${fmtMoney(totalBudget)}</p>` : ''}
+            <div class="board-card-actions">
+              <button type="button" data-prev ${i === 0 ? 'disabled' : ''} title="Sposta indietro">←</button>
+              <button type="button" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="Sposta avanti">→</button>
+              <button type="button" data-edit>Modifica</button>
+              <button type="button" data-link>Cartella</button>
+              <button type="button" data-del>Elimina</button>
+            </div>
+          </div>
+        `);
+        async function moveTo(newStatus) {
+          await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+          render('projects');
+        }
+        card.querySelector('[data-prev]').addEventListener('click', () => moveTo(STATUSES[i - 1].key));
+        card.querySelector('[data-next]').addEventListener('click', () => moveTo(STATUSES[i + 1].key));
+        card.querySelector('[data-edit]').addEventListener('click', () => {
+          const form = projectModal(p);
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tags = parseTags(form);
+            const contacts = parseContacts(form);
+            const budget = parseBudgetLines(form.budget.value);
+            const checklist = collectChecklist(form, p.checklist);
+            await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
+            closeModal(); toast('Progetto aggiornato'); render('projects');
+          });
+          form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+          openModal('Modifica progetto', form);
         });
-        form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Modifica progetto', form);
+        card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('project', p.id, p.title));
+        card.querySelector('[data-del]').addEventListener('click', async () => {
+          if (!confirm('Spostare questo progetto nel cestino?')) return;
+          await api(`/projects/${p.id}`, { method: 'DELETE' });
+          toast('Progetto eliminato'); render('projects');
+        });
+        if (highlightId && String(p.id) === highlightId) card.classList.add('card-highlight');
+        body.appendChild(card);
       });
-      card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('project', p.id, p.title));
-      card.querySelector('[data-del]').addEventListener('click', async () => {
-        if (!confirm('Spostare questo progetto nel cestino?')) return;
-        await api(`/projects/${p.id}`, { method: 'DELETE' });
-        toast('Progetto eliminato'); render('projects');
-      });
-      if (highlightId && String(p.id) === highlightId) card.classList.add('card-highlight');
-      grid.appendChild(card);
+      board.appendChild(col);
     });
-    root.appendChild(grid);
+    root.appendChild(board);
     if (highlightId) {
-      const target = grid.querySelector('.card-highlight');
+      const target = board.querySelector('.card-highlight');
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
@@ -1948,7 +1251,7 @@
             ${entry.hasTotp ? '<button class="btn btn-sm" data-totp>Codice</button>' : ''}
             <button class="btn btn-sm" data-reveal>Mostra</button>
             <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Fascicolo</button>
+            <button class="btn btn-sm" data-link>Cartella</button>
             <button class="btn btn-sm btn-danger" data-del>Elimina</button>
           </span>
         </div>
@@ -2024,6 +1327,16 @@
   // ==================================================================
   // ACCOUNT
   // ==================================================================
+  const BILLING_LABELS = {
+    '': 'Non specificata',
+    settimanale: 'Settimanale',
+    mensile: 'Mensile',
+    trimestrale: 'Trimestrale',
+    semestrale: 'Semestrale',
+    annuale: 'Annuale',
+    una_tantum: 'Una tantum',
+  };
+
   function accountModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
@@ -2042,6 +1355,12 @@
           <div class="form-row"><label>Luogo / negozio</label><input type="text" name="location" placeholder="es. edicola, negozio" /></div>
           <div class="form-row"><label>Modalita' di pagamento</label><input type="text" name="payment_method" placeholder="es. contanti, bonifico" /></div>
         </div>
+        <div class="form-row"><label>Frequenza di addebito</label>
+          <select name="billing_frequency">
+            ${Object.entries(BILLING_LABELS).map(([v, label]) => `<option value="${v}">${esc(label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Importo</label><input type="number" name="amount" step="0.01" min="0" placeholder="es. 9.99" /></div>
         <div class="form-row"><label>Data di rinnovo/scadenza</label><input type="date" name="renewal_date" /></div>
         <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
         <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
@@ -2064,12 +1383,55 @@
       form.plan.value = existing.plan;
       form.location.value = existing.location || '';
       form.payment_method.value = existing.payment_method || '';
+      form.billing_frequency.value = existing.billing_frequency || '';
+      form.amount.value = existing.amount != null ? existing.amount : '';
       form.renewal_date.value = existing.renewal_date ? existing.renewal_date.slice(0, 10) : '';
       form.notes.value = existing.notes;
       form.tags.value = (existing.tags || []).join(', ');
     }
     syncTypeFields();
     return form;
+  }
+
+  // Scelta di una voce Vault gia' salvata da collegare a un abbonamento
+  // (credenziali riusate, senza doverle riscrivere). Stesso schema del
+  // selettore fascicolo esistente (openLinkToDossierModal).
+  async function openLinkVaultModal(account) {
+    const entries = await api('/vault');
+    const wrap = el('<div></div>');
+    if (account.vaultEntry) {
+      const current = el(`
+        <div class="trash-row row-card">
+          <span>Collegata: ${esc(account.vaultEntry.site)}${account.vaultEntry.username ? ' · ' + esc(account.vaultEntry.username) : ''}</span>
+          <button class="btn btn-sm btn-danger">Scollega</button>
+        </div>
+      `);
+      current.querySelector('button').addEventListener('click', async () => {
+        await api(`/accounts/${account.id}`, { method: 'PUT', body: JSON.stringify({ vault_entry_id: null }) });
+        toast('Credenziali scollegate');
+        closeModal(); render('accounts');
+      });
+      wrap.appendChild(current);
+    }
+    if (!entries.length) {
+      wrap.appendChild(el('<p class="card-sub">Non hai ancora nessuna voce nel Vault. Creane una dalla sezione Vault.</p>'));
+    } else {
+      entries.forEach((v) => {
+        const row = el(`
+          <div class="trash-row row-card">
+            <span>${esc(v.site)}${v.username ? ' · ' + esc(v.username) : ''}</span>
+            <button class="btn btn-sm btn-primary">Collega</button>
+          </div>
+        `);
+        row.querySelector('button').addEventListener('click', async () => {
+          await api(`/accounts/${account.id}`, { method: 'PUT', body: JSON.stringify({ vault_entry_id: v.id }) });
+          toast(`Credenziali "${v.site}" collegate`);
+          closeModal(); render('accounts');
+        });
+        wrap.appendChild(row);
+      });
+    }
+    openModal('Collega credenziali dal Vault', wrap);
   }
 
   views.accounts = async (root, opts = {}) => {
@@ -2091,6 +1453,8 @@
         plan: form.plan.value,
         location: form.location.value,
         payment_method: form.payment_method.value,
+        billing_frequency: form.billing_frequency.value,
+        amount: form.amount.value === '' ? null : form.amount.value,
         renewal_date: form.renewal_date.value || null,
         notes: form.notes.value,
         tags: parseTags(form),
@@ -2123,11 +1487,16 @@
           ${isCartaceo
             ? `<p class="card-sub">${esc(a.location) || '—'}${a.payment_method ? ' · ' + esc(a.payment_method) : ''}</p>`
             : `<p class="card-sub">${esc(a.email) || '—'} ${a.plan ? '· ' + esc(a.plan) : ''}</p>`}
+          ${a.billing_frequency || a.amount != null
+            ? `<p class="card-sub">${a.billing_frequency ? esc(BILLING_LABELS[a.billing_frequency] || a.billing_frequency) : ''}${a.billing_frequency && a.amount != null ? ' · ' : ''}${a.amount != null ? fmtMoney(a.amount) : ''}</p>`
+            : ''}
           ${a.renewal_date ? `<p class="card-sub">Rinnovo: ${fmtDate(a.renewal_date)}</p>` : ''}
+          ${a.vaultEntry ? `<p class="card-sub">Credenziali: ${esc(a.vaultEntry.site)}${a.vaultEntry.username ? ' · ' + esc(a.vaultEntry.username) : ''}</p>` : ''}
           <div class="tag-row">${(a.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-actions">
             <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Fascicolo</button>
+            <button class="btn btn-sm" data-link>Cartella</button>
+            <button class="btn btn-sm" data-vault>${a.vaultEntry ? 'Cambia credenziali' : 'Collega credenziali'}</button>
             <button class="btn btn-sm btn-danger" data-del>Elimina</button>
           </div>
         </div>
@@ -2143,6 +1512,7 @@
         openModal('Modifica abbonamento', form);
       });
       card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('account', a.id, a.service));
+      card.querySelector('[data-vault]').addEventListener('click', () => openLinkVaultModal(a));
       card.querySelector('[data-del]').addEventListener('click', async () => {
         if (!confirm('Spostare questo abbonamento nel cestino?')) return;
         await api(`/accounts/${a.id}`, { method: 'DELETE' });
@@ -2249,7 +1619,7 @@
           <span class="card-actions" style="padding:0">
             <a class="btn btn-sm" href="/api/drive/${d.id}/download">Scarica</a>
             <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Fascicolo</button>
+            <button class="btn btn-sm" data-link>Cartella</button>
             <button class="btn btn-sm btn-danger" data-del>Elimina</button>
           </span>
         </div>
@@ -2290,10 +1660,10 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Fascicoli</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-dossier">+ Nuovo fascicolo</button></div>
+        <h2>Cartelle</h2>
+        <div class="view-header-actions"><button class="btn btn-primary" id="new-dossier">+ Nuova cartella</button></div>
       </div>
-      <p class="card-sub">Un fascicolo raccoglie insieme documenti, password, abbonamenti e idee legati allo stesso tema. Collega gli elementi dai loro pulsanti "Fascicolo".</p>
+      <p class="card-sub">Una cartella raccoglie insieme documenti, password, abbonamenti e note legati allo stesso tema. Collega gli elementi dai loro pulsanti "Cartella".</p>
     `));
 
     root.querySelector('#new-dossier').addEventListener('click', () => {
@@ -2310,14 +1680,14 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await api('/dossiers', { method: 'POST', body: JSON.stringify({ title: form.title.value, description: form.description.value }) });
-        closeModal(); toast('Fascicolo creato'); render('dossiers');
+        closeModal(); toast('Cartella creata'); render('dossiers');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuovo fascicolo', form);
+      openModal('Nuova cartella', form);
     });
 
     if (!dossiers.length) {
-      root.appendChild(el('<div class="empty-state">Nessun fascicolo ancora.</div>'));
+      root.appendChild(el('<div class="empty-state">Nessuna cartella ancora.</div>'));
       return;
     }
 
@@ -2363,7 +1733,7 @@
           <p class="card-sub">${summary ? esc(summary) : 'Nessun elemento collegato.'}</p>
           <div class="card-actions">
             <button class="btn btn-sm" data-open>Apri</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina fascicolo</button>
+            <button class="btn btn-sm btn-danger" data-del>Elimina cartella</button>
           </div>
         </div>
       `);
@@ -2374,9 +1744,9 @@
       card.querySelector('[data-open]').addEventListener('click', () => openDossierDetail(d));
       card.querySelector('[data-del]').addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm('Spostare questo fascicolo nel cestino? Gli elementi collegati non verranno eliminati.')) return;
+        if (!confirm('Spostare questa cartella nel cestino? Gli elementi collegati non verranno eliminati.')) return;
         await api(`/dossiers/${d.id}`, { method: 'DELETE' });
-        toast('Fascicolo eliminato'); render('dossiers');
+        toast('Cartella eliminata'); render('dossiers');
       });
       if (highlightId && String(d.id) === highlightId) card.classList.add('card-highlight');
       grid.appendChild(card);
@@ -2393,7 +1763,7 @@
   // ==================================================================
   // CESTINO
   // ==================================================================
-  const TYPE_LABELS = { idea: 'Idea', project: 'Progetto', vault: 'Vault', account: 'Abbonamento', document: 'Documento', dossier: 'Fascicolo', reminder: 'Scadenza' };
+  const TYPE_LABELS = { idea: 'Nota', project: 'Progetto', vault: 'Vault', account: 'Abbonamento', document: 'Documento', dossier: 'Cartella', reminder: 'Scadenza' };
 
   views.trash = async (root) => {
     const items = await api('/trash');
@@ -2606,6 +1976,17 @@
 
     root.appendChild(block);
 
+    const wallpaperBlock = el('<div class="section-block"><h3>Sfondo desktop</h3><p class="card-sub">Solo su questo dispositivo — non viene sincronizzato.</p></div>');
+    const wallpaperRow = el('<div class="card-actions" style="padding-top:10px"></div>');
+    Object.entries(WALLPAPERS).forEach(([key, wp]) => {
+      const btn = el(`<button class="btn btn-sm${key === currentWallpaper() ? ' btn-primary' : ''}" data-wp="${key}"></button>`);
+      btn.textContent = wp.label;
+      btn.addEventListener('click', () => { applyWallpaper(key); render('security'); });
+      wallpaperRow.appendChild(btn);
+    });
+    wallpaperBlock.appendChild(wallpaperRow);
+    root.appendChild(wallpaperBlock);
+
     const help = el('<div class="section-block"><h3>Se perdi il telefono</h3></div>');
     help.appendChild(el(`
       <p class="card-sub">Usa uno dei codici di recupero al posto delle 6 cifre nella schermata di accesso.
@@ -2625,11 +2006,11 @@
   // Su telefono la ricerca sta dietro un'icona: apre a tutta larghezza al tocco
   // e libera lo spazio che occupava fissa in cima. Su schermo largo l'icona e'
   // nascosta dal CSS e il campo resta sempre visibile.
-  searchToggle.innerHTML = icona('cerca');
+  searchToggle.innerHTML = iconaLinea('cerca');
   searchToggle.addEventListener('click', () => {
     const aperta = topbar.classList.toggle('search-open');
     searchToggle.setAttribute('aria-expanded', String(aperta));
-    searchToggle.innerHTML = icona(aperta ? 'chiudi' : 'cerca');
+    searchToggle.innerHTML = iconaLinea(aperta ? 'chiudi' : 'cerca');
     if (aperta) {
       searchInput.focus();
     } else {
@@ -2663,7 +2044,7 @@
           item.addEventListener('click', () => {
             searchResults.classList.add('hidden');
             searchInput.value = '';
-            render(TYPE_TO_VIEW[r.type] || 'flusso', { highlight: r.id });
+            render(TYPE_TO_VIEW[r.type] || 'ideas', { highlight: r.id });
           });
           searchResults.appendChild(item);
         });

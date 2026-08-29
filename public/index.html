@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Mindkeep</title>
-<meta name="theme-color" content="#101219" />
+<meta name="theme-color" content="#008080" />
 <meta name="description" content="Il tuo spazio personale: idee, progetti, password, documenti." />
 <!-- Aggiunta alla schermata home del telefono -->
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -53,48 +53,41 @@
 
 <!-- App principale -->
 <div id="app" class="app hidden">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <span class="brand-mark-box" aria-hidden="true"></span>
-      <span class="brand-name" id="sidebar-brand-name">Mindkeep</span>
+  <header class="topbar" id="topbar">
+    <!-- Su telefono la ricerca parte come icona e si apre al tocco: a schermo
+         pieno resta sempre visibile come prima. -->
+    <button class="icon-btn search-toggle" id="search-toggle" aria-label="Cerca" aria-expanded="false"></button>
+    <div class="search-wrap">
+      <input type="text" id="global-search" placeholder="Cerca in tutto Mindkeep…" autocomplete="off" />
+      <div id="search-results" class="search-results hidden"></div>
     </div>
+  </header>
 
-    <div class="sidebar-scroll">
-      <!-- Le voci vengono generate da app.js a partire da un unico elenco,
-           condiviso con la barra in basso del telefono. -->
-      <nav class="nav" id="nav"></nav>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-status">tutto in locale<br />aes-256-gcm<br /><span id="sidebar-version"></span></div>
-      <a class="btn btn-ghost btn-block" href="/api/backup" target="_blank" rel="noopener">Esporta backup</a>
-      <button class="btn btn-ghost btn-block" id="logout-btn">Esci</button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar" id="topbar">
-      <!-- Su telefono la ricerca parte come icona e si apre al tocco: a schermo
-           pieno resta sempre visibile come prima. -->
-      <button class="icon-btn search-toggle" id="search-toggle" aria-label="Cerca" aria-expanded="false"></button>
-      <div class="search-wrap">
-        <input type="text" id="global-search" placeholder="Cerca in tutto Mindkeep…" autocomplete="off" />
-        <div id="search-results" class="search-results hidden"></div>
-      </div>
-    </header>
-
-    <div class="crumbbar" id="crumbbar"></div>
-
-    <section id="view-root" class="view-root">
-      <!-- le view vengono renderizzate qui via JS -->
-    </section>
-  </main>
-
-  <!-- Navigazione da telefono: barra fissa in basso + foglio con tutto il resto -->
-  <nav class="tabbar" id="tabbar" aria-label="Sezioni"></nav>
-  <div class="sheet-backdrop hidden" id="sheet-backdrop">
-    <div class="sheet" id="sheet" role="dialog" aria-label="Tutte le sezioni"></div>
+  <!-- Desktop: sfondo (scelto in Sicurezza/Impostazioni, salvato solo sul
+       dispositivo), icone (Cartelle + note recenti come post-it) e finestre. -->
+  <div id="desktop" class="desktop">
+    <div id="desktop-wallpaper" class="desktop-wallpaper"></div>
+    <div id="desktop-icons" class="desktop-icons"></div>
+    <div id="window-layer" class="window-layer"></div>
   </div>
+
+  <!-- Barra in basso: Avvio, finestre aperte, orologio. Su telefono un'app
+       alla volta a schermo intero; "Affianca" (dal titlebar) ne apre una
+       seconda in split solo se lo scegli tu. -->
+  <div id="taskbar" class="taskbar raised">
+    <button id="btn-start" class="taskbar-start raised" aria-haspopup="true" aria-expanded="false">
+      <span class="taskbar-start-icon" aria-hidden="true"></span>
+      Avvio
+    </button>
+    <button id="btn-nuovo" class="taskbar-btn raised" title="Cattura veloce — sempre disponibile">
+      <svg width="14" height="14" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8"><line x1="6" y1="1.5" x2="6" y2="10.5"/><line x1="1.5" y1="6" x2="10.5" y2="6"/></svg>
+      Nuovo
+    </button>
+    <div id="taskbar-windows" class="taskbar-windows"></div>
+    <div id="taskbar-clock" class="taskbar-clock sunken"></div>
+  </div>
+  <div id="start-menu" class="start-menu raised hidden"></div>
+  <div id="quick-capture" class="quick-capture win-frame hidden"></div>
 </div>
 
 <template id="tpl-modal">
@@ -109,6 +102,26 @@
   </div>
 </template>
 
+<template id="tpl-window">
+  <div class="win-frame raised window">
+    <div class="titlebar titlebar-active" data-drag-handle>
+      <span class="titlebar-icon" aria-hidden="true"></span>
+      <span class="titlebar-label"></span>
+      <div class="titlebar-btns">
+        <button class="win-btn win-btn-split hidden" data-action="split" aria-label="Affianca un'altra app">⬒</button>
+        <button class="win-btn win-btn-min" data-action="minimize" aria-label="Riduci a icona">_</button>
+        <button class="win-btn win-btn-max" data-action="maximize" aria-label="Ingrandisci">□</button>
+        <button class="win-btn win-btn-close" data-action="close" aria-label="Chiudi">✕</button>
+      </div>
+    </div>
+    <div class="win-content"></div>
+    <div class="resize-handle resize-e"></div>
+    <div class="resize-handle resize-s"></div>
+    <div class="resize-handle resize-se"></div>
+  </div>
+</template>
+
+<script src="/wm.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
