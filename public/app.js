@@ -1197,15 +1197,15 @@
     root.appendChild(el(`
       <div class="view-header">
         <h2>Vault</h2>
-        <div class="view-header-actions">
-          <label class="btn btn-ghost" style="cursor:pointer">
-            Importa CSV
-            <input type="file" id="csv-input" accept=".csv" class="hidden" />
-          </label>
-          <button class="btn btn-primary" id="new-vault">+ Nuova voce</button>
-        </div>
       </div>
       <p class="card-sub">L'import CSV riconosce colonne come site/name/title, username/login/email, password, url, notes.</p>
+      <div class="vault-toolbar">
+        <label class="btn btn-ghost" style="cursor:pointer">
+          Importa CSV
+          <input type="file" id="csv-input" accept=".csv" class="hidden" />
+        </label>
+        <button class="btn btn-primary" id="new-vault">+ Nuova voce</button>
+      </div>
     `));
 
     root.querySelector('#csv-input').addEventListener('change', async (e) => {
@@ -1241,13 +1241,31 @@
     }
 
     const TYPE_LABEL = { password: 'Password', note: 'Nota', card: 'Carta' };
-    entries.forEach((entry) => {
+    const sheet = el(`
+      <div class="vault-sheet">
+        <div class="vault-sheet-head">
+          <span class="vsh-cell">#</span>
+          <span class="vsh-cell">Tipo</span>
+          <span class="vsh-cell">Sito</span>
+          <span class="vsh-cell">Utente</span>
+          <span class="vsh-cell">Password</span>
+          <span class="vsh-cell"></span>
+        </div>
+        <div class="vault-sheet-body"></div>
+      </div>
+    `);
+    const body = sheet.querySelector('.vault-sheet-body');
+    root.appendChild(sheet);
+
+    entries.forEach((entry, idx) => {
       const row = el(`
-        <div class="vault-row row-card">
-          <strong><span class="chip-type">${esc(TYPE_LABEL[entry.type] || entry.type)}</span> ${esc(entry.site)}</strong>
-          <span>${esc(entry.username) || '—'}</span>
-          <span class="password-field" data-pwd>${entry.type === 'note' ? '(nota sicura)' : '••••••••'}</span>
-          <span class="card-actions" style="padding:0">
+        <div class="vault-sheet-row">
+          <span class="vs-cell vs-num">${idx + 1}</span>
+          <span class="vs-cell vs-type" data-label="Tipo"><span class="vs-type-dot vs-type-${esc(entry.type)}"></span>${esc(TYPE_LABEL[entry.type] || entry.type)}</span>
+          <span class="vs-cell" data-label="Sito">${esc(entry.site)}</span>
+          <span class="vs-cell" data-label="Utente">${esc(entry.username) || '—'}</span>
+          <span class="vs-cell vs-pwd" data-label="Password" data-pwd>${entry.type === 'note' ? '(nota sicura)' : '••••••••'}</span>
+          <span class="vs-cell vs-actions">
             ${entry.hasTotp ? '<button class="btn btn-sm" data-totp>Codice</button>' : ''}
             <button class="btn btn-sm" data-reveal>Mostra</button>
             <button class="btn btn-sm" data-edit>Modifica</button>
@@ -1316,7 +1334,7 @@
         toast('Voce eliminata'); render('vault');
       });
       if (highlightId && String(entry.id) === highlightId) row.classList.add('card-highlight');
-      root.appendChild(row);
+      body.appendChild(row);
     });
     if (highlightId) {
       const target = root.querySelector('.card-highlight');

@@ -480,7 +480,7 @@ body.no-scroll { overflow: hidden; }
   background: var(--surface); border: 1px solid var(--border-soft);
   padding: 14px; display: flex; flex-direction: column; gap: 8px;
 }
-.card.card-highlight, .row-card.card-highlight, .entry-block.card-highlight { outline: 2px solid var(--accent); outline-offset: 1px; }
+.card.card-highlight, .row-card.card-highlight, .entry-block.card-highlight, .vault-sheet-row.card-highlight { outline: 2px solid var(--accent); outline-offset: 1px; }
 .card-title { font-weight: 700; font-size: 1rem; margin: 0; overflow-wrap: anywhere; }
 .card-sub { color: var(--text-muted); font-size: 0.82rem; margin: 0; }
 .card-body { font-size: 0.88rem; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -518,12 +518,41 @@ body.no-scroll { overflow: hidden; }
 .preview-media { flex: 1; min-height: 0; width: 100%; border: none; background: var(--surface); }
 img.preview-media { object-fit: contain; background: #0a0a0a; }
 
-/* ---------- Riga elenco: base condivisa da Vault / Drive / Cestino / Scadenze ---------- */
+/* ---------- Riga elenco: base condivisa da Drive / Cestino / Scadenze ---------- */
 .row-card { align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--border-soft); background: var(--surface); margin-bottom: 6px; font-size: 0.87rem; }
 
-.vault-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; }
-.vault-row .password-field { font-family: var(--font-mono); color: var(--text-muted); }
-@media (max-width: 760px) { .vault-row { grid-template-columns: 1fr; } }
+/* ---------- Vista Vault: foglio elettronico ---------- */
+.vault-toolbar {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding: 8px; background: var(--win-face); margin-bottom: 14px;
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+}
+.vault-sheet { border: 1px solid var(--border-soft); background: var(--surface); }
+.vault-sheet-head, .vault-sheet-row {
+  display: grid; grid-template-columns: 34px 90px 1fr 1fr 1fr auto; align-items: center;
+}
+.vault-sheet-head {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--win-face); color: var(--text-muted);
+  font-weight: 700; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em;
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+}
+.vsh-cell, .vs-cell { padding: 6px 10px; border-right: 1px solid var(--border-soft); overflow-wrap: anywhere; }
+.vsh-cell:last-child, .vs-cell:last-child { border-right: none; }
+.vault-sheet-row { border-bottom: 1px solid var(--border-soft); font-size: 0.85rem; min-height: 28px; }
+.vault-sheet-row:last-child { border-bottom: none; }
+.vault-sheet-row:hover { background: var(--sel-bg); color: var(--sel-text); }
+.vault-sheet-row:hover .vs-num,
+.vault-sheet-row:hover .vs-pwd { color: inherit; }
+.vs-num { color: var(--text-faint); font-family: var(--font-mono); font-size: 0.78rem; }
+.vs-type { display: flex; align-items: center; gap: 6px; }
+.vs-type-dot { width: 9px; height: 9px; flex: none; box-shadow: inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35); }
+.vs-type-dot.vs-type-password { background: var(--accent-soft); }
+.vs-type-dot.vs-type-note { background: var(--moss); }
+.vs-type-dot.vs-type-card { background: #a05a2c; }
+.vs-pwd { font-family: var(--font-mono); color: var(--text-muted); }
+.vs-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; padding-top: 4px; padding-bottom: 4px; }
+.vs-actions .btn-sm { padding: 3px 8px; font-size: 0.76rem; }
 
 .doc-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .doc-name { font-weight: 600; }
@@ -586,9 +615,19 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   .modal { max-height: 88vh; }
   .form-actions { flex-wrap: wrap; }
 
-  .vault-row > *, .doc-row > *, .trash-row > * { min-width: 0; }
+  .doc-row > *, .trash-row > * { min-width: 0; }
   .doc-row, .trash-row { flex-wrap: wrap; }
-  .vault-row strong, .vault-row span, .doc-name, .doc-meta { overflow-wrap: anywhere; }
+  .doc-name, .doc-meta { overflow-wrap: anywhere; }
+
+  .vault-toolbar .btn { flex: 1; }
+  .vault-sheet-head { display: none; }
+  .vault-sheet-row { grid-template-columns: 1fr; border-bottom: 4px solid var(--border-soft); }
+  .vs-cell { border-right: none; border-bottom: 1px solid var(--border-soft); white-space: normal; }
+  .vs-cell:last-child { border-bottom: none; }
+  .vs-cell[data-label]::before { content: attr(data-label) ": "; font-weight: 700; color: var(--text-muted); }
+  .vault-sheet-row .vs-num { display: none; }
+  .vs-actions { justify-content: flex-start; }
+  .vs-actions .btn-sm { min-height: 40px; }
 
   .chip { font-size: 12.5px; padding: 4px 8px; }
   .composer-hint { font-size: 12px; }
