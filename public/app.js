@@ -438,6 +438,21 @@
 
   const VIEW_LABELS = Object.fromEntries(SECTIONS.map((s) => [s.view, s.label]));
 
+  // Aprire un elemento da dentro una cartella mostra solo quell'elemento
+  // (non l'intero elenco) e aggiunge un modo per tornare alla cartella —
+  // stesso meccanismo in ogni vista che puo' essere raggiunta da li'.
+  function onlyFilter(opts) {
+    return (item) => !opts.only || String(item.id) === String(opts.only);
+  }
+  function backToDossierButtonHtml(opts) {
+    return opts.fromDossier ? '<button type="button" class="btn btn-sm" data-back-to-dossier>← Torna alla cartella</button>' : '';
+  }
+  function wireBackToDossier(root, opts) {
+    if (!opts.fromDossier) return;
+    const btn = root.querySelector('[data-back-to-dossier]');
+    if (btn) btn.addEventListener('click', () => render('dossiers', { highlight: opts.fromDossier }));
+  }
+
   // ---------------- Menu Avvio ----------------
   const startMenu = document.getElementById('start-menu');
   const btnStart = document.getElementById('btn-start');
@@ -883,14 +898,15 @@
 
   views.reminders = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const reminders = await api('/reminders');
+    const reminders = (await api('/reminders')).filter(onlyFilter(opts));
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
         <h2>Scadenze</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-reminder">+ Nuova scadenza</button></div>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-reminder">+ Nuova scadenza</button></div>
       </div>
     `));
+    wireBackToDossier(root, opts);
 
     root.querySelector('#new-reminder').addEventListener('click', () => {
       const form = reminderModal();
@@ -1076,14 +1092,15 @@
 
   views.ideas = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const ideas = await api('/ideas');
+    const ideas = (await api('/ideas')).filter(onlyFilter(opts));
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
         <h2>Note</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-idea">+ Nuova nota</button></div>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-idea">+ Nuova nota</button></div>
       </div>
     `));
+    wireBackToDossier(root, opts);
 
     root.querySelector('#new-idea').addEventListener('click', () => {
       const form = ideaModal();
@@ -1213,14 +1230,15 @@
   // (nessun trascinamento reale ancora — arriva in un secondo momento).
   views.projects = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const projects = await api('/projects');
+    const projects = (await api('/projects')).filter(onlyFilter(opts));
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
         <h2>Progetti</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-project">+ Nuovo progetto</button></div>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-project">+ Nuovo progetto</button></div>
       </div>
     `));
+    wireBackToDossier(root, opts);
 
     root.querySelector('#new-project').addEventListener('click', () => {
       const form = projectModal();
@@ -1532,11 +1550,12 @@
 
   views.vault = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const entries = await api('/vault');
+    const entries = (await api('/vault')).filter(onlyFilter(opts));
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
         <h2>Vault</h2>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}</div>
       </div>
       <p class="card-sub">L'import CSV riconosce colonne come site/name/title, username/login/email, password, url, notes.</p>
       <div class="vault-toolbar">
@@ -1547,6 +1566,7 @@
         <button class="btn btn-primary" id="new-vault">+ Nuova voce</button>
       </div>
     `));
+    wireBackToDossier(root, opts);
 
     root.querySelector('#csv-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -1700,6 +1720,52 @@
     una_tantum: 'Una tantum',
   };
 
+  // Passo di avanzamento per ciascuna cadenza di addebito: il giorno/mese e'
+  // solo un riferimento nel calendario (es. "e' partito il 15 marzo"), la
+  // cadenza vera resta quella scelta in "Frequenza di addebito" — un
+  // abbonamento mensile o settimanale non diventa annuale solo perche' il
+  // rinnovo si esprime come giorno+mese invece di una data con l'anno.
+  const BILLING_STEP = {
+    settimanale: { unit: 'days', amount: 7 },
+    mensile: { unit: 'months', amount: 1 },
+    trimestrale: { unit: 'months', amount: 3 },
+    semestrale: { unit: 'months', amount: 6 },
+    annuale: { unit: 'months', amount: 12 },
+  };
+  // Ricalcola la data da zero a ogni passo invece di sommare mese dopo mese
+  // sulla stessa istanza: altrimenti un giorno che non esiste in un mese
+  // intermedio (es. 31 a settembre, che Date normalizza a 1 ottobre) trascina
+  // la ricorrenza su un giorno diverso per tutte le occorrenze successive.
+  function monthlyOccurrence(anchorYear, anchorMonth0, offsetMonths, day) {
+    const total = anchorYear * 12 + anchorMonth0 + offsetMonths;
+    return new Date(Math.floor(total / 12), ((total % 12) + 12) % 12, day);
+  }
+  // Prossima occorrenza a partire da giorno+mese: si parte da un'occorrenza
+  // dell'anno scorso e si avanza di un passo alla volta (secondo la cadenza)
+  // finche' non si trova la prima data non ancora passata. Senza una cadenza
+  // riconosciuta (non specificata, o "una tantum") si assume annuale, l'unica
+  // assunzione ragionevole senza altra informazione.
+  function nextRenewalDate(day, month, frequency) {
+    if (!day || !month) return null;
+    const step = BILLING_STEP[frequency] || BILLING_STEP.annuale;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (step.unit === 'days') {
+      let candidate = new Date(today.getFullYear() - 1, month - 1, day);
+      while (candidate < today) candidate.setDate(candidate.getDate() + step.amount);
+      return candidate;
+    }
+    const anchorYear = today.getFullYear() - 1;
+    const anchorMonth0 = month - 1;
+    let offset = 0;
+    let candidate = monthlyOccurrence(anchorYear, anchorMonth0, offset, day);
+    while (candidate < today) {
+      offset += step.amount;
+      candidate = monthlyOccurrence(anchorYear, anchorMonth0, offset, day);
+    }
+    return candidate;
+  }
+
   function accountModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
@@ -1724,7 +1790,20 @@
           </select>
         </div>
         <div class="form-row"><label>Importo</label><input type="number" name="amount" step="0.01" min="0" placeholder="es. 9.99" /></div>
-        <div class="form-row"><label>Data di rinnovo/scadenza</label><input type="date" name="renewal_date" /></div>
+        <div class="form-row"><label>Data di inizio (opzionale)</label><input type="date" name="start_date" /></div>
+        <div class="form-row">
+          <label>Rinnovo (giorno e mese di riferimento, si ripete secondo la frequenza scelta sopra)</label>
+          <div style="display:flex;gap:8px">
+            <select name="renewal_day" style="flex:1">
+              <option value="">Giorno</option>
+              ${Array.from({ length: 31 }, (_, i) => i + 1).map((d) => `<option value="${d}">${d}</option>`).join('')}
+            </select>
+            <select name="renewal_month" style="flex:2">
+              <option value="">Mese</option>
+              ${MONTH_LABELS.map((m, i) => `<option value="${i + 1}">${esc(m)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
         <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
         <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
         <div class="form-actions">
@@ -1748,7 +1827,9 @@
       form.payment_method.value = existing.payment_method || '';
       form.billing_frequency.value = existing.billing_frequency || '';
       form.amount.value = existing.amount != null ? existing.amount : '';
-      form.renewal_date.value = existing.renewal_date ? existing.renewal_date.slice(0, 10) : '';
+      form.start_date.value = existing.start_date ? existing.start_date.slice(0, 10) : '';
+      form.renewal_day.value = existing.renewal_day || '';
+      form.renewal_month.value = existing.renewal_month || '';
       form.notes.value = existing.notes;
       form.tags.value = (existing.tags || []).join(', ');
     }
@@ -1799,14 +1880,15 @@
 
   views.accounts = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const accounts = await api('/accounts');
+    const accounts = (await api('/accounts')).filter(onlyFilter(opts));
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
         <h2>Abbonamenti</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-account">+ Nuovo abbonamento</button></div>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-account">+ Nuovo abbonamento</button></div>
       </div>
     `));
+    wireBackToDossier(root, opts);
 
     function accountPayload(form) {
       return {
@@ -1818,7 +1900,9 @@
         payment_method: form.payment_method.value,
         billing_frequency: form.billing_frequency.value,
         amount: form.amount.value === '' ? null : form.amount.value,
-        renewal_date: form.renewal_date.value || null,
+        start_date: form.start_date.value || null,
+        renewal_day: form.renewal_day.value || null,
+        renewal_month: form.renewal_month.value || null,
         notes: form.notes.value,
         tags: parseTags(form),
       };
@@ -1840,9 +1924,41 @@
       return;
     }
 
+    // Prossimo rinnovo in assoluto tra tutti gli abbonamenti, per la vista
+    // riassuntiva in cima. L'ordine della griglia sotto segue lo stesso
+    // criterio: chi rinnova prima compare prima. Non ha senso quando si sta
+    // gia' guardando un solo abbonamento arrivando da una cartella.
+    if (!opts.only) {
+      const withRenewal = accounts
+        .map((a) => ({ a, next: nextRenewalDate(a.renewal_day, a.renewal_month, a.billing_frequency) }))
+        .filter((x) => x.next);
+      withRenewal.sort((x, y) => x.next - y.next);
+      if (withRenewal.length) {
+        const soonest = withRenewal[0];
+        const days = daysUntil(soonest.next.toISOString().slice(0, 10));
+        const dayLabel = days === 0 ? 'oggi' : days === 1 ? 'domani' : `tra ${days} giorni`;
+        root.appendChild(el(`
+          <div class="section-block" style="margin-bottom:14px">
+            <p class="card-sub" style="margin-bottom:4px">Prossimo rinnovo</p>
+            <p class="card-title" style="font-size:1rem">${esc(soonest.a.service)} — ${soonest.next.getDate()} ${esc(MONTH_LABELS[soonest.next.getMonth()])} (${dayLabel})</p>
+          </div>
+        `));
+      }
+      const renewalOrder = new Map(withRenewal.map((x, i) => [x.a.id, i]));
+      accounts.sort((a, b) => {
+        const ra = renewalOrder.has(a.id) ? renewalOrder.get(a.id) : Infinity;
+        const rb = renewalOrder.has(b.id) ? renewalOrder.get(b.id) : Infinity;
+        return ra - rb;
+      });
+    }
+
     const grid = el('<div class="grid"></div>');
     accounts.forEach((a) => {
       const isCartaceo = a.type === 'cartaceo';
+      const next = nextRenewalDate(a.renewal_day, a.renewal_month, a.billing_frequency);
+      const renewalLabel = next
+        ? `${a.renewal_day} ${MONTH_LABELS[a.renewal_month - 1]} (tra ${daysUntil(next.toISOString().slice(0, 10))} giorni)`
+        : '';
       const card = el(`
         <div class="card">
           <span class="tag tag-neutral" style="width:fit-content">${isCartaceo ? 'Cartaceo' : 'Digitale'}</span>
@@ -1853,7 +1969,8 @@
           ${a.billing_frequency || a.amount != null
             ? `<p class="card-sub">${a.billing_frequency ? esc(BILLING_LABELS[a.billing_frequency] || a.billing_frequency) : ''}${a.billing_frequency && a.amount != null ? ' · ' : ''}${a.amount != null ? fmtMoney(a.amount) : ''}</p>`
             : ''}
-          ${a.renewal_date ? `<p class="card-sub">Rinnovo: ${fmtDate(a.renewal_date)}</p>` : ''}
+          ${a.start_date ? `<p class="card-sub">Inizio: ${fmtDate(a.start_date)}</p>` : ''}
+          ${renewalLabel ? `<p class="card-sub">Rinnovo: ${esc(renewalLabel)}</p>` : ''}
           ${a.vaultEntry ? `<p class="card-sub">Credenziali: ${esc(a.vaultEntry.site)}${a.vaultEntry.username ? ' · ' + esc(a.vaultEntry.username) : ''}</p>` : ''}
           <div class="tag-row">${(a.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-actions">
@@ -1932,7 +2049,8 @@
 
   views.drive = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
-    const [docs, dossiers] = await Promise.all([api('/drive'), api('/dossiers')]);
+    const [docsAll, dossiers] = await Promise.all([api('/drive'), api('/dossiers')]);
+    const docs = docsAll.filter(onlyFilter(opts));
     // Documento -> cartelle a cui e' collegato (di norma una sola, il menu a
     // tendina tratta il collegamento come singolo anche se il modello dati
     // sotto permetterebbe piu' cartelle per lo stesso elemento).
@@ -1946,9 +2064,10 @@
     root.appendChild(el(`
       <div class="view-header">
         <h2>Drive</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-doc">+ Carica documento</button></div>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-doc">+ Carica documento</button></div>
       </div>
     `));
+    wireBackToDossier(root, opts);
 
     root.querySelector('#new-doc').addEventListener('click', () => {
       const form = el(`
@@ -2155,7 +2274,7 @@
         `);
         icon.addEventListener('click', (e) => {
           if (e.target.closest('[data-unlink]')) return;
-          if (view) render(view, { highlight: item.id });
+          if (view) render(view, { only: item.id, fromDossier: d.id });
         });
         icon.querySelector('[data-unlink]').addEventListener('click', async (e) => {
           e.stopPropagation();

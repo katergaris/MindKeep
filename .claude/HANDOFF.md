@@ -207,6 +207,46 @@ Altro giro di feedback dall'uso reale, dopo il giro di bug fix del 29/08:
   flex/grid si restringano davvero sotto la dimensione del contenuto).
 - Verificato tutto con Playwright reale (server isolato, DB temporaneo).
 
+## Sessione 30/08/2026 (seconda parte): taskbar, abbonamenti, cartelle
+
+- **Bug grafico: la barra Windows in basso sembrava assente** — la classe
+  `.raised` era referenziata in `index.html` (taskbar, pulsanti, menu Avvio,
+  finestre) e in `wm.js` ma non era mai stata definita in `style.css`. Il
+  contenitore `.taskbar` restava percio' trasparente (i singoli pulsanti si
+  vedevano perche' hanno gia' il loro sfondo, ma la barra attorno no).
+  Aggiunta come utility class in cima al foglio, cosi' le regole piu'
+  specifiche gia' esistenti (`.win-frame`, `.taskbar-start`, ecc.) continuano
+  a vincere dov'erano gia' definite, e `.raised` riempie solo il vuoto per chi
+  non aveva un proprio sfondo (`.taskbar`, `.start-menu`).
+- **Abbonamenti**: nuovo campo opzionale "Data di inizio" (data vera, storica).
+  Il vecchio campo "Data di rinnovo/scadenza" (una data con anno) e' stato
+  sostituito da un riferimento giorno+mese (due `<select>`, niente anno):
+  la cadenza reale resta quella di "Frequenza di addebito" (settimanale...
+  annuale), non diventa annuale solo perche' si esprime senza anno — vedi
+  `BILLING_STEP`/`nextRenewalDate()` in `app.js` (duplicato lato server in
+  `search.js` per l'endpoint `/search/reminders/upcoming`, mai consumato dal
+  client ma tenuto coerente). Occhio se si ritocca: il calcolo ricrea la data
+  da zero a ogni passo invece di sommare mese dopo mese sulla stessa istanza,
+  altrimenti un giorno inesistente in un mese intermedio (es. 31 a settembre)
+  trascina la ricorrenza su un altro giorno per tutte le occorrenze dopo.
+  Migrazione `013_account_renewal_daymonth.js`: aggiunge `start_date`,
+  `renewal_day`, `renewal_month`, e travasa automaticamente giorno/mese da
+  chi aveva gia' un `renewal_date` impostato (colonna lasciata in tabella,
+  non piu' scritta dai form). La vista Abbonamenti mostra un riquadro
+  "Prossimo rinnovo" in cima (il piu' vicino tra tutti) e ordina la griglia
+  di conseguenza.
+- **Cartelle: aprire un elemento collegato mostrava l'intero elenco invece
+  del solo elemento.** Ogni vista raggiungibile da una cartella (Note,
+  Progetti, Vault, Abbonamenti, Drive, Scadenze) accetta ora `opts.only`
+  (filtra alla sola voce) e `opts.fromDossier` (mostra un bottone "← Torna
+  alla cartella" che riapre `dossiers` gia' dentro quella cartella — stesso
+  meccanismo che il campo `highlight` di quella vista gia' usava per
+  drillare subito nel fascicolo, non serve altro). Helper condivisi
+  `onlyFilter()`/`backToDossierButtonHtml()`/`wireBackToDossier()` vicino a
+  `TYPE_TO_VIEW`. La finestra resta la stessa singleton di sempre (nessuna
+  nuova finestra "dettaglio"): cambia solo cosa viene mostrato dentro.
+- Verificato tutto con Playwright reale (server isolato, DB temporaneo).
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più

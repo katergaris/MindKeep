@@ -26,6 +26,15 @@ function parseVaultEntryId(raw) {
   return Number.isInteger(n) ? n : null;
 }
 
+// Giorno/mese del rinnovo periodico: fuori range o non numerico diventa
+// NULL invece di salvare un valore senza senso (es. giorno 45).
+function parseDayMonth(raw, max) {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === '') return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isInteger(n) && n >= 1 && n <= max ? n : null;
+}
+
 function serialize(row) {
   const { vault_site, vault_username, vault_type, ...account } = row;
   return {
@@ -58,12 +67,15 @@ function getById(id) {
 router.post('/', (req, res) => {
   const {
     service, type = 'digitale', email = '', plan = '', location = '', payment_method = '',
-    renewal_date = null, notes = '', tags = [], billing_frequency = '', amount = null, vault_entry_id = null,
+    start_date = null, renewal_day = null, renewal_month = null,
+    notes = '', tags = [], billing_frequency = '', amount = null, vault_entry_id = null,
   } = req.body;
   if (!service) return res.status(400).json({ error: 'Il servizio e\' obbligatorio' });
   const finalType = VALID_TYPES.includes(type) ? type : 'digitale';
   const finalBilling = VALID_BILLING.includes(billing_frequency) ? billing_frequency : '';
   const finalAmount = parseAmount(amount);
+  const finalRenewalDay = parseDayMonth(renewal_day, 31);
+  const finalRenewalMonth = parseDayMonth(renewal_month, 12);
 
   let finalVaultEntryId = parseVaultEntryId(vault_entry_id);
   if (finalVaultEntryId != null) {
@@ -73,22 +85,26 @@ router.post('/', (req, res) => {
 
   const info = db
     .prepare(
-      'INSERT INTO accounts (service, type, email, plan, location, payment_method, renewal_date, notes, tags, billing_frequency, amount, vault_entry_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO accounts (service, type, email, plan, location, payment_method, start_date, renewal_day, renewal_month, notes, tags, billing_frequency, amount, vault_entry_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
-    .run(service, finalType, email, plan, location, payment_method, renewal_date, notes, JSON.stringify(tags), finalBilling, finalAmount, finalVaultEntryId);
+    .run(service, finalType, email, plan, location, payment_method, start_date || null, finalRenewalDay, finalRenewalMonth, notes, JSON.stringify(tags), finalBilling, finalAmount, finalVaultEntryId);
   res.status(201).json(serialize(getById(info.lastInsertRowid)));
 });
 
 router.put('/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM accounts WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Account non trovato' });
-  const { service, type, email, plan, location, payment_method, renewal_date, notes, tags, billing_frequency, amount, vault_entry_id } = req.body;
+  const { service, type, email, plan, location, payment_method, start_date, renewal_day, renewal_month, notes, tags, billing_frequency, amount, vault_entry_id } = req.body;
   const finalType = type && VALID_TYPES.includes(type) ? type : existing.type;
   const finalBilling = billing_frequency !== undefined
     ? (VALID_BILLING.includes(billing_frequency) ? billing_frequency : '')
     : existing.billing_frequency;
   const parsedAmount = parseAmount(amount);
   const finalAmount = parsedAmount !== undefined ? parsedAmount : existing.amount;
+  const parsedRenewalDay = parseDayMonth(renewal_day, 31);
+  const parsedRenewalMonth = parseDayMonth(renewal_month, 12);
+  const finalRenewalDay = renewal_day !== undefined ? parsedRenewalDay : existing.renewal_day;
+  const finalRenewalMonth = renewal_month !== undefined ? parsedRenewalMonth : existing.renewal_month;
 
   let finalVaultEntryId = existing.vault_entry_id;
   const parsedVaultEntryId = parseVaultEntryId(vault_entry_id);
@@ -101,7 +117,7 @@ router.put('/:id', (req, res) => {
   }
 
   db.prepare(
-    "UPDATE accounts SET service = ?, type = ?, email = ?, plan = ?, location = ?, payment_method = ?, renewal_date = ?, notes = ?, tags = ?, billing_frequency = ?, amount = ?, vault_entry_id = ?, updated_at = datetime('now') WHERE id = ?"
+    "UPDATE accounts SET service = ?, type = ?, email = ?, plan = ?, location = ?, payment_method = ?, start_date = ?, renewal_day = ?, renewal_month = ?, notes = ?, tags = ?, billing_frequency = ?, amount = ?, vault_entry_id = ?, updated_at = datetime('now') WHERE id = ?"
   ).run(
     service ?? existing.service,
     finalType,
@@ -109,7 +125,9 @@ router.put('/:id', (req, res) => {
     plan ?? existing.plan,
     location ?? existing.location,
     payment_method ?? existing.payment_method,
-    renewal_date !== undefined ? renewal_date : existing.renewal_date,
+    start_date !== undefined ? (start_date || null) : existing.start_date,
+    finalRenewalDay,
+    finalRenewalMonth,
     notes ?? existing.notes,
     JSON.stringify(tags ?? JSON.parse(existing.tags || '[]')),
     finalBilling,

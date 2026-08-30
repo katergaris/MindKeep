@@ -73,6 +73,17 @@ html, body {
 
 .hidden { display: none !important; }
 
+/* Chrome Windows 95 "in rilievo": usata su taskbar/menu Avvio/finestre/
+   pulsanti taskbar. Dove l'elemento definisce gia' il proprio sfondo+bevel
+   (es. .win-frame, .taskbar-start) questa regola, messa qui in cima, viene
+   sovrascritta da quella piu' specifica piu' sotto nel foglio — serve solo a
+   dare lo sfondo grigio mancante a chi non lo definiva affatto (.taskbar,
+   .start-menu), che altrimenti restava trasparente sullo sfondo del desktop. */
+.raised {
+  background: var(--win-face);
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+}
+
 a { color: var(--accent-soft); }
 a:hover { color: var(--accent); }
 
