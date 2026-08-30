@@ -4,7 +4,32 @@ Se stai leggendo questo file all'inizio di una nuova chat: questo documento ti d
 tutto il contesto per continuare esattamente da dove si era interrotto. Leggi
 anche i file collegati sotto, poi procedi.
 
-## Nota sul branch (30/08/2026)
+## Leggi prima questo: stato al 30/08/2026, fine sessione
+
+- **Branch**: si lavora su `main` (non piu' `redesign-retro-ui`, mergiato —
+  vedi nota sotto). Ultimo commit pushato: `7f9ec7a`. Nessuna PR in sospeso.
+- **Il redesign Windows 95 (Fasi 1-4) e' completo da tempo**; da allora si
+  sono susseguiti tanti piccoli giri di bug fix/rifiniture dall'uso reale
+  dell'utente — vedi le sezioni "Sessione 30/08/2026 (N-esima parte)" sotto,
+  in ordine cronologico, per il dettaglio di ciascuno. Non c'e' piu' un
+  piano/roadmap residuo da seguire: nuovo lavoro = nuove richieste esplicite
+  dell'utente.
+- **Cosa fare appena riprendi, PRIMA di aggiungere altro**:
+  1. L'utente deve ancora aggiornare il suo Raspberry Pi con gli ultimi
+     commit (vedi "ottava parte" sotto: `git pull` poi `./setup.sh` o
+     `docker compose up -d --build`). Se torna a parlarne, la schermata di
+     login ora mostra "versione X.Y.Z · [hash commit]" in basso — usalo per
+     confermare che il container sta girando sull'ultimo codice prima di
+     indagare oltre su qualsiasi bug segnalato "dal vivo".
+  2. **Notifiche push da riverificare**: l'utente ha segnalato una notifica
+     generica (icona di Chrome, testo placeholder invece del contenuto
+     vero) che "capita sempre". E' stato applicato un fix (corpo mai vuoto,
+     tag per-scadenza — vedi "ottava parte") ma NON confermato risolutivo:
+     probabile che il Pi girasse ancora su una build vecchia. Prossima
+     volta che se ne riparla, verificare prima il punto 1, poi ritestare.
+  3. Non risultano altre richieste esplicite in sospeso a fine sessione.
+
+## Nota sul branch
 
 `redesign-retro-ui` e' stato **mergiato in `main`** (commit `09b261e`, non da
 questa sessione — trovato gia' fatto). Da questo punto in poi tutti i commit
@@ -457,18 +482,12 @@ commit di questa sessione.
 
 ## Prossimi passi
 
-Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più
-"lavoro di redesign", è messa in produzione:
-- **Verifica reale delle notifiche push su HTTPS**: funzionano su
-  `localhost` in sviluppo ma vanno riverificate sul LAN IP del Raspberry
-  Pi (probabilmente non basta, serve il certificato TLS vero una volta
-  spostato sul dominio Aruba) prima di considerarle utilizzabili davvero
-  dall'utente.
-- **Apertura della PR** verso `main` quando l'utente lo riterrà pronto:
-  https://github.com/katergaris/MindKeep/pull/new/redesign-retro-ui
-  (branch già pushato, nessuna PR aperta finora).
-- Da qui in poi, nuovo lavoro = nuove richieste dell'utente, non voci
-  residue di un piano — non presumere altro da fare senza chiedere.
+Tutte le fasi pianificate (1-4) del redesign sono complete da tempo e gia'
+in produzione (mergiate in `main`, nessuna PR in sospeso). Quello che resta
+sono le voci diagnostiche gia' riassunte in cima a questo file ("Leggi
+prima questo") — non ripeterle qui, tenerle aggiornate li'. Da qui in poi,
+nuovo lavoro = nuove richieste esplicite dell'utente, non voci residue di
+un piano — non presumere altro da fare senza chiedere.
 
 ## Limiti noti della Fase 1 (non bloccanti, ma da tenere a mente)
 
