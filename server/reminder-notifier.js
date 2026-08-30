@@ -27,7 +27,14 @@ async function checkDueReminders() {
   const markNotified = db.prepare("UPDATE reminders SET notified_at = datetime('now') WHERE id = ?");
   for (const r of due) {
     try {
-      await push.sendToAll({ title: 'Scadenza: ' + r.label, body: r.notes || '', url: '/' });
+      // Corpo mai vuoto: alcuni browser/OS mostrano una notifica generica
+      // "a scatola chiusa" (icona/testo di sistema invece dei nostri) quando
+      // il payload ha poco o nessun contenuto testuale. Senza note, si mostra
+      // almeno la data/ora della scadenza invece di una stringa vuota.
+      const dateLabel = new Date(r.date).toLocaleDateString('it-IT') + (r.time ? ` alle ${r.time}` : '');
+      // Tag per-scadenza: piu' notifiche non si sovrascrivono/collassano a
+      // vicenda sotto lo stesso slot.
+      await push.sendToAll({ title: 'Scadenza: ' + r.label, body: r.notes || dateLabel, url: '/', tag: 'reminder-' + r.id });
     } catch (err) {
       console.error('Notifica scadenza fallita:', err.message);
     }

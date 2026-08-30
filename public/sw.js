@@ -37,6 +37,14 @@ self.addEventListener('activate', (event) => {
 });
 
 // --- Notifiche push (scadenze) ---
+// Il browser MOSTRA SEMPRE una notifica per ogni push ricevuto (anche
+// generica, con l'icona del browser invece della nostra) se questo handler
+// non ne mostra una propria in tempo, o se lancia un errore prima di
+// arrivare a showNotification(): da qui l'esito segnalato dall'utente
+// ("si vede solo Mindkeep con l'icona di Chrome") quando il payload non
+// arriva o non si legge come previsto. Il try/catch sotto copre il caso di
+// payload non-JSON, ma un body vuoto puo' comunque produrre una notifica
+// dall'aspetto "vuoto": vedi il fallback in reminder-notifier.js.
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { /* payload non-JSON: ignorato, resta {} */ }
@@ -46,6 +54,7 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
+      tag: data.tag || undefined,
       data: { url: data.url || '/' },
     })
   );
