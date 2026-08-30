@@ -282,6 +282,24 @@ cadenza e non sono mai la data da mostrare direttamente.
   cadenza, valori riletti correttamente in modifica, calcolo del prossimo
   rinnovo corretto per tutte e quattro le cadenze.
 
+## Sessione 30/08/2026 (quarta parte): orologio taskbar in tema + data
+
+L'utente ha mostrato uno screenshot di un vero orologio taskbar Windows
+(sfondo grigio incassato, niente icona accanto — esplicitamente chiesto di
+non aggiungerla) e chiesto anche la data, assente nell'originale.
+
+- `.taskbar-clock` aveva `background: var(--surface)` (bianco): cambiato in
+  `var(--win-face)` (grigio, come il resto della barra). Il bevel incassato
+  c'era gia' (era corretto, solo lo sfondo stonava).
+- Aggiunta la data su una seconda riga sotto l'ora (`tickClock()` in
+  `wm.js` ora costruisce due `<span>`, `.taskbar-clock-time`/
+  `.taskbar-clock-date`), formato `it-IT` coerente con `fmtDate()` altrove.
+- Notata e sistemata anche `.sunken`: come `.raised` la settimana scorsa,
+  era referenziata in `index.html` (proprio su `#taskbar-clock`) ma mai
+  definita in `style.css` — non causava un bug visibile qui perche'
+  `.taskbar-clock` ha gia' il proprio bevel esplicito, ma l'ho definita
+  comunque (controparte di `.raised`) per non lasciare la stessa lacuna.
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più

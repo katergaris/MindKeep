@@ -289,7 +289,9 @@ window.MindkeepWM = (() => {
   function tickClock() {
     if (!taskbarClock) return;
     const now = new Date();
-    taskbarClock.textContent = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const time = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const date = now.toLocaleDateString('it-IT');
+    taskbarClock.innerHTML = `<span class="taskbar-clock-time">${time}</span><span class="taskbar-clock-date">${date}</span>`;
   }
   tickClock();
   setInterval(tickClock, 30000);
