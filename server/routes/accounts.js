@@ -74,7 +74,9 @@ router.post('/', (req, res) => {
   const finalType = VALID_TYPES.includes(type) ? type : 'digitale';
   const finalBilling = VALID_BILLING.includes(billing_frequency) ? billing_frequency : '';
   const finalAmount = parseAmount(amount);
-  const finalRenewalDay = parseDayMonth(renewal_day, 31);
+  // "renewal_day" e' un giorno della settimana (1-7) se la cadenza e'
+  // settimanale, altrimenti un giorno del mese (1-31).
+  const finalRenewalDay = parseDayMonth(renewal_day, finalBilling === 'settimanale' ? 7 : 31);
   const finalRenewalMonth = parseDayMonth(renewal_month, 12);
 
   let finalVaultEntryId = parseVaultEntryId(vault_entry_id);
@@ -101,7 +103,7 @@ router.put('/:id', (req, res) => {
     : existing.billing_frequency;
   const parsedAmount = parseAmount(amount);
   const finalAmount = parsedAmount !== undefined ? parsedAmount : existing.amount;
-  const parsedRenewalDay = parseDayMonth(renewal_day, 31);
+  const parsedRenewalDay = parseDayMonth(renewal_day, finalBilling === 'settimanale' ? 7 : 31);
   const parsedRenewalMonth = parseDayMonth(renewal_month, 12);
   const finalRenewalDay = renewal_day !== undefined ? parsedRenewalDay : existing.renewal_day;
   const finalRenewalMonth = renewal_month !== undefined ? parsedRenewalMonth : existing.renewal_month;

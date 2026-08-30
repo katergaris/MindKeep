@@ -969,6 +969,7 @@
   // quella data precompilata; click su una voce = modifica.
   const MONTH_LABELS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
   const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+  const WEEKDAY_LABELS_FULL = ['Lunedi\'', 'Martedi\'', 'Mercoledi\'', 'Giovedi\'', 'Venerdi\'', 'Sabato', 'Domenica'];
 
   views.calendar = async (root, opts = {}) => {
     const reminders = await api('/reminders');
@@ -1720,18 +1721,13 @@
     una_tantum: 'Una tantum',
   };
 
-  // Passo di avanzamento per ciascuna cadenza di addebito: il giorno/mese e'
-  // solo un riferimento nel calendario (es. "e' partito il 15 marzo"), la
-  // cadenza vera resta quella scelta in "Frequenza di addebito" — un
-  // abbonamento mensile o settimanale non diventa annuale solo perche' il
-  // rinnovo si esprime come giorno+mese invece di una data con l'anno.
-  const BILLING_STEP = {
-    settimanale: { unit: 'days', amount: 7 },
-    mensile: { unit: 'months', amount: 1 },
-    trimestrale: { unit: 'months', amount: 3 },
-    semestrale: { unit: 'months', amount: 6 },
-    annuale: { unit: 'months', amount: 12 },
-  };
+  // Cosa serve per individuare il rinnovo dipende dalla cadenza: settimanale
+  // vuole solo il giorno della settimana, mensile solo il giorno del mese,
+  // trimestrale/semestrale/annuale vogliono giorno+mese di riferimento (per
+  // sapere in quale dei periodi dell'anno cade). "day"/"month" hanno quindi
+  // un significato diverso a seconda di "frequency" — vedi il form in
+  // accountModal() per quali campi si vedono in ciascun caso.
+  const BILLING_STEP_MONTHS = { trimestrale: 3, semestrale: 6, annuale: 12 };
   // Ricalcola la data da zero a ogni passo invece di sommare mese dopo mese
   // sulla stessa istanza: altrimenti un giorno che non esiste in un mese
   // intermedio (es. 31 a settembre, che Date normalizza a 1 ottobre) trascina
@@ -1740,27 +1736,34 @@
     const total = anchorYear * 12 + anchorMonth0 + offsetMonths;
     return new Date(Math.floor(total / 12), ((total % 12) + 12) % 12, day);
   }
-  // Prossima occorrenza a partire da giorno+mese: si parte da un'occorrenza
-  // dell'anno scorso e si avanza di un passo alla volta (secondo la cadenza)
-  // finche' non si trova la prima data non ancora passata. Senza una cadenza
-  // riconosciuta (non specificata, o "una tantum") si assume annuale, l'unica
-  // assunzione ragionevole senza altra informazione.
   function nextRenewalDate(day, month, frequency) {
-    if (!day || !month) return null;
-    const step = BILLING_STEP[frequency] || BILLING_STEP.annuale;
+    if (!day) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (step.unit === 'days') {
-      let candidate = new Date(today.getFullYear() - 1, month - 1, day);
-      while (candidate < today) candidate.setDate(candidate.getDate() + step.amount);
+
+    if (frequency === 'settimanale') {
+      // day: 1 = Lunedi' ... 7 = Domenica (stessa convenzione di WEEKDAY_LABELS).
+      const todayIso = ((today.getDay() + 6) % 7) + 1;
+      const candidate = new Date(today);
+      candidate.setDate(candidate.getDate() + ((day - todayIso + 7) % 7));
       return candidate;
     }
+    if (frequency === 'mensile') {
+      // day: giorno del mese, nessun mese di riferimento necessario.
+      let candidate = new Date(today.getFullYear(), today.getMonth(), day);
+      if (candidate < today) candidate = new Date(today.getFullYear(), today.getMonth() + 1, day);
+      return candidate;
+    }
+    // trimestrale / semestrale / annuale (o cadenza non riconosciuta, trattata
+    // come annuale in assenza di altra informazione): serve anche il mese.
+    if (!month) return null;
+    const stepMonths = BILLING_STEP_MONTHS[frequency] || 12;
     const anchorYear = today.getFullYear() - 1;
     const anchorMonth0 = month - 1;
     let offset = 0;
     let candidate = monthlyOccurrence(anchorYear, anchorMonth0, offset, day);
     while (candidate < today) {
-      offset += step.amount;
+      offset += stepMonths;
       candidate = monthlyOccurrence(anchorYear, anchorMonth0, offset, day);
     }
     return candidate;
@@ -1791,8 +1794,22 @@
         </div>
         <div class="form-row"><label>Importo</label><input type="number" name="amount" step="0.01" min="0" placeholder="es. 9.99" /></div>
         <div class="form-row"><label>Data di inizio (opzionale)</label><input type="date" name="start_date" /></div>
-        <div class="form-row">
-          <label>Rinnovo (giorno e mese di riferimento, si ripete secondo la frequenza scelta sopra)</label>
+        <div data-billing-fields="settimanale" class="form-row">
+          <label>Rinnovo: giorno della settimana</label>
+          <select name="renewal_weekday">
+            <option value="">—</option>
+            ${WEEKDAY_LABELS_FULL.map((w, i) => `<option value="${i + 1}">${esc(w)}</option>`).join('')}
+          </select>
+        </div>
+        <div data-billing-fields="mensile" class="form-row">
+          <label>Rinnovo: giorno del mese</label>
+          <select name="renewal_monthday">
+            <option value="">—</option>
+            ${Array.from({ length: 31 }, (_, i) => i + 1).map((d) => `<option value="${d}">${d}</option>`).join('')}
+          </select>
+        </div>
+        <div data-billing-fields="trimestrale semestrale annuale" class="form-row">
+          <label>Rinnovo: giorno e mese di riferimento</label>
           <div style="display:flex;gap:8px">
             <select name="renewal_day" style="flex:1">
               <option value="">Giorno</option>
@@ -1817,7 +1834,13 @@
         group.classList.toggle('hidden', group.dataset.typeFields !== form.type.value);
       });
     }
+    function syncBillingFields() {
+      form.querySelectorAll('[data-billing-fields]').forEach((group) => {
+        group.classList.toggle('hidden', !group.dataset.billingFields.split(' ').includes(form.billing_frequency.value));
+      });
+    }
     form.type.addEventListener('change', syncTypeFields);
+    form.billing_frequency.addEventListener('change', syncBillingFields);
     if (existing) {
       form.service.value = existing.service;
       form.type.value = existing.type || 'digitale';
@@ -1828,12 +1851,16 @@
       form.billing_frequency.value = existing.billing_frequency || '';
       form.amount.value = existing.amount != null ? existing.amount : '';
       form.start_date.value = existing.start_date ? existing.start_date.slice(0, 10) : '';
-      form.renewal_day.value = existing.renewal_day || '';
-      form.renewal_month.value = existing.renewal_month || '';
+      // "day" ha un significato diverso a seconda della frequenza: si ripopola
+      // solo il campo che corrisponde a quella gia' salvata.
+      if (existing.billing_frequency === 'settimanale') form.renewal_weekday.value = existing.renewal_day || '';
+      else if (existing.billing_frequency === 'mensile') form.renewal_monthday.value = existing.renewal_day || '';
+      else { form.renewal_day.value = existing.renewal_day || ''; form.renewal_month.value = existing.renewal_month || ''; }
       form.notes.value = existing.notes;
       form.tags.value = (existing.tags || []).join(', ');
     }
     syncTypeFields();
+    syncBillingFields();
     return form;
   }
 
@@ -1890,6 +1917,14 @@
     `));
     wireBackToDossier(root, opts);
 
+    // "day"/"month" hanno un significato diverso a seconda della frequenza
+    // scelta (vedi accountModal): qui si sceglie quale campo del form leggere.
+    function renewalPayload(form) {
+      const freq = form.billing_frequency.value;
+      if (freq === 'settimanale') return { renewal_day: form.renewal_weekday.value || null, renewal_month: null };
+      if (freq === 'mensile') return { renewal_day: form.renewal_monthday.value || null, renewal_month: null };
+      return { renewal_day: form.renewal_day.value || null, renewal_month: form.renewal_month.value || null };
+    }
     function accountPayload(form) {
       return {
         service: form.service.value,
@@ -1901,8 +1936,7 @@
         billing_frequency: form.billing_frequency.value,
         amount: form.amount.value === '' ? null : form.amount.value,
         start_date: form.start_date.value || null,
-        renewal_day: form.renewal_day.value || null,
-        renewal_month: form.renewal_month.value || null,
+        ...renewalPayload(form),
         notes: form.notes.value,
         tags: parseTags(form),
       };
@@ -1956,8 +1990,11 @@
     accounts.forEach((a) => {
       const isCartaceo = a.type === 'cartaceo';
       const next = nextRenewalDate(a.renewal_day, a.renewal_month, a.billing_frequency);
+      // "renewal_day"/"renewal_month" hanno un significato diverso a seconda
+      // della frequenza (vedi nextRenewalDate): per mostrarli si usa sempre
+      // la prossima data vera e propria gia' calcolata, mai i campi grezzi.
       const renewalLabel = next
-        ? `${a.renewal_day} ${MONTH_LABELS[a.renewal_month - 1]} (tra ${daysUntil(next.toISOString().slice(0, 10))} giorni)`
+        ? `${next.getDate()} ${MONTH_LABELS[next.getMonth()]} (tra ${daysUntil(next.toISOString().slice(0, 10))} giorni)`
         : '';
       const card = el(`
         <div class="card">

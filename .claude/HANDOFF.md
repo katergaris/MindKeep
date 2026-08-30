@@ -247,6 +247,41 @@ Altro giro di feedback dall'uso reale, dopo il giro di bug fix del 29/08:
   nuova finestra "dettaglio"): cambia solo cosa viene mostrato dentro.
 - Verificato tutto con Playwright reale (server isolato, DB temporaneo).
 
+## Sessione 30/08/2026 (terza parte): rinnovo abbonamenti specifico per cadenza
+
+Correzione al lavoro sugli abbonamenti di poco prima nella stessa sessione:
+l'utente ha chiarito che il giorno+mese generico andava bene solo per
+trimestrale/semestrale/annuale, non per tutte le cadenze — mantengono
+"il carattere di essere con frequenze variabili dalla settimanale
+all'annuale", ognuna con il proprio dato di riferimento:
+
+- **Settimanale** → solo giorno della settimana (select `renewal_weekday`,
+  1=Lunedi'...7=Domenica, stessa convenzione di `WEEKDAY_LABELS` del
+  Calendario).
+- **Mensile** → solo giorno del mese (select `renewal_monthday`, 1-31).
+- **Trimestrale/semestrale/annuale** → giorno+mese di riferimento (invariato
+  dal giro precedente).
+
+Il form (`accountModal` in `app.js`) mostra/nasconde questi tre gruppi con
+`data-billing-fields` + `syncBillingFields()`, stesso pattern gia' usato per
+Digitale/Cartaceo (`data-type-fields`/`syncTypeFields()`). In salvataggio
+(`renewalPayload()` dentro `views.accounts`) si legge il campo giusto in base
+alla frequenza scelta e lo si manda sempre come `renewal_day`/`renewal_month`
+al server (colonne DB invariate dalla migrazione precedente, `renewal_month`
+resta NULL per settimanale/mensile). `nextRenewalDate()` (client, in
+`app.js`) e `nextOccurrence()` (server, in `search.js`) diramano per
+frequenza: settimanale cerca la prossima occorrenza di quel giorno ISO della
+settimana, mensile la prossima occorrenza di quel giorno del mese, le altre
+tre restano sul calcolo "ricrea la data da zero a ogni passo" gia' descritto
+sopra. **Occhio**: in ogni punto dove si mostra il rinnovo (card, riquadro
+"Prossimo rinnovo"), si usa sempre la data vera calcolata da `next`
+(`next.getDate()`/`next.getMonth()`), mai `a.renewal_day`/`a.renewal_month`
+grezzi — quei due campi hanno un significato diverso a seconda della
+cadenza e non sono mai la data da mostrare direttamente.
+- Verificato con Playwright reale: campi giusti mostrati per ciascuna
+  cadenza, valori riletti correttamente in modifica, calcolo del prossimo
+  rinnovo corretto per tutte e quattro le cadenze.
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più
