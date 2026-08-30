@@ -384,14 +384,14 @@ body.no-scroll { overflow: hidden; }
   padding: 0 6px calc(env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 5px;
   z-index: 90;
 }
-.taskbar-start, .taskbar-btn, .tasktn {
+.taskbar-start, .taskbar-btn, .taskbtn {
   display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
   background: var(--win-face); color: var(--text); font-size: 12px; white-space: nowrap;
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
   border: none; cursor: pointer;
 }
 .taskbar-start { font-weight: 700; }
-.taskbar-start.pressed, .taskbar-btn.pressed, .tasktn.pressed {
+.taskbar-start.pressed, .taskbar-btn.pressed, .taskbtn.pressed {
   box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
 }
 .taskbar-start-icon {
@@ -404,8 +404,9 @@ body.no-scroll { overflow: hidden; }
 }
 .taskbar-windows { flex: 1; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 .taskbar-windows::-webkit-scrollbar { display: none; }
-.tasktn { max-width: 160px; }
-.tasktn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.taskbtn { max-width: 160px; }
+.taskbtn-icon { display: inline-flex; flex: none; }
+.taskbtn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .taskbar-clock {
   flex: none; padding: 3px 10px; font-family: var(--font-mono);
   background: var(--win-face); box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
@@ -616,6 +617,17 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 .vs-actions .btn-icon .icon { width: 15px; height: 15px; }
 
 .doc-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+/* Riquadro icona a sinistra del nome file: mostra sempre l'estensione, mai
+   un'anteprima dell'immagine (che restava visibile in elenco senza aprire
+   nulla — segnalato dall'utente). L'immagine vera si vede solo aprendo
+   l'anteprima, gestita altrove da openDocumentPreview(). */
+.entry-doc { width: 40px; height: 40px; flex: none; }
+.entry-doc-clickable { cursor: pointer; }
+.entry-doc-ext {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  background: var(--surface); color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
+  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+}
 .doc-name { font-weight: 600; }
 .doc-original { color: var(--text-faint); font-size: 0.74rem; font-family: var(--font-mono); }
 .doc-meta { color: var(--text-muted); font-size: 0.78rem; }

@@ -2146,15 +2146,12 @@
     docs.forEach((d) => {
       const ext = (d.original_name.includes('.') ? d.original_name.split('.').pop() : '').toUpperCase().slice(0, 4);
       const previewable = PREVIEWABLE_MIME.has(d.mime);
-      const isImage = (d.mime || '').startsWith('image/');
       const linkedDossiers = docDossiers[d.id] || [];
       const row = el(`
         <div class="doc-row row-card">
           <div style="display:flex;gap:10px;align-items:center;min-width:0">
             <div class="entry-doc${previewable ? ' entry-doc-clickable' : ''}" style="margin-top:0;flex:none">
-              ${isImage
-                ? `<img class="entry-doc-thumb" src="/api/drive/${d.id}/view" alt="" />`
-                : `<span class="entry-doc-ext">${esc(ext || 'FILE')}</span>`}
+              <span class="entry-doc-ext">${esc(ext || 'FILE')}</span>
             </div>
             <div style="min-width:0">
               <div class="doc-name">${esc(d.display_name || d.original_name)}</div>

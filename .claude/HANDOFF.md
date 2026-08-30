@@ -300,6 +300,37 @@ non aggiungerla) e chiesto anche la data, assente nell'originale.
   `.taskbar-clock` ha gia' il proprio bevel esplicito, ma l'ho definita
   comunque (controparte di `.raised`) per non lasciare la stessa lacuna.
 
+## Sessione 30/08/2026 (quinta parte): immagini in Drive, audit classi CSS orfane
+
+L'utente ha segnalato che le immagini in Drive sfondavano il riquadro e ha
+chiesto di non mostrarle finche' non si aprono, e di verificare se lo stesso
+tipo di bug (classe usata in JS/HTML ma mai definita in CSS — gia' visto con
+`.raised` e `.sunken`) fosse presente altrove.
+
+- **Drive**: `.entry-doc`, `.entry-doc-thumb`, `.entry-doc-ext` non erano MAI
+  state definite in `style.css` — l'`<img>` per le immagini si vedeva a
+  dimensione naturale (poteva sfondare qualsiasi cosa) perche' non aveva
+  ne' un contenitore ne' vincoli di taglia. Risolto rimuovendo del tutto
+  l'anteprima eager nell'elenco: ora anche le immagini mostrano il badge
+  estensione (`.entry-doc-ext`, riquadro 40x40 con bevel incassato) come
+  qualsiasi altro file — l'immagine vera si vede solo aprendo l'anteprima
+  (`openDocumentPreview()`, gia' esistente, invariata).
+- **Audit sistematico**: script una tantum (non salvato, era solo per questa
+  verifica) che confronta ogni classe usata in `app.js`/`wm.js`/`index.html`
+  contro i selettori di `style.css`. Trovato un altro caso reale: i pulsanti
+  delle finestre aperte in taskbar venivano creati in `wm.js` con classe
+  `taskbtn`/`taskbtn-icon`/`taskbtn-label`, ma `style.css` definiva
+  `.tasktn`/`.tasktn-label` (manca una "b" — probabile refuso mai notato).
+  Risultato: quei pulsanti non avevano mai avuto `max-width` ne' l'ellissi
+  sul titolo lungo. Rinominato in style.css per far combaciare i nomi.
+  Altri scarti dell'audit (`.focused`, `.app`, `.preview-frame`,
+  `.vault-sheet-body`, `.win-btn-min/-max/-split`) sono marcatori di stato o
+  contenitori/ID gia' coperti altrove — non causano bug visibili, lasciati
+  cosi'.
+- Verificato con Playwright reale: riquadro icona Drive ora 40x40 con
+  l'estensione (non l'immagine), l'anteprima si apre comunque al click,
+  pulsanti taskbar delle finestre correttamente dimensionati.
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più
