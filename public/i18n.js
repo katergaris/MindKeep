@@ -57,6 +57,7 @@ window.MindkeepI18n = (() => {
       settings_language: 'Lingua',
       settings_language_hint: 'Solo su questo dispositivo.',
       version_label: 'versione {version}',
+      version_label_build: 'versione {version} · {build}',
 
       // Campi e azioni ripetuti in quasi ogni form/vista.
       field_title: 'Titolo',

@@ -635,13 +635,12 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
    segnalato dall'utente). L'immagine vera si vede solo aprendo l'anteprima,
    gestita altrove da openDocumentPreview(). */
 .entry-doc {
-  width: 40px; height: 40px; flex: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  background: var(--surface); box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+  width: 48px; height: 48px; flex: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
 }
 .entry-doc-clickable { cursor: pointer; }
-.entry-doc .icon { width: 17px; height: 17px; color: var(--text-muted); }
-.entry-doc-ext { color: var(--text-muted); font-size: 8px; font-weight: 700; letter-spacing: 0.02em; }
+.entry-doc .icon { width: 26px; height: 26px; color: var(--text-muted); }
+.entry-doc-ext { color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: 0.02em; }
 .doc-name { font-weight: 600; }
 .doc-original { color: var(--text-faint); font-size: 0.74rem; font-family: var(--font-mono); }
 .doc-meta { color: var(--text-muted); font-size: 0.78rem; }

@@ -123,6 +123,12 @@ fi
 PORT="$CANDIDATE_PORT"
 
 # --- 4. Avvia il container ---
+# Il commit corrente diventa la versione mostrata in app (schermata di
+# accesso): senza questo, un "up --build" rieseguito dopo aver scaricato
+# nuovo codice non aveva modo di dimostrare di aver preso davvero l'ultimo
+# aggiornamento invece di riusare un'immagine vecchia dalla cache.
+export GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo dev)"
+
 echo ""
 echo "Avvio Mindkeep (la prima volta può richiedere qualche minuto per scaricare e compilare le dipendenze)..."
 $COMPOSE up -d --build

@@ -47,10 +47,13 @@ app.use(
 
 // --- Health check (pubblico, usato da Docker e dallo script di setup) ---
 // "version" e' la versione applicativa (package.json), mostrata nella
-// schermata di accesso — prima mostrava lo sha del commit o "dev" quando
-// GIT_SHA non era impostato, poco leggibile per chi usa l'app.
+// schermata di accesso. "build" e' il commit da cui gira questa immagine
+// (passato da setup.sh/setup.ps1 a "docker compose up --build" — "dev" per
+// una build locale senza passarlo): serve a controllare a colpo d'occhio,
+// dopo un aggiornamento, se il container sta girando davvero sull'ultimo
+// codice invece di una build vecchia rimasta in cache.
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: require('../package.json').version });
+  res.json({ status: 'ok', version: require('../package.json').version, build: process.env.GIT_SHA || 'dev' });
 });
 
 // --- Autenticazione ---

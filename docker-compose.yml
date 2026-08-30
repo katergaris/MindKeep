@@ -1,6 +1,14 @@
 services:
   mindkeep:
-    build: .
+    build:
+      context: .
+      # Passato dagli script di setup (git rev-parse --short HEAD) cosi' la
+      # versione mostrata in app (schermata di accesso, /api/health) cambia
+      # davvero a ogni aggiornamento — prima restava sempre "dev" perche'
+      # nessuno lo passava mai, inutile per capire se un "docker compose up
+      # --build" ha davvero preso l'ultimo codice o ha riusato una build vecchia.
+      args:
+        GIT_SHA: ${GIT_SHA:-dev}
     container_name: mindkeep
     restart: unless-stopped
     ports:

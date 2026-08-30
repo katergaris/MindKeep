@@ -421,6 +421,40 @@ Proposta confermata dall'utente (vedi sezione precedente) e implementata:
   ricerca, posizione e trascinamento della cattura veloce, menu "…" e
   apertura della schermata Drive scegliendo "/doc" da li'.
 
+## Sessione 30/08/2026 (ottava parte): versione build reale, icone Drive, deploy
+
+L'utente ha segnalato di NON vedere le ultime modifiche neanche in
+incognito (quindi non e' cache del browser/service worker: e' proprio il
+server sul Raspberry Pi a servire codice vecchio) — segno che il suo
+`docker compose up -d --build` non aveva mai preso l'ultimo `git pull`, o
+piu' probabilmente non aveva ancora rifatto il pull/build dopo gli ultimi
+commit di questa sessione.
+
+- **GIT_SHA ricollegato per davvero**: il `Dockerfile` gia' supportava
+  l'ARG `GIT_SHA` da tempo, ma **nessuno script lo passava mai** —
+  `docker-compose.yml` non aveva `build.args`, `setup.sh`/`setup.ps1`
+  chiamavano `docker compose up -d --build` senza calcolare nulla. Il
+  risultato era che la build mostrava sempre "dev", inutile per capire se
+  un aggiornamento era andato a buon fine. Ora `docker-compose.yml` ha
+  `build.args.GIT_SHA: ${GIT_SHA:-dev}` ed entrambi gli script calcolano
+  `git rev-parse --short HEAD` e lo esportano prima del build. `/api/health`
+  espone sia `version` (da `package.json`, quello che l'utente aveva chiesto
+  di mostrare) sia `build` (il commit, mostrato solo se diverso da "dev") —
+  la schermata di accesso ora mostra "versione 1.0.0 · a1b2c3d": dopo un
+  aggiornamento, se lo sha non cambia, il container non ha preso l'ultimo
+  codice.
+- **Notifiche push**: l'utente conferma che il problema (notifica generica,
+  icona di Chrome invece della nostra) "capita sempre" — non e' escluso che
+  fosse proprio dovuto al Pi che girava su un'immagine vecchia da prima che
+  esistesse il fix del corpo-mai-vuoto di poco fa. Da riverificare dopo un
+  aggiornamento vero con lo sha visibile per confermare che sia la build
+  giusta, prima di scavare oltre lato codice.
+- **Icone file in Drive**: troppo piccole e con un riquadro visibile
+  (bordo/sfondo incassato) che non piaceva. Tolto lo sfondo/bevel,
+  ingrandita l'icona (17px → 26px) e il contenitore (40px → 48px): ora
+  l'icona e l'estensione stanno semplicemente sopra lo sfondo della riga,
+  senza margini visibili.
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più

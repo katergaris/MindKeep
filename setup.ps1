@@ -115,6 +115,16 @@ if ($candidatePort -ne $currentPort) {
 $port = $candidatePort
 
 # --- 4. Avvia il container ---
+# Il commit corrente diventa la versione mostrata in app (schermata di
+# accesso): senza questo, un "up --build" rieseguito dopo aver scaricato
+# nuovo codice non aveva modo di dimostrare di aver preso davvero l'ultimo
+# aggiornamento invece di riusare un'immagine vecchia dalla cache.
+try {
+  $gitSha = (git rev-parse --short HEAD 2>$null)
+} catch { $gitSha = $null }
+if (-not $gitSha) { $gitSha = "dev" }
+$env:GIT_SHA = $gitSha
+
 Write-Host ""
 Write-Host "Avvio Mindkeep (la prima volta può richiedere qualche minuto)..."
 docker compose up -d --build

@@ -2763,9 +2763,14 @@
     e.preventDefault();
   });
 
-  // Versione applicativa: si vede sia prima sia dopo l'accesso.
+  // Versione applicativa: si vede sia prima sia dopo l'accesso. Il commit
+  // (quando disponibile: non su una build locale senza GIT_SHA) si vede
+  // solo qui, cosi' dopo un aggiornamento si controlla subito se il
+  // container sta girando sull'ultimo codice o su una build vecchia.
   api('/health').then((health) => {
-    const label = tr('version_label', { version: health.version });
+    const label = health.build && health.build !== 'dev'
+      ? tr('version_label_build', { version: health.version, build: health.build })
+      : tr('version_label', { version: health.version });
     const authEl = document.getElementById('auth-version');
     const sidebarEl = document.getElementById('sidebar-version');
     if (authEl) authEl.textContent = label;
