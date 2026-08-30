@@ -11,7 +11,6 @@ window.MindkeepWM = (() => {
   const winTpl = document.getElementById('tpl-window');
 
   const windows = new Map(); // id -> { id, el, titlebarEl, contentEl, taskbarBtn, state, rectBeforeMax }
-  const openOrder = []; // ordine di apertura, per il fallback mobile "sostituisci"
   let zCounter = 10;
   let cascadeIndex = 0;
   let splitPending = false;
@@ -141,7 +140,15 @@ window.MindkeepWM = (() => {
     btn.querySelector('.taskbtn-label').textContent = title;
     btn.addEventListener('click', () => {
       if (win.state === 'normal' && isFocused(win.id)) minimizeWindow(win.id);
-      else { restoreWindow(win.id); focusWindow(win.id); }
+      else {
+        // Su mobile, fuori dallo split, resta un'app a schermo intero alla
+        // volta: passare a un'altra dalla taskbar riduce a icona quella
+        // visibile invece di chiuderla, cosi' resta li' per un cambio rapido.
+        if (isMobile && !windowLayer.classList.contains('split-mode')) {
+          windows.forEach((w) => { if (w.id !== win.id && w.state === 'normal') minimizeWindow(w.id); });
+        }
+        restoreWindow(win.id); focusWindow(win.id);
+      }
     });
     taskbarWindows.appendChild(btn);
     win.taskbarBtn = btn;
@@ -178,8 +185,14 @@ window.MindkeepWM = (() => {
     win.el.classList.remove('minimized');
   }
 
+  function normalWindowCount() {
+    let n = 0;
+    windows.forEach((w) => { if (w.state === 'normal') n += 1; });
+    return n;
+  }
+
   function updateSplitButtons() {
-    const showSplit = isMobile && openOrder.length === 1 && !windowLayer.classList.contains('split-mode');
+    const showSplit = isMobile && normalWindowCount() === 1 && !windowLayer.classList.contains('split-mode');
     windows.forEach((win) => {
       const btn = win.el.querySelector('.win-btn-split');
       if (btn) btn.classList.toggle('hidden', !showSplit);
@@ -192,13 +205,17 @@ window.MindkeepWM = (() => {
     win.el.remove();
     win.taskbarBtn && win.taskbarBtn.remove();
     windows.delete(id);
-    const idx = openOrder.indexOf(id);
-    if (idx !== -1) openOrder.splice(idx, 1);
-    if (isMobile && openOrder.length <= 1) windowLayer.classList.remove('split-mode');
+    if (isMobile && normalWindowCount() <= 1) windowLayer.classList.remove('split-mode');
     updateSplitButtons();
-    // Rimasta una finestra sola: rimetto a fuoco quella con lo z-index più alto.
+    // Rimasta una finestra sola: rimetto a fuoco quella con lo z-index più
+    // alto tra quelle davvero visibili (mai una ridotta a icona: altrimenti
+    // il suo pulsante in taskbar risulterebbe "premuto" senza che la
+    // finestra sia davvero in vista).
     let top = null;
-    windows.forEach((w) => { if (!top || Number(w.el.style.zIndex || 0) > Number(top.el.style.zIndex || 0)) top = w; });
+    windows.forEach((w) => {
+      if (w.state !== 'normal') return;
+      if (!top || Number(w.el.style.zIndex || 0) > Number(top.el.style.zIndex || 0)) top = w;
+    });
     if (top) focusWindow(top.id);
   }
 
@@ -236,7 +253,6 @@ window.MindkeepWM = (() => {
 
     const win = { id, el, titlebarEl, contentEl, state: 'normal' };
     windows.set(id, win);
-    openOrder.push(id);
 
     el.addEventListener('pointerdown', () => focusWindow(id), { capture: true });
     el.querySelector('.titlebar-btns').addEventListener('click', (e) => {
@@ -258,16 +274,21 @@ window.MindkeepWM = (() => {
     });
 
     if (isMobile) {
-      const otherIds = openOrder.slice(0, -1);
-      if (splitPending && otherIds.length === 1) {
+      // Solo le finestre gia' visibili (non ridotte a icona) contano per le
+      // regole sotto: una gia' minimizzata resta tale, non va ne' richiusa
+      // ne' ri-minimizzata per finire in qualche conteggio sbagliato.
+      const otherNormalIds = [...windows.keys()].filter((k) => k !== id && windows.get(k).state === 'normal');
+      if (splitPending && otherNormalIds.length === 1) {
         windowLayer.classList.add('split-mode');
         splitPending = false;
-      } else if (windowLayer.classList.contains('split-mode') && otherIds.length >= 2) {
-        // Terza app mentre siamo in split: si torna a una sola finestra a schermo intero.
-        otherIds.forEach((oid) => closeWindow(oid));
+      } else if (windowLayer.classList.contains('split-mode') && otherNormalIds.length >= 2) {
+        // Terza app mentre siamo in split: si torna a una sola finestra a
+        // schermo intero. Le altre due si riducono a icona (non si chiudono
+        // piu'): restano in taskbar per un cambio rapido.
+        otherNormalIds.forEach((oid) => minimizeWindow(oid));
         windowLayer.classList.remove('split-mode');
       } else if (!windowLayer.classList.contains('split-mode')) {
-        otherIds.forEach((oid) => closeWindow(oid));
+        otherNormalIds.forEach((oid) => minimizeWindow(oid));
       }
       el.classList.add('mobile-full');
       windowLayer.appendChild(el);

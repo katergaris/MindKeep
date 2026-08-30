@@ -617,17 +617,19 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 .vs-actions .btn-icon .icon { width: 15px; height: 15px; }
 
 .doc-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-/* Riquadro icona a sinistra del nome file: mostra sempre l'estensione, mai
-   un'anteprima dell'immagine (che restava visibile in elenco senza aprire
-   nulla — segnalato dall'utente). L'immagine vera si vede solo aprendo
-   l'anteprima, gestita altrove da openDocumentPreview(). */
-.entry-doc { width: 40px; height: 40px; flex: none; }
-.entry-doc-clickable { cursor: pointer; }
-.entry-doc-ext {
-  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
-  background: var(--surface); color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
-  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+/* Riquadro icona a sinistra del nome file: un simbolo per categoria
+   (immagine/documento/audio/video) sopra l'estensione, mai un'anteprima
+   dell'immagine vera (che restava visibile in elenco senza aprire nulla —
+   segnalato dall'utente). L'immagine vera si vede solo aprendo l'anteprima,
+   gestita altrove da openDocumentPreview(). */
+.entry-doc {
+  width: 40px; height: 40px; flex: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--surface); box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
 }
+.entry-doc-clickable { cursor: pointer; }
+.entry-doc .icon { width: 17px; height: 17px; color: var(--text-muted); }
+.entry-doc-ext { color: var(--text-muted); font-size: 8px; font-weight: 700; letter-spacing: 0.02em; }
 .doc-name { font-weight: 600; }
 .doc-original { color: var(--text-faint); font-size: 0.74rem; font-family: var(--font-mono); }
 .doc-meta { color: var(--text-muted); font-size: 0.78rem; }

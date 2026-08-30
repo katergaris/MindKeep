@@ -191,6 +191,16 @@
 
   // ---------------- Anteprima documento a schermo intero ----------------
   const PREVIEWABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf']);
+
+  // Simbolo per categoria di file in Drive, cosi' si riconosce a colpo
+  // d'occhio se e' un'immagine/audio/video senza dover leggere l'estensione.
+  function fileCategoryIcon(mime) {
+    const m = mime || '';
+    if (m.startsWith('image/')) return 'immagine';
+    if (m.startsWith('audio/')) return 'musica';
+    if (m.startsWith('video/')) return 'video';
+    return 'documento';
+  }
   let activePreview = null;
 
   function closePreview() {
@@ -409,6 +419,10 @@
     cartellaLinea: '<path d="M3 7a1.8 1.8 0 0 1 1.8-1.8h4l2 2h8.4A1.8 1.8 0 0 1 21 9v8.2A1.8 1.8 0 0 1 19.2 19H4.8A1.8 1.8 0 0 1 3 17.2z"/>',
     cestino: '<path d="M4.5 7h15M9.5 7V4.5h5V7M7 7l1 12.5a1.5 1.5 0 0 0 1.5 1.4h7a1.5 1.5 0 0 0 1.5-1.4L18 7"/><path d="M10.2 11v6M13.8 11v6"/>',
     codice: '<rect x="2" y="5.5" width="20" height="13" rx="1"/><text x="6" y="15" font-size="9.5" font-family="var(--font-mono, monospace)" font-weight="700" stroke="none" fill="currentColor">01</text>',
+    immagine: '<rect x="3" y="4" width="18" height="15" rx="1"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M3 15l5-4.5 4 3.5 3-2.5 6 5"/>',
+    musica: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    video: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none"/>',
+    documento: '<path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/>',
   };
   function iconaLinea(nome) {
     return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -2151,6 +2165,7 @@
         <div class="doc-row row-card">
           <div style="display:flex;gap:10px;align-items:center;min-width:0">
             <div class="entry-doc${previewable ? ' entry-doc-clickable' : ''}" style="margin-top:0;flex:none">
+              ${iconaLinea(fileCategoryIcon(d.mime))}
               <span class="entry-doc-ext">${esc(ext || 'FILE')}</span>
             </div>
             <div style="min-width:0">
