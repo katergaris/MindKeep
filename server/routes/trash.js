@@ -48,6 +48,13 @@ router.delete('/:type/:id', (req, res) => {
     if (type !== 'dossier') {
       db.prepare('DELETE FROM dossier_links WHERE item_type = ? AND item_id = ?').run(type, req.params.id);
     }
+    // Stesso motivo per il collegamento abbonamento -> credenziali Vault:
+    // niente foreign key, quindi va scollegato a mano quando il Vault viene
+    // svuotato definitivamente, altrimenti l'account restava agganciato a un
+    // id ormai inesistente.
+    if (type === 'vault') {
+      db.prepare('UPDATE accounts SET vault_entry_id = NULL WHERE vault_entry_id = ?').run(req.params.id);
+    }
   });
   purge();
 

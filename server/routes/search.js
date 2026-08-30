@@ -46,6 +46,47 @@ router.get('/', (req, res) => {
   res.json(results);
 });
 
+// Cosa serve per individuare il rinnovo dipende dalla cadenza: settimanale
+// vuole solo il giorno della settimana (1=Lunedi'...7=Domenica), mensile solo
+// il giorno del mese, trimestrale/semestrale/annuale vogliono giorno+mese di
+// riferimento. "day"/"month" hanno quindi un significato diverso a seconda
+// di "frequency" — stessa logica di nextRenewalDate() in public/app.js.
+const BILLING_STEP_MONTHS = { trimestrale: 3, semestrale: 6, annuale: 12 };
+// Ricalcola la data da zero a ogni passo invece di sommare mese dopo mese
+// sulla stessa istanza: altrimenti un giorno che non esiste in un mese
+// intermedio (es. 31 a settembre, che Date normalizza a 1 ottobre) trascina
+// la ricorrenza su un giorno diverso per tutte le occorrenze successive.
+function monthlyOccurrence(anchorYear, anchorMonth0, offsetMonths, day) {
+  const total = anchorYear * 12 + anchorMonth0 + offsetMonths;
+  return new Date(Math.floor(total / 12), ((total % 12) + 12) % 12, day);
+}
+function nextOccurrence(day, month, frequency) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (frequency === 'settimanale') {
+    const todayIso = ((today.getDay() + 6) % 7) + 1;
+    const candidate = new Date(today);
+    candidate.setDate(candidate.getDate() + ((day - todayIso + 7) % 7));
+    return candidate.toISOString().slice(0, 10);
+  }
+  if (frequency === 'mensile') {
+    let candidate = new Date(today.getFullYear(), today.getMonth(), day);
+    if (candidate < today) candidate = new Date(today.getFullYear(), today.getMonth() + 1, day);
+    return candidate.toISOString().slice(0, 10);
+  }
+  const stepMonths = BILLING_STEP_MONTHS[frequency] || 12;
+  const anchorYear = today.getFullYear() - 1;
+  const anchorMonth0 = month - 1;
+  let offset = 0;
+  let candidate = monthlyOccurrence(anchorYear, anchorMonth0, offset, day);
+  while (candidate < today) {
+    offset += stepMonths;
+    candidate = monthlyOccurrence(anchorYear, anchorMonth0, offset, day);
+  }
+  return candidate.toISOString().slice(0, 10);
+}
+
 // Elementi con scadenza vicina (account e documenti), usati per i promemoria
 router.get('/reminders/upcoming', (req, res) => {
   const parsed = parseInt(req.query.days, 10);
@@ -53,13 +94,20 @@ router.get('/reminders/upcoming', (req, res) => {
   // (finestra al passato o interrogazione senza limite).
   const days = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0), 3650) : 30;
   const limit = `+${days} days`;
+  const windowEnd = new Date();
+  windowEnd.setHours(0, 0, 0, 0);
+  windowEnd.setDate(windowEnd.getDate() + days);
+  const windowEndStr = windowEnd.toISOString().slice(0, 10);
 
   const accounts = db
-    .prepare(
-      "SELECT id, service AS label, renewal_date AS date FROM accounts WHERE deleted_at IS NULL AND renewal_date IS NOT NULL AND date(renewal_date) <= date('now', ?) ORDER BY renewal_date ASC"
-    )
-    .all(limit)
-    .map((r) => ({ ...r, type: 'account' }));
+    // renewal_month resta NULL per le cadenze settimanale/mensile (non serve,
+    // solo il giorno conta): non va richiesto anche lui, altrimenti quelle
+    // non comparirebbero mai qui.
+    .prepare('SELECT id, service AS label, renewal_day, renewal_month, billing_frequency FROM accounts WHERE deleted_at IS NULL AND renewal_day IS NOT NULL')
+    .all()
+    .map((r) => ({ id: r.id, label: r.label, date: nextOccurrence(r.renewal_day, r.renewal_month, r.billing_frequency), type: 'account' }))
+    .filter((r) => r.date <= windowEndStr)
+    .sort((a, b) => (a.date > b.date ? 1 : -1));
 
   const documents = db
     .prepare(

@@ -18,12 +18,15 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
   runMigrations(db);
 
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
-  for (const t of ['users', 'ideas', 'projects', 'vault_entries', 'accounts', 'documents', 'dossiers', 'dossier_links', 'recovery_codes', 'reminders']) {
+  for (const t of ['users', 'ideas', 'projects', 'vault_entries', 'accounts', 'documents', 'dossiers', 'dossier_links', 'recovery_codes', 'reminders', 'push_subscriptions']) {
     assert.ok(tables.includes(t), `manca la tabella ${t}`);
   }
 
   const applied = db.prepare('SELECT id FROM schema_migrations ORDER BY rowid').all().map((r) => r.id);
   assert.deepEqual(applied, EXPECTED_IDS);
+
+  const reminderColumns = db.prepare('PRAGMA table_info(reminders)').all().map((c) => c.name);
+  assert.ok(reminderColumns.includes('notified_at'));
 
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
   assert.ok(userColumns.includes('totp_secret'));
@@ -31,6 +34,7 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
 
   const docColumns = db.prepare('PRAGMA table_info(documents)').all().map((c) => c.name);
   assert.ok(docColumns.includes('display_name'));
+  assert.ok(docColumns.includes('updated_at'));
 
   const projectColumns = db.prepare('PRAGMA table_info(projects)').all().map((c) => c.name);
   assert.ok(projectColumns.includes('deadline'));
@@ -41,12 +45,18 @@ test('su un database vuoto crea tutte le tabelle ed esegue le migrazioni in ordi
   assert.ok(accountColumns.includes('type'));
   assert.ok(accountColumns.includes('location'));
   assert.ok(accountColumns.includes('payment_method'));
+  assert.ok(accountColumns.includes('billing_frequency'));
+  assert.ok(accountColumns.includes('amount'));
+  assert.ok(accountColumns.includes('vault_entry_id'));
 
   const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
   assert.ok(vaultColumns.includes('type'));
   assert.ok(vaultColumns.includes('totp_secret_encrypted'));
   assert.ok(vaultColumns.includes('card_cvv_encrypted'));
   assert.ok(vaultColumns.includes('card_expiry'));
+
+  const ideaColumns = db.prepare('PRAGMA table_info(ideas)').all().map((c) => c.name);
+  assert.ok(ideaColumns.includes('checklist'));
 });
 
 test('e\' idempotente: eseguirla piu\' volte non fallisce e non riapplica nulla', () => {
@@ -71,6 +81,15 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
       totp_secret TEXT,
       totp_enabled INTEGER NOT NULL DEFAULT 0,
       totp_last_step INTEGER
+    );
+    CREATE TABLE ideas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      body TEXT DEFAULT '',
+      tags TEXT DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      deleted_at TEXT
     );
     CREATE TABLE documents (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,16 +153,26 @@ test('un database pre-esistente (schema gia\' presente, creato prima di questo s
   // tabella nuova.
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
   assert.ok(tables.includes('reminders'), 'la migrazione delle scadenze non e\' stata eseguita sul database legacy');
+  assert.ok(tables.includes('push_subscriptions'), 'la migrazione delle notifiche push non e\' stata eseguita sul database legacy');
+
+  const reminderColumns = db.prepare('PRAGMA table_info(reminders)').all().map((c) => c.name);
+  assert.ok(reminderColumns.includes('notified_at'), 'la migrazione delle notifiche push non e\' stata eseguita sul database legacy');
 
   const docColumns = db.prepare('PRAGMA table_info(documents)').all().map((c) => c.name);
   assert.ok(docColumns.includes('display_name'), 'la migrazione del nome personalizzato non e\' stata eseguita sul database legacy');
+  assert.ok(docColumns.includes('updated_at'), 'la migrazione della data di modifica documenti non e\' stata eseguita sul database legacy');
 
   const projectColumns = db.prepare('PRAGMA table_info(projects)').all().map((c) => c.name);
   assert.ok(projectColumns.includes('deadline'), 'la migrazione dei campi progetto non e\' stata eseguita sul database legacy');
 
   const accountColumns = db.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name);
   assert.ok(accountColumns.includes('type'), 'la migrazione del tipo account non e\' stata eseguita sul database legacy');
+  assert.ok(accountColumns.includes('billing_frequency'), 'la migrazione della fatturazione account non e\' stata eseguita sul database legacy');
+  assert.ok(accountColumns.includes('vault_entry_id'), 'la migrazione della fatturazione account non e\' stata eseguita sul database legacy');
 
   const vaultColumns = db.prepare('PRAGMA table_info(vault_entries)').all().map((c) => c.name);
   assert.ok(vaultColumns.includes('totp_secret_encrypted'), 'la migrazione dei tipi vault non e\' stata eseguita sul database legacy');
+
+  const ideaColumns = db.prepare('PRAGMA table_info(ideas)').all().map((c) => c.name);
+  assert.ok(ideaColumns.includes('checklist'), 'la migrazione della checklist note non e\' stata eseguita sul database legacy');
 });

@@ -158,6 +158,7 @@ app.use('/api/accounts', auth.requireAuth, require('./routes/accounts'));
 app.use('/api/drive', auth.requireAuth, require('./routes/drive'));
 app.use('/api/dossiers', auth.requireAuth, require('./routes/dossiers'));
 app.use('/api/reminders', auth.requireAuth, require('./routes/reminders'));
+app.use('/api/push', auth.requireAuth, require('./routes/push'));
 app.use('/api/search', auth.requireAuth, require('./routes/search'));
 app.use('/api/trash', auth.requireAuth, require('./routes/trash'));
 app.use('/api/backup', auth.requireAuth, require('./routes/backup'));
@@ -207,6 +208,7 @@ const server = app.listen(PORT, () => {
       ? 'Accesso: nessuna scadenza automatica (imposta SESSION_DAYS nel file .env per cambiarla)'
       : `Accesso: scade dopo ${Math.round(SESSION_MAX_AGE / DAY_MS)} giorni di inattivita'`
   );
+  require('./reminder-notifier').start();
 });
 
 server.on('error', (err) => {
