@@ -4,6 +4,13 @@ Se stai leggendo questo file all'inizio di una nuova chat: questo documento ti d
 tutto il contesto per continuare esattamente da dove si era interrotto. Leggi
 anche i file collegati sotto, poi procedi.
 
+## Nota sul branch (30/08/2026)
+
+`redesign-retro-ui` e' stato **mergiato in `main`** (commit `09b261e`, non da
+questa sessione — trovato gia' fatto). Da questo punto in poi tutti i commit
+di questo file di handoff vanno diretti su `main`; le sezioni sotto che
+parlano ancora di `redesign-retro-ui` come branch di lavoro sono storiche.
+
 ## Stato attuale (29/08/2026)
 
 - **Branch**: `redesign-retro-ui` (già pushato su `origin`). PR non ancora aperta:
@@ -330,6 +337,57 @@ tipo di bug (classe usata in JS/HTML ma mai definita in CSS — gia' visto con
 - Verificato con Playwright reale: riquadro icona Drive ora 40x40 con
   l'estensione (non l'immagine), l'anteprima si apre comunque al click,
   pulsanti taskbar delle finestre correttamente dimensionati.
+
+## Sessione 30/08/2026 (sesta parte): multi-app mobile, icone file, lingua IT/EN
+
+- **Taskbar mobile**: passare a un'altra app dalla taskbar (fuori dallo
+  split) minimizzava... no, **chiudeva** del tutto le altre finestre. Ora le
+  minimizza: restano in taskbar per un cambio rapido, esattamente come su
+  desktop. Rifattorizzato `wm.js` attorno a `normalWindowCount()`
+  (quante finestre sono davvero visibili adesso) invece del vecchio
+  `openOrder` (quante ne sono mai state aperte, mai decrementato se non con
+  una chiusura vera) — quel contatore andava gia' storto prima di questo
+  cambio, il minimize-invece-di-close lo avrebbe reso ancora piu' evidente.
+- **Drive**: icona per categoria file (immagine/documento/musica/video)
+  accanto all'estensione, cosi' si riconosce il tipo senza leggere il testo.
+- **Lingua IT/EN** — il pezzo grosso di questa sessione:
+  - `public/i18n.js` (nuovo file, caricato prima di `wm.js`/`app.js`):
+    dizionario piatto `STRINGS.it`/`STRINGS.en`, funzione `t(key, vars)` con
+    interpolazione `{placeholder}`, lingua salvata in `localStorage`
+    (dispositivo, come lo sfondo — si sceglie prima ancora che esista un
+    account, non puo' vivere sul server).
+  - Schermata di scelta lingua al primissimo avvio (prima della creazione
+    account), sezione "Lingua"/"Language" in Sicurezza per cambiarla dopo.
+    **Cambiare lingua ricarica sempre la pagina** (`location.reload()`): un
+    sacco di costanti (`SECTIONS`, `MONTH_LABELS`, `WEEKDAY_LABELS`,
+    `BILLING_LABELS`, `TYPE_LABELS`...) sono calcolate una volta sola
+    all'avvio dello script, un semplice re-render non le aggiornerebbe.
+  - **Tutte** le viste, modali, toast, conferme, stati vuoti sono tradotti.
+    I messaggi di errore che arrivano dal *server* (es. "Il servizio e'
+    obbligatorio") restano in italiano — tradurre anche quelli e' un lavoro
+    separato (richiede toccare ogni file in `server/routes/`), non fatto qui.
+  - **Occhio se aggiungi testo nuovo**: il modulo tiene un alias locale
+    `tr` per `I18N.t` (NON si chiama `t`: quel nome era gia' preso ovunque
+    nel file per "tag" nei `.map((t) => ...)` — usarlo avrebbe causato bug
+    di shadowing silenziosi). Per l'HTML statico in `index.html` (schermata
+    di login, taskbar, `<template>` di finestra/modale) si usano gli
+    attributi `data-i18n` / `data-i18n-placeholder` / `data-i18n-aria-label`
+    / `data-i18n-title`, applicati da `I18N.applyStaticTranslations(root)`.
+    Il contenuto dentro `<template>` non e' nel DOM finche' non viene
+    clonato: la funzione va richiamata sul nodo clonato subito dopo (vedi
+    `openModal()` in `app.js` e `openWindow()` in `wm.js`), non basta
+    chiamarla una volta su `document` all'avvio.
+  - Verificato con Playwright reale in entrambe le lingue: titoli finestra,
+    pulsanti taskbar, aria-label, form, toast, conferme — tutti confermati
+    cambiare lingua correttamente dopo il reload.
+- **Proposta in sospeso, NON ancora implementata**: l'utente ha descritto un
+  redesign di ricerca e cattura veloce (icona lente accanto ad Avvio invece
+  della barra sempre visibile; tasto "Nuovo" diventa "+"; il riquadro di
+  cattura veloce si sposta in alto/al centro ed e' spostabile; un tasto
+  "..." per scegliere un tipo diverso da nota, che poi apre la schermata
+  di inserimento completa di quel tipo). Ho risposto riassumendo la mia
+  comprensione e aspetto conferma prima di procedere — controlla la
+  conversazione per la risposta dell'utente prima di iniziare.
 
 ## Prossimi passi
 
