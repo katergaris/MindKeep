@@ -20,6 +20,22 @@
 </head>
 <body>
 
+<!-- Scelta della lingua: solo al primissimo avvio, prima ancora che esista
+     un account, quindi non puo' vivere sul server (vedi i18n.js). -->
+<div id="lang-screen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="nest-mark" aria-hidden="true">
+      <img src="/icon-192.png" width="72" height="72" alt="" />
+    </div>
+    <h1 data-i18n="lang_pick_title">Mindkeep</h1>
+    <p class="auth-sub" data-i18n="lang_pick_sub">Scegli la lingua — Choose your language</p>
+    <div class="lang-choice">
+      <button type="button" class="btn btn-primary btn-block" data-lang="it">Italiano</button>
+      <button type="button" class="btn btn-primary btn-block" data-lang="en">English</button>
+    </div>
+  </div>
+</div>
+
 <!-- Schermata di setup / login -->
 <div id="auth-screen" class="auth-screen hidden">
   <div class="auth-card">
@@ -31,18 +47,18 @@
 
     <form id="auth-form" class="auth-form">
       <label>
-        Username
+        <span data-i18n="auth_username">Username</span>
         <input type="text" id="auth-username" autocomplete="username" required />
       </label>
       <label>
-        Password
+        <span data-i18n="auth_password">Password</span>
         <input type="password" id="auth-password" autocomplete="current-password" required />
       </label>
       <label id="auth-code-row" class="hidden">
-        Codice di verifica
+        <span data-i18n="auth_code">Codice di verifica</span>
         <input type="text" id="auth-code" autocomplete="one-time-code" inputmode="numeric"
-               placeholder="6 cifre dall'app" maxlength="14" />
-        <span class="field-hint">Oppure uno dei codici di recupero, se non hai il telefono.</span>
+               data-i18n-placeholder="auth_code_placeholder" placeholder="6 cifre dall'app" maxlength="14" />
+        <span class="field-hint" data-i18n="auth_code_hint">Oppure uno dei codici di recupero, se non hai il telefono.</span>
       </label>
       <p id="auth-error" class="form-error hidden"></p>
       <button type="submit" class="btn btn-primary" id="auth-submit">Entra</button>
@@ -58,7 +74,7 @@
          pieno resta sempre visibile come prima. -->
     <button class="icon-btn search-toggle" id="search-toggle" aria-label="Cerca" aria-expanded="false"></button>
     <div class="search-wrap">
-      <input type="text" id="global-search" placeholder="Cerca in tutto Mindkeep…" autocomplete="off" />
+      <input type="text" id="global-search" data-i18n-placeholder="search_placeholder" placeholder="Cerca in tutto Mindkeep…" autocomplete="off" />
       <div id="search-results" class="search-results hidden"></div>
     </div>
   </header>
@@ -77,11 +93,11 @@
   <div id="taskbar" class="taskbar raised">
     <button id="btn-start" class="taskbar-start raised" aria-haspopup="true" aria-expanded="false">
       <span class="taskbar-start-icon" aria-hidden="true"></span>
-      Avvio
+      <span data-i18n="taskbar_start">Avvio</span>
     </button>
     <button id="btn-nuovo" class="taskbar-btn raised" title="Cattura veloce — sempre disponibile">
       <svg width="14" height="14" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8"><line x1="6" y1="1.5" x2="6" y2="10.5"/><line x1="1.5" y1="6" x2="10.5" y2="6"/></svg>
-      Nuovo
+      <span data-i18n="taskbar_new">Nuovo</span>
     </button>
     <div id="taskbar-windows" class="taskbar-windows"></div>
     <div id="taskbar-clock" class="taskbar-clock sunken"></div>
@@ -121,6 +137,7 @@
   </div>
 </template>
 
+<script src="/i18n.js"></script>
 <script src="/wm.js"></script>
 <script src="/app.js"></script>
 </body>

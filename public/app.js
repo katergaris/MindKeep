@@ -1,6 +1,10 @@
 (() => {
   'use strict';
 
+  // ---------------- Lingua ----------------
+  const I18N = window.MindkeepI18n;
+  const t = I18N.t;
+
   // ---------------- PWA: cache del guscio per installabilita' e avvio offline ----------------
   // Se la registrazione fallisce (es. accesso in http semplice, senza
   // certificato: i service worker richiedono https) l'app funziona comunque,
@@ -326,10 +330,8 @@
       return;
     }
     setupMode = status.setupNeeded;
-    authSub.textContent = setupMode
-      ? 'Primo avvio: crea il tuo accesso personale.'
-      : 'Il tuo spazio personale, al sicuro.';
-    authSubmit.textContent = setupMode ? 'Crea accesso' : 'Entra';
+    authSub.textContent = setupMode ? t('auth_sub_setup') : t('auth_sub_login');
+    authSubmit.textContent = setupMode ? t('auth_submit_setup') : t('auth_submit_login');
     showAuthScreen();
   }
 
@@ -359,7 +361,7 @@
         authCodeRow.classList.remove('hidden');
         authCodeInput.value = '';
         authCodeInput.focus();
-        authSubmit.textContent = 'Verifica ed entra';
+        authSubmit.textContent = t('auth_submit_verify');
       }
       authError.textContent = err.message;
       authError.classList.remove('hidden');
@@ -2612,6 +2614,17 @@
     wallpaperBlock.appendChild(wallpaperRow);
     root.appendChild(wallpaperBlock);
 
+    const langBlock = el(`<div class="section-block"><h3>${esc(t('settings_language'))}</h3><p class="card-sub">${esc(t('settings_language_hint'))}</p></div>`);
+    const langRow = el('<div class="card-actions" style="padding-top:10px"></div>');
+    [['it', 'Italiano'], ['en', 'English']].forEach(([code, label]) => {
+      const btn = el(`<button class="btn btn-sm${code === I18N.getLang() ? ' btn-primary' : ''}" data-lang="${code}"></button>`);
+      btn.textContent = label;
+      btn.addEventListener('click', () => { I18N.setLang(code); location.reload(); });
+      langRow.appendChild(btn);
+    });
+    langBlock.appendChild(langRow);
+    root.appendChild(langBlock);
+
     const help = el('<div class="section-block"><h3>Se perdi il telefono</h3></div>');
     help.appendChild(el(`
       <p class="card-sub">Usa uno dei codici di recupero al posto delle 6 cifre nella schermata di accesso.
@@ -2710,9 +2723,31 @@
   }).catch(() => {});
 
   // ---------------- Avvio ----------------
-  checkAuth().catch((err) => {
-    authError.textContent = err.message;
-    authError.classList.remove('hidden');
-    showAuthScreen();
-  });
+  // La lingua si sceglie una volta sola, al primissimo avvio del
+  // dispositivo, prima ancora che esista un account (non ha senso chiederla
+  // di nuovo a ogni accesso di chi ha gia' scelto, ne' ha senso mostrarla a
+  // chi ha gia' un account creato prima che questa schermata esistesse:
+  // quelli restano semplicemente in italiano finche' non la cambiano da
+  // Sicurezza).
+  const langScreen = document.getElementById('lang-screen');
+  function startAfterLanguage() {
+    I18N.applyStaticTranslations();
+    checkAuth().catch((err) => {
+      authError.textContent = err.message;
+      authError.classList.remove('hidden');
+      showAuthScreen();
+    });
+  }
+  if (I18N.hasChosenLang()) {
+    startAfterLanguage();
+  } else {
+    langScreen.classList.remove('hidden');
+    langScreen.querySelectorAll('[data-lang]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        I18N.setLang(btn.dataset.lang);
+        langScreen.classList.add('hidden');
+        startAfterLanguage();
+      });
+    });
+  }
 })();
