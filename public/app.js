@@ -3,7 +3,7 @@
 
   // ---------------- Lingua ----------------
   const I18N = window.MindkeepI18n;
-  const t = I18N.t;
+  const tr = I18N.t;
 
   // ---------------- PWA: cache del guscio per installabilita' e avvio offline ----------------
   // Se la registrazione fallisce (es. accesso in http semplice, senza
@@ -114,6 +114,14 @@
   // riusato da Scadenze e dalla scadenza dei Progetti in Bacheca.
   function daysUntil(dateStr) {
     return Math.round((new Date(dateStr) - new Date()) / 86400000);
+  }
+
+  // Etichetta "Scade tra N giorni"/"Scaduto da N giorni", riusata da
+  // Progetti/Scadenze/Abbonamenti ovunque serva mostrare una scadenza.
+  function dueLabel(days) {
+    if (days === 0) return tr('due_today');
+    const unit = tr(Math.abs(days) === 1 ? 'day_one' : 'day_other');
+    return days > 0 ? tr('due_in', { n: days, unit }) : tr('overdue_by', { n: -days, unit });
   }
 
   function parseTags(form) {
@@ -330,8 +338,8 @@
       return;
     }
     setupMode = status.setupNeeded;
-    authSub.textContent = setupMode ? t('auth_sub_setup') : t('auth_sub_login');
-    authSubmit.textContent = setupMode ? t('auth_submit_setup') : t('auth_submit_login');
+    authSub.textContent = setupMode ? tr('auth_sub_setup') : tr('auth_sub_login');
+    authSubmit.textContent = setupMode ? tr('auth_submit_setup') : tr('auth_submit_login');
     showAuthScreen();
   }
 
@@ -361,7 +369,7 @@
         authCodeRow.classList.remove('hidden');
         authCodeInput.value = '';
         authCodeInput.focus();
-        authSubmit.textContent = t('auth_submit_verify');
+        authSubmit.textContent = tr('auth_submit_verify');
       }
       authError.textContent = err.message;
       authError.classList.remove('hidden');
@@ -433,16 +441,16 @@
 
   // Elenco unico delle app: alimenta il menu Avvio (computer e telefono).
   const SECTIONS = [
-    { view: 'projects', label: 'Progetti' },
-    { view: 'ideas', label: 'Note' },
-    { view: 'vault', label: 'Vault' },
-    { view: 'accounts', label: 'Abbonamenti' },
-    { view: 'drive', label: 'Drive' },
-    { view: 'dossiers', label: 'Cartelle' },
-    { view: 'reminders', label: 'Scadenze' },
-    { view: 'calendar', label: 'Calendario' },
-    { view: 'trash', label: 'Cestino' },
-    { view: 'security', label: 'Sicurezza' },
+    { view: 'projects', label: tr('nav_projects') },
+    { view: 'ideas', label: tr('nav_ideas') },
+    { view: 'vault', label: tr('nav_vault') },
+    { view: 'accounts', label: tr('nav_accounts') },
+    { view: 'drive', label: tr('nav_drive') },
+    { view: 'dossiers', label: tr('nav_dossiers') },
+    { view: 'reminders', label: tr('nav_reminders') },
+    { view: 'calendar', label: tr('nav_calendar') },
+    { view: 'trash', label: tr('nav_trash') },
+    { view: 'security', label: tr('nav_security') },
   ];
   // Voci di configurazione separate da quelle d'uso quotidiano con un
   // divisore nel menu Avvio, per ridurre le scelte a parita' di sguardo.
@@ -862,13 +870,13 @@
     const dossiers = await api('/dossiers');
     const wrap = el('<div></div>');
     if (!dossiers.length) {
-      wrap.appendChild(el('<p class="card-sub">Non hai ancora nessuna cartella. Creane una dalla sezione Cartelle.</p>'));
+      wrap.appendChild(el(`<p class="card-sub">${esc(tr('dossiers_none_yet'))}</p>`));
     } else {
       dossiers.forEach((d) => {
         const row = el(`
           <div class="trash-row row-card">
             <span>${esc(d.title)}</span>
-            <button class="btn btn-sm btn-primary">Collega</button>
+            <button class="btn btn-sm btn-primary">${esc(tr('btn_link'))}</button>
           </div>
         `);
         row.querySelector('button').addEventListener('click', async () => {
@@ -876,13 +884,13 @@
             method: 'POST',
             body: JSON.stringify({ item_type: itemType, item_id: itemId }),
           });
-          toast(`"${itemLabel}" collegato a "${d.title}"`);
+          toast(tr('toast_linked_to_dossier', { item: itemLabel, dossier: d.title }));
           closeModal();
         });
         wrap.appendChild(row);
       });
     }
-    openModal('Collega a una cartella', wrap);
+    openModal(tr('modal_link_to_dossier'), wrap);
   }
 
   // ==================================================================
@@ -983,9 +991,9 @@
   // Calendario: griglia mensile, riusa l'API e il modulo delle Scadenze —
   // stessi dati, vista diversa. Click su un giorno vuoto = nuova scadenza con
   // quella data precompilata; click su una voce = modifica.
-  const MONTH_LABELS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-  const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-  const WEEKDAY_LABELS_FULL = ['Lunedi\'', 'Martedi\'', 'Mercoledi\'', 'Giovedi\'', 'Venerdi\'', 'Sabato', 'Domenica'];
+  const MONTH_LABELS = ['month_0', 'month_1', 'month_2', 'month_3', 'month_4', 'month_5', 'month_6', 'month_7', 'month_8', 'month_9', 'month_10', 'month_11'].map(tr);
+  const WEEKDAY_LABELS = ['weekday_short_1', 'weekday_short_2', 'weekday_short_3', 'weekday_short_4', 'weekday_short_5', 'weekday_short_6', 'weekday_short_7'].map(tr);
+  const WEEKDAY_LABELS_FULL = ['weekday_1', 'weekday_2', 'weekday_3', 'weekday_4', 'weekday_5', 'weekday_6', 'weekday_7'].map(tr);
 
   views.calendar = async (root, opts = {}) => {
     const reminders = await api('/reminders');
@@ -1088,13 +1096,13 @@
   function ideaModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Titolo</label><input type="text" name="title" required /></div>
-        <div class="form-row"><label>Descrizione</label><textarea name="body" rows="5"></textarea></div>
-        <div class="form-row"><label>Checklist (una voce per riga, opzionale)</label><textarea name="checklist" rows="4" placeholder="es. Comprare il latte"></textarea></div>
-        <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
+        <div class="form-row"><label>${esc(tr('field_title'))}</label><input type="text" name="title" required /></div>
+        <div class="form-row"><label>${esc(tr('field_description'))}</label><textarea name="body" rows="5"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_checklist'))}</label><textarea name="checklist" rows="4" placeholder="${esc(tr('idea_checklist_placeholder'))}"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_tags'))}</label><input type="text" name="tags" /></div>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_save'))}</button>
         </div>
       </form>
     `);
@@ -1113,8 +1121,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Note</h2>
-        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-idea">+ Nuova nota</button></div>
+        <h2>${esc(tr('nav_ideas_title'))}</h2>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-idea">${esc(tr('btn_new_idea'))}</button></div>
       </div>
     `));
     wireBackToDossier(root, opts);
@@ -1126,14 +1134,14 @@
         const tags = parseTags(form);
         const checklist = collectChecklist(form, []);
         await api('/ideas', { method: 'POST', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags, checklist }) });
-        closeModal(); toast('Nota salvata'); render('ideas');
+        closeModal(); toast(tr('toast_idea_saved')); render('ideas');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuova nota', form);
+      openModal(tr('modal_new_idea'), form);
     });
 
     if (!ideas.length) {
-      root.appendChild(el('<div class="empty-state">Nessuna nota ancora. Butta giu\' la prima.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_ideas'))}</div>`));
       return;
     }
 
@@ -1144,23 +1152,23 @@
         <div class="card">
           <p class="card-title">${esc(idea.title)}</p>
           <p class="card-body">${escTrim(idea.body, 220)}</p>
-          <div class="tag-row">${(idea.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+          <div class="tag-row">${(idea.tags || []).map((tg) => `<span class="tag">${esc(tg)}</span>`).join('')}</div>
           <div class="card-actions">
-            <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Cartella</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina</button>
+            <button class="btn btn-sm" data-edit>${esc(tr('btn_edit'))}</button>
+            <button class="btn btn-sm" data-link>${esc(tr('btn_link_folder'))}</button>
+            <button class="btn btn-sm btn-danger" data-del>${esc(tr('btn_delete'))}</button>
           </div>
         </div>
       `);
       if (total) {
         const checklistEl = el('<div class="idea-checklist"></div>');
-        checklistEl.appendChild(el(`<p class="card-sub">${done}/${total} completati</p>`));
+        checklistEl.appendChild(el(`<p class="card-sub">${esc(tr('label_completed_count', { done, total }))}</p>`));
         (idea.checklist || []).forEach((item, i) => {
           const row = el(`
             <label class="idea-checklist-item">
               <input type="checkbox" ${item.done ? 'checked' : ''} />
               <span>${esc(item.text)}</span>
-              ${item.done ? '<span class="idea-checklist-badge" title="Completato">✓</span>' : ''}
+              ${item.done ? `<span class="idea-checklist-badge" title="${esc(tr('label_completed_title'))}">✓</span>` : ''}
             </label>
           `);
           row.querySelector('input').addEventListener('change', async (e) => {
@@ -1206,23 +1214,23 @@
   function projectModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Titolo</label><input type="text" name="title" required /></div>
-        <div class="form-row"><label>Descrizione</label><textarea name="description" rows="4"></textarea></div>
-        <div class="form-row"><label>Stato</label>
+        <div class="form-row"><label>${esc(tr('field_title'))}</label><input type="text" name="title" required /></div>
+        <div class="form-row"><label>${esc(tr('field_description'))}</label><textarea name="description" rows="4"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_status'))}</label>
           <select name="status">
-            <option value="da_fare">Da fare</option>
-            <option value="in_corso">In corso</option>
-            <option value="fatto">Fatto</option>
+            <option value="da_fare">${esc(tr('status_todo'))}</option>
+            <option value="in_corso">${esc(tr('status_doing'))}</option>
+            <option value="fatto">${esc(tr('status_done'))}</option>
           </select>
         </div>
-        <div class="form-row"><label>Scadenza (opzionale)</label><input type="date" name="deadline" /></div>
-        <div class="form-row"><label>Checklist (una voce per riga)</label><textarea name="checklist" rows="4" placeholder="es. Comprare i materiali"></textarea></div>
-        <div class="form-row"><label>Persone/contatti (separati da virgola)</label><input type="text" name="contacts" placeholder="es. Mario Rossi, elettricista" /></div>
-        <div class="form-row"><label>Budget (una voce per riga: etichetta, importo)</label><textarea name="budget" rows="3" placeholder="es. Materiali, 50"></textarea></div>
-        <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
+        <div class="form-row"><label>${esc(tr('field_deadline_optional'))}</label><input type="date" name="deadline" /></div>
+        <div class="form-row"><label>${esc(tr('field_checklist_required'))}</label><textarea name="checklist" rows="4" placeholder="${esc(tr('field_checklist_project_placeholder'))}"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_contacts'))}</label><input type="text" name="contacts" placeholder="${esc(tr('field_contacts_placeholder'))}" /></div>
+        <div class="form-row"><label>${esc(tr('field_budget'))}</label><textarea name="budget" rows="3" placeholder="${esc(tr('field_budget_placeholder'))}"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_tags'))}</label><input type="text" name="tags" /></div>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_save'))}</button>
         </div>
       </form>
     `);
@@ -1251,8 +1259,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Progetti</h2>
-        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-project">+ Nuovo progetto</button></div>
+        <h2>${esc(tr('nav_projects'))}</h2>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-project">${esc(tr('btn_new_project'))}</button></div>
       </div>
     `));
     wireBackToDossier(root, opts);
@@ -1266,21 +1274,21 @@
         const budget = parseBudgetLines(form.budget.value);
         const checklist = collectChecklist(form, []);
         await api('/projects', { method: 'POST', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-        closeModal(); toast('Progetto creato'); render('projects');
+        closeModal(); toast(tr('toast_project_saved')); render('projects');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuovo progetto', form);
+      openModal(tr('modal_new_project'), form);
     });
 
     if (!projects.length) {
-      root.appendChild(el('<div class="empty-state">Nessun progetto ancora.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_none_yet'))}</div>`));
       return;
     }
 
     const STATUSES = [
-      { key: 'da_fare', label: 'Da fare' },
-      { key: 'in_corso', label: 'In corso' },
-      { key: 'fatto', label: 'Fatto' },
+      { key: 'da_fare', label: tr('status_todo') },
+      { key: 'in_corso', label: tr('status_doing') },
+      { key: 'fatto', label: tr('status_done') },
     ];
     const board = el('<div class="board"></div>');
 
@@ -1371,26 +1379,25 @@
         let deadlineChip = '';
         if (p.deadline) {
           const days = daysUntil(p.deadline);
-          const label = days === 0 ? 'Scade oggi' : days > 0 ? `Scade tra ${days} giorn${days === 1 ? 'o' : 'i'}` : `Scaduto da ${-days} giorn${days === -1 ? 'o' : 'i'}`;
           const kind = days < 0 ? 'late' : days <= 3 ? 'soon' : 'far';
-          deadlineChip = `<span class="chip-deadline chip-deadline-${kind}">${esc(label)}</span>`;
+          deadlineChip = `<span class="chip-deadline chip-deadline-${kind}">${esc(dueLabel(days))}</span>`;
         }
         const card = el(`
           <div class="board-card">
             <p class="board-card-title">${esc(p.title)}</p>
             ${total ? `
-              <div class="board-progress" title="${done}/${total} completati"><div class="board-progress-fill" style="width:${pct}%"></div></div>
-              <p class="card-sub">${done}/${total} completati</p>
+              <div class="board-progress" title="${esc(tr('label_completed_count', { done, total }))}"><div class="board-progress-fill" style="width:${pct}%"></div></div>
+              <p class="card-sub">${esc(tr('label_completed_count', { done, total }))}</p>
             ` : ''}
             ${deadlineChip}
-            ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">Budget: ${fmtMoney(totalBudget)}</p>` : ''}
-            ${(p.contacts || []).length ? `<p class="card-sub">👥 ${escTrim(p.contacts.join(', '), 60)}</p>` : ''}
+            ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">${tr('budget_label', { amount: fmtMoney(totalBudget) })}</p>` : ''}
+            ${(p.contacts || []).length ? `<p class="card-sub">${tr('contacts_prefix', { names: escTrim(p.contacts.join(', '), 60) })}</p>` : ''}
             <div class="board-card-actions">
-              <button type="button" data-prev ${i === 0 ? 'disabled' : ''} title="Sposta indietro">←</button>
-              <button type="button" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="Sposta avanti">→</button>
-              <button type="button" data-edit>Modifica</button>
-              <button type="button" data-link>Cartella</button>
-              <button type="button" data-del>Elimina</button>
+              <button type="button" data-prev ${i === 0 ? 'disabled' : ''} title="${esc(tr('move_back'))}">←</button>
+              <button type="button" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="${esc(tr('move_forward'))}">→</button>
+              <button type="button" data-edit>${esc(tr('btn_edit'))}</button>
+              <button type="button" data-link>${esc(tr('btn_link_folder'))}</button>
+              <button type="button" data-del>${esc(tr('btn_delete'))}</button>
             </div>
           </div>
         `);
@@ -1409,17 +1416,17 @@
             const budget = parseBudgetLines(form.budget.value);
             const checklist = collectChecklist(form, p.checklist);
             await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-            closeModal(); toast('Progetto aggiornato'); render('projects');
+            closeModal(); toast(tr('toast_project_updated')); render('projects');
           });
           form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-          openModal('Modifica progetto', form);
+          openModal(tr('modal_edit_project'), form);
         });
         card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('project', p.id, p.title));
         attachCardDrag(card, p);
         card.querySelector('[data-del]').addEventListener('click', async () => {
-          if (!confirm('Spostare questo progetto nel cestino?')) return;
+          if (!confirm(tr('confirm_delete_project'))) return;
           await api(`/projects/${p.id}`, { method: 'DELETE' });
-          toast('Progetto eliminato'); render('projects');
+          toast(tr('toast_project_deleted')); render('projects');
         });
         if (highlightId && String(p.id) === highlightId) card.classList.add('card-highlight');
         body.appendChild(card);
@@ -1448,55 +1455,55 @@
   function vaultModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Titolo</label><input type="text" name="site" required /></div>
-        <div class="form-row"><label>Tipo</label>
+        <div class="form-row"><label>${esc(tr('field_title'))}</label><input type="text" name="site" required /></div>
+        <div class="form-row"><label>${esc(tr('field_type'))}</label>
           <select name="type">
-            <option value="password">Password</option>
-            <option value="note">Nota sicura</option>
-            <option value="card">Carta di credito</option>
+            <option value="password">${esc(tr('vault_type_password'))}</option>
+            <option value="note">${esc(tr('vault_type_note'))}</option>
+            <option value="card">${esc(tr('vault_type_card'))}</option>
           </select>
         </div>
 
         <div data-type-fields="password">
-          <div class="form-row"><label>Username</label><input type="text" name="username" /></div>
+          <div class="form-row"><label>${esc(tr('field_username'))}</label><input type="text" name="username" /></div>
           <div class="form-row">
-            <label>Password${existing ? ' (lascia vuoto per non cambiarla)' : ''}</label>
+            <label>${esc(tr('field_password'))}${existing ? esc(tr('leave_blank_f')) : ''}</label>
             <div style="display:flex;gap:6px">
               <input type="text" name="password" style="flex:1" />
-              <button type="button" class="btn btn-sm" id="gen-password">Genera</button>
+              <button type="button" class="btn btn-sm" id="gen-password">${esc(tr('btn_generate'))}</button>
             </div>
           </div>
-          <div class="form-row"><label>URL</label><input type="text" name="url" /></div>
+          <div class="form-row"><label>${esc(tr('field_url'))}</label><input type="text" name="url" /></div>
           <div class="form-row">
-            <label>Codice TOTP${existing ? ' (lascia vuoto per non cambiarlo)' : ' (opzionale)'}</label>
-            <input type="text" name="totp_secret" placeholder="es. JBSWY3DPEHPK3PXP" />
-            <span class="field-hint">Segreto dell'app di autenticazione per questo sito: mostra un codice a 6 cifre insieme alla password.</span>
+            <label>${esc(tr('vault_totp_code'))}${existing ? esc(tr('leave_blank_m')) : esc(tr('totp_optional'))}</label>
+            <input type="text" name="totp_secret" placeholder="${esc(tr('vault_totp_placeholder'))}" />
+            <span class="field-hint">${esc(tr('vault_totp_hint'))}</span>
           </div>
           <div class="form-row" id="remove-totp-row" style="display:none">
             <label style="flex-direction:row;align-items:center;gap:6px">
-              <input type="checkbox" name="remove_totp" style="width:auto" /> Rimuovi il codice TOTP salvato
+              <input type="checkbox" name="remove_totp" style="width:auto" /> ${esc(tr('vault_remove_totp'))}
             </label>
           </div>
         </div>
 
         <div data-type-fields="note">
-          <div class="form-row"><label>Contenuto${existing ? ' (lascia vuoto per non cambiarlo)' : ''}</label><textarea name="secure_note" rows="6"></textarea></div>
+          <div class="form-row"><label>${esc(tr('field_content'))}${existing ? esc(tr('leave_blank_m')) : ''}</label><textarea name="secure_note" rows="6"></textarea></div>
         </div>
 
         <div data-type-fields="card">
-          <div class="form-row"><label>Titolare carta</label><input type="text" name="card_holder" /></div>
-          <div class="form-row"><label>Numero carta${existing ? ' (lascia vuoto per non cambiarlo)' : ''}</label><input type="text" name="card_number" inputmode="numeric" /></div>
+          <div class="form-row"><label>${esc(tr('field_card_holder'))}</label><input type="text" name="card_holder" /></div>
+          <div class="form-row"><label>${esc(tr('field_card_number'))}${existing ? esc(tr('leave_blank_m')) : ''}</label><input type="text" name="card_number" inputmode="numeric" /></div>
           <div style="display:flex;gap:10px">
-            <div class="form-row" style="flex:1"><label>Scadenza (MM/AA)</label><input type="text" name="card_expiry" placeholder="12/28" /></div>
-            <div class="form-row" style="flex:1"><label>CVV${existing ? ' (lascia vuoto per non cambiarlo)' : ''}</label><input type="text" name="card_cvv" inputmode="numeric" /></div>
+            <div class="form-row" style="flex:1"><label>${esc(tr('field_card_expiry'))}</label><input type="text" name="card_expiry" placeholder="12/28" /></div>
+            <div class="form-row" style="flex:1"><label>${esc(tr('field_cvv'))}${existing ? esc(tr('leave_blank_m')) : ''}</label><input type="text" name="card_cvv" inputmode="numeric" /></div>
           </div>
         </div>
 
-        <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
-        <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
+        <div class="form-row"><label>${esc(tr('field_notes'))}</label><textarea name="notes" rows="3"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_tags'))}</label><input type="text" name="tags" /></div>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_save'))}</button>
         </div>
       </form>
     `);
@@ -1559,9 +1566,9 @@
   function vaultPrimaryFieldError(form, existing) {
     if (existing) return null; // in modifica, vuoto = "non cambiare": mai un errore
     const type = form.type.value;
-    if (type === 'password' && !form.password.value) return 'La password e\' obbligatoria';
-    if (type === 'note' && !form.secure_note.value) return 'Il contenuto della nota e\' obbligatorio';
-    if (type === 'card' && !form.card_number.value) return 'Il numero della carta e\' obbligatorio';
+    if (type === 'password' && !form.password.value) return tr('err_password_required');
+    if (type === 'note' && !form.secure_note.value) return tr('err_note_content_required');
+    if (type === 'card' && !form.card_number.value) return tr('err_card_number_required');
     return null;
   }
 
@@ -1571,16 +1578,16 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Vault</h2>
+        <h2>${esc(tr('nav_vault_title'))}</h2>
         <div class="view-header-actions">${backToDossierButtonHtml(opts)}</div>
       </div>
-      <p class="card-sub">L'import CSV riconosce colonne come site/name/title, username/login/email, password, url, notes.</p>
+      <p class="card-sub">${esc(tr('vault_csv_hint'))}</p>
       <div class="vault-toolbar">
         <label class="btn btn-ghost" style="cursor:pointer">
-          Importa CSV
+          ${esc(tr('btn_import_csv'))}
           <input type="file" id="csv-input" accept=".csv" class="hidden" />
         </label>
-        <button class="btn btn-primary" id="new-vault">+ Nuova voce</button>
+        <button class="btn btn-primary" id="new-vault">${esc(tr('btn_new_vault_entry'))}</button>
       </div>
     `));
     wireBackToDossier(root, opts);
@@ -1592,10 +1599,10 @@
       fd.append('file', file);
       try {
         const result = await api('/vault/import', { method: 'POST', body: fd });
-        toast(`Importate ${result.imported} voci (${result.skipped} saltate)`);
+        toast(tr('toast_vault_import', { imported: result.imported, skipped: result.skipped }));
         render('vault');
       } catch (err) {
-        toast('Import fallito: ' + err.message);
+        toast(tr('toast_vault_import_failed', { msg: err.message }));
       }
     });
 
@@ -1606,26 +1613,26 @@
         const error = vaultPrimaryFieldError(form, null);
         if (error) { toast(error); return; }
         await api('/vault', { method: 'POST', body: JSON.stringify(collectVaultPayload(form, null)) });
-        closeModal(); toast('Voce salvata'); render('vault');
+        closeModal(); toast(tr('toast_vault_saved')); render('vault');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuova voce vault', form);
+      openModal(tr('modal_new_vault_entry'), form);
     });
 
     if (!entries.length) {
-      root.appendChild(el('<div class="empty-state">Il vault e\' vuoto.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('vault_empty'))}</div>`));
       return;
     }
 
-    const TYPE_LABEL = { password: 'Password', note: 'Nota', card: 'Carta' };
+    const TYPE_LABEL = { password: tr('vault_type_password'), note: tr('vault_type_note'), card: tr('vault_type_card') };
     const sheet = el(`
       <div class="vault-sheet">
         <div class="vault-sheet-head">
-          <span class="vsh-cell">#</span>
-          <span class="vsh-cell">Tipo</span>
-          <span class="vsh-cell">Sito</span>
-          <span class="vsh-cell">Utente</span>
-          <span class="vsh-cell">Password</span>
+          <span class="vsh-cell">${esc(tr('col_num'))}</span>
+          <span class="vsh-cell">${esc(tr('col_type'))}</span>
+          <span class="vsh-cell">${esc(tr('col_site'))}</span>
+          <span class="vsh-cell">${esc(tr('col_username'))}</span>
+          <span class="vsh-cell">${esc(tr('col_password'))}</span>
           <span class="vsh-cell"></span>
         </div>
         <div class="vault-sheet-body"></div>
@@ -1638,16 +1645,16 @@
       const row = el(`
         <div class="vault-sheet-row">
           <span class="vs-cell vs-num">${idx + 1}</span>
-          <span class="vs-cell vs-type" data-label="Tipo"><span class="vs-type-dot vs-type-${esc(entry.type)}"></span>${esc(TYPE_LABEL[entry.type] || entry.type)}</span>
-          <span class="vs-cell" data-label="Sito">${esc(entry.site)}</span>
-          <span class="vs-cell" data-label="Utente">${esc(entry.username) || '—'}</span>
-          <span class="vs-cell vs-pwd" data-label="Password" data-pwd>${entry.type === 'note' ? '(nota sicura)' : '••••••••'}</span>
+          <span class="vs-cell vs-type" data-label="${esc(tr('col_type'))}"><span class="vs-type-dot vs-type-${esc(entry.type)}"></span>${esc(TYPE_LABEL[entry.type] || entry.type)}</span>
+          <span class="vs-cell" data-label="${esc(tr('col_site'))}">${esc(entry.site)}</span>
+          <span class="vs-cell" data-label="${esc(tr('col_username'))}">${esc(entry.username) || '—'}</span>
+          <span class="vs-cell vs-pwd" data-label="${esc(tr('col_password'))}" data-pwd>${entry.type === 'note' ? esc(tr('vault_secure_note')) : '••••••••'}</span>
           <span class="vs-cell vs-actions">
-            ${entry.hasTotp ? `<button class="btn btn-sm btn-icon" data-totp title="Codice TOTP">${iconaLinea('codice')}</button>` : ''}
-            <button class="btn btn-sm btn-icon" data-reveal title="Mostra">${iconaLinea('occhio')}</button>
-            <button class="btn btn-sm btn-icon" data-edit title="Modifica">${iconaLinea('matita')}</button>
-            <button class="btn btn-sm btn-icon" data-link title="Cartella">${iconaLinea('cartellaLinea')}</button>
-            <button class="btn btn-sm btn-icon btn-danger" data-del title="Elimina">${iconaLinea('cestino')}</button>
+            ${entry.hasTotp ? `<button class="btn btn-sm btn-icon" data-totp title="${esc(tr('title_totp_code'))}">${iconaLinea('codice')}</button>` : ''}
+            <button class="btn btn-sm btn-icon" data-reveal title="${esc(tr('title_show'))}">${iconaLinea('occhio')}</button>
+            <button class="btn btn-sm btn-icon" data-edit title="${esc(tr('btn_edit'))}">${iconaLinea('matita')}</button>
+            <button class="btn btn-sm btn-icon" data-link title="${esc(tr('btn_link_folder'))}">${iconaLinea('cartellaLinea')}</button>
+            <button class="btn btn-sm btn-icon btn-danger" data-del title="${esc(tr('btn_delete'))}">${iconaLinea('cestino')}</button>
           </span>
         </div>
       `);
@@ -1658,16 +1665,16 @@
         if (!revealed) {
           const full = await api(`/vault/${entry.id}/reveal`);
           pwdEl.textContent = entry.type === 'card'
-            ? `${full.password || '(vuoto)'} · CVV ${full.cvv || '—'}`
-            : (full.password || '(vuoto)');
+            ? tr('vault_card_cvv_inline', { password: full.password || tr('vault_empty_value'), cvv: full.cvv || '—' })
+            : (full.password || tr('vault_empty_value'));
           revealed = true;
           revealBtn.innerHTML = iconaLinea('occhio-off');
-          revealBtn.title = 'Nascondi';
+          revealBtn.title = tr('title_hide');
         } else {
-          pwdEl.textContent = entry.type === 'note' ? '(nota sicura)' : '••••••••';
+          pwdEl.textContent = entry.type === 'note' ? tr('vault_secure_note') : '••••••••';
           revealed = false;
           revealBtn.innerHTML = iconaLinea('occhio');
-          revealBtn.title = 'Mostra';
+          revealBtn.title = tr('title_show');
         }
       });
       if (entry.hasTotp) {
@@ -1677,9 +1684,9 @@
           if (totpTimer) {
             clearInterval(totpTimer);
             totpTimer = null;
-            row.querySelector('[data-pwd]').textContent = entry.type === 'note' ? '(nota sicura)' : (revealed ? row.querySelector('[data-pwd]').textContent : '••••••••');
+            row.querySelector('[data-pwd]').textContent = entry.type === 'note' ? tr('vault_secure_note') : (revealed ? row.querySelector('[data-pwd]').textContent : '••••••••');
             totpBtn.innerHTML = iconaLinea('codice');
-            totpBtn.title = 'Codice TOTP';
+            totpBtn.title = tr('title_totp_code');
             return;
           }
           const pwdEl = row.querySelector('[data-pwd]');
@@ -1690,13 +1697,13 @@
               const { code, secondsRemaining } = await api(`/vault/${entry.id}/totp`);
               pwdEl.textContent = `${code} (${secondsRemaining}s)`;
             } catch (e) {
-              pwdEl.textContent = 'Codice non disponibile';
+              pwdEl.textContent = tr('vault_code_unavailable');
             }
           };
           await showCode();
           totpTimer = setInterval(showCode, 1000);
           totpBtn.innerHTML = iconaLinea('occhio-off');
-          totpBtn.title = 'Nascondi codice';
+          totpBtn.title = tr('title_hide_code');
         });
       }
       row.querySelector('[data-edit]').addEventListener('click', () => {
@@ -1704,16 +1711,16 @@
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           await api(`/vault/${entry.id}`, { method: 'PUT', body: JSON.stringify(collectVaultPayload(form, entry)) });
-          closeModal(); toast('Voce aggiornata'); render('vault');
+          closeModal(); toast(tr('toast_vault_updated')); render('vault');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Modifica voce vault', form);
+        openModal(tr('modal_edit_vault_entry'), form);
       });
       row.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('vault', entry.id, entry.site));
       row.querySelector('[data-del]').addEventListener('click', async () => {
-        if (!confirm('Spostare questa voce nel cestino?')) return;
+        if (!confirm(tr('confirm_delete_vault_entry'))) return;
         await api(`/vault/${entry.id}`, { method: 'DELETE' });
-        toast('Voce eliminata'); render('vault');
+        toast(tr('toast_vault_deleted')); render('vault');
       });
       if (highlightId && String(entry.id) === highlightId) row.classList.add('card-highlight');
       body.appendChild(row);
@@ -1728,13 +1735,13 @@
   // ACCOUNT
   // ==================================================================
   const BILLING_LABELS = {
-    '': 'Non specificata',
-    settimanale: 'Settimanale',
-    mensile: 'Mensile',
-    trimestrale: 'Trimestrale',
-    semestrale: 'Semestrale',
-    annuale: 'Annuale',
-    una_tantum: 'Una tantum',
+    '': tr('billing_unspecified'),
+    settimanale: tr('billing_weekly'),
+    mensile: tr('billing_monthly'),
+    trimestrale: tr('billing_quarterly'),
+    semestrale: tr('billing_semiannual'),
+    annuale: tr('billing_annual'),
+    una_tantum: tr('billing_onetime'),
   };
 
   // Cosa serve per individuare il rinnovo dipende dalla cadenza: settimanale
@@ -1788,60 +1795,60 @@
   function accountModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Servizio / abbonamento</label><input type="text" name="service" required /></div>
-        <div class="form-row"><label>Tipo</label>
+        <div class="form-row"><label>${esc(tr('field_service'))}</label><input type="text" name="service" required /></div>
+        <div class="form-row"><label>${esc(tr('field_type'))}</label>
           <select name="type">
-            <option value="digitale">Digitale</option>
-            <option value="cartaceo">Cartaceo / fisico</option>
+            <option value="digitale">${esc(tr('account_type_digital'))}</option>
+            <option value="cartaceo">${esc(tr('account_type_paper'))}</option>
           </select>
         </div>
         <div data-type-fields="digitale">
-          <div class="form-row"><label>Email</label><input type="text" name="email" /></div>
-          <div class="form-row"><label>Piano</label><input type="text" name="plan" /></div>
+          <div class="form-row"><label>${esc(tr('field_email'))}</label><input type="text" name="email" /></div>
+          <div class="form-row"><label>${esc(tr('field_plan'))}</label><input type="text" name="plan" /></div>
         </div>
         <div data-type-fields="cartaceo">
-          <div class="form-row"><label>Luogo / negozio</label><input type="text" name="location" placeholder="es. edicola, negozio" /></div>
-          <div class="form-row"><label>Modalita' di pagamento</label><input type="text" name="payment_method" placeholder="es. contanti, bonifico" /></div>
+          <div class="form-row"><label>${esc(tr('field_location'))}</label><input type="text" name="location" placeholder="${esc(tr('field_location_placeholder'))}" /></div>
+          <div class="form-row"><label>${esc(tr('field_payment_method'))}</label><input type="text" name="payment_method" placeholder="${esc(tr('field_payment_method_placeholder'))}" /></div>
         </div>
-        <div class="form-row"><label>Frequenza di addebito</label>
+        <div class="form-row"><label>${esc(tr('field_billing_frequency'))}</label>
           <select name="billing_frequency">
             ${Object.entries(BILLING_LABELS).map(([v, label]) => `<option value="${v}">${esc(label)}</option>`).join('')}
           </select>
         </div>
-        <div class="form-row"><label>Importo</label><input type="number" name="amount" step="0.01" min="0" placeholder="es. 9.99" /></div>
-        <div class="form-row"><label>Data di inizio (opzionale)</label><input type="date" name="start_date" /></div>
+        <div class="form-row"><label>${esc(tr('field_amount'))}</label><input type="number" name="amount" step="0.01" min="0" placeholder="${esc(tr('field_amount_placeholder'))}" /></div>
+        <div class="form-row"><label>${esc(tr('field_start_date_optional'))}</label><input type="date" name="start_date" /></div>
         <div data-billing-fields="settimanale" class="form-row">
-          <label>Rinnovo: giorno della settimana</label>
+          <label>${esc(tr('renewal_weekday_label'))}</label>
           <select name="renewal_weekday">
             <option value="">—</option>
             ${WEEKDAY_LABELS_FULL.map((w, i) => `<option value="${i + 1}">${esc(w)}</option>`).join('')}
           </select>
         </div>
         <div data-billing-fields="mensile" class="form-row">
-          <label>Rinnovo: giorno del mese</label>
+          <label>${esc(tr('renewal_monthday_label'))}</label>
           <select name="renewal_monthday">
             <option value="">—</option>
             ${Array.from({ length: 31 }, (_, i) => i + 1).map((d) => `<option value="${d}">${d}</option>`).join('')}
           </select>
         </div>
         <div data-billing-fields="trimestrale semestrale annuale" class="form-row">
-          <label>Rinnovo: giorno e mese di riferimento</label>
+          <label>${esc(tr('renewal_daymonth_label'))}</label>
           <div style="display:flex;gap:8px">
             <select name="renewal_day" style="flex:1">
-              <option value="">Giorno</option>
+              <option value="">${esc(tr('field_day'))}</option>
               ${Array.from({ length: 31 }, (_, i) => i + 1).map((d) => `<option value="${d}">${d}</option>`).join('')}
             </select>
             <select name="renewal_month" style="flex:2">
-              <option value="">Mese</option>
+              <option value="">${esc(tr('field_month'))}</option>
               ${MONTH_LABELS.map((m, i) => `<option value="${i + 1}">${esc(m)}</option>`).join('')}
             </select>
           </div>
         </div>
-        <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
-        <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
+        <div class="form-row"><label>${esc(tr('field_notes'))}</label><textarea name="notes" rows="3"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_tags'))}</label><input type="text" name="tags" /></div>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_save'))}</button>
         </div>
       </form>
     `);
@@ -1889,36 +1896,36 @@
     if (account.vaultEntry) {
       const current = el(`
         <div class="trash-row row-card">
-          <span>Collegata: ${esc(account.vaultEntry.site)}${account.vaultEntry.username ? ' · ' + esc(account.vaultEntry.username) : ''}</span>
-          <button class="btn btn-sm btn-danger">Scollega</button>
+          <span>${tr('credentials_linked_label', { label: esc(account.vaultEntry.site) + (account.vaultEntry.username ? ' · ' + esc(account.vaultEntry.username) : '') })}</span>
+          <button class="btn btn-sm btn-danger">${esc(tr('btn_unlink'))}</button>
         </div>
       `);
       current.querySelector('button').addEventListener('click', async () => {
         await api(`/accounts/${account.id}`, { method: 'PUT', body: JSON.stringify({ vault_entry_id: null }) });
-        toast('Credenziali scollegate');
+        toast(tr('toast_credentials_unlinked'));
         closeModal(); render('accounts');
       });
       wrap.appendChild(current);
     }
     if (!entries.length) {
-      wrap.appendChild(el('<p class="card-sub">Non hai ancora nessuna voce nel Vault. Creane una dalla sezione Vault.</p>'));
+      wrap.appendChild(el(`<p class="card-sub">${esc(tr('vault_none_yet'))}</p>`));
     } else {
       entries.forEach((v) => {
         const row = el(`
           <div class="trash-row row-card">
             <span>${esc(v.site)}${v.username ? ' · ' + esc(v.username) : ''}</span>
-            <button class="btn btn-sm btn-primary">Collega</button>
+            <button class="btn btn-sm btn-primary">${esc(tr('btn_link'))}</button>
           </div>
         `);
         row.querySelector('button').addEventListener('click', async () => {
           await api(`/accounts/${account.id}`, { method: 'PUT', body: JSON.stringify({ vault_entry_id: v.id }) });
-          toast(`Credenziali "${v.site}" collegate`);
+          toast(tr('toast_credentials_linked', { site: v.site }));
           closeModal(); render('accounts');
         });
         wrap.appendChild(row);
       });
     }
-    openModal('Collega credenziali dal Vault', wrap);
+    openModal(tr('modal_link_credentials'), wrap);
   }
 
   views.accounts = async (root, opts = {}) => {
@@ -1927,8 +1934,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Abbonamenti</h2>
-        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-account">+ Nuovo abbonamento</button></div>
+        <h2>${esc(tr('nav_accounts_title'))}</h2>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-account">${esc(tr('btn_new_account'))}</button></div>
       </div>
     `));
     wireBackToDossier(root, opts);
@@ -1963,14 +1970,14 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await api('/accounts', { method: 'POST', body: JSON.stringify(accountPayload(form)) });
-        closeModal(); toast('Abbonamento salvato'); render('accounts');
+        closeModal(); toast(tr('toast_account_saved')); render('accounts');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuovo abbonamento', form);
+      openModal(tr('modal_new_account'), form);
     });
 
     if (!accounts.length) {
-      root.appendChild(el('<div class="empty-state">Nessun abbonamento ancora.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_accounts'))}</div>`));
       return;
     }
 
@@ -1986,11 +1993,11 @@
       if (withRenewal.length) {
         const soonest = withRenewal[0];
         const days = daysUntil(soonest.next.toISOString().slice(0, 10));
-        const dayLabel = days === 0 ? 'oggi' : days === 1 ? 'domani' : `tra ${days} giorni`;
+        const dayLabel = days === 0 ? tr('today_lc') : days === 1 ? tr('due_tomorrow') : tr('due_in_n', { n: days, unit: tr('day_other') });
         root.appendChild(el(`
           <div class="section-block" style="margin-bottom:14px">
-            <p class="card-sub" style="margin-bottom:4px">Prossimo rinnovo</p>
-            <p class="card-title" style="font-size:1rem">${esc(soonest.a.service)} — ${soonest.next.getDate()} ${esc(MONTH_LABELS[soonest.next.getMonth()])} (${dayLabel})</p>
+            <p class="card-sub" style="margin-bottom:4px">${esc(tr('next_renewal_title'))}</p>
+            <p class="card-title" style="font-size:1rem">${tr('next_renewal_line', { service: esc(soonest.a.service), day: soonest.next.getDate(), month: esc(MONTH_LABELS[soonest.next.getMonth()]), when: esc(dayLabel) })}</p>
           </div>
         `));
       }
@@ -2010,11 +2017,11 @@
       // della frequenza (vedi nextRenewalDate): per mostrarli si usa sempre
       // la prossima data vera e propria gia' calcolata, mai i campi grezzi.
       const renewalLabel = next
-        ? `${next.getDate()} ${MONTH_LABELS[next.getMonth()]} (tra ${daysUntil(next.toISOString().slice(0, 10))} giorni)`
+        ? tr('field_renewal_label', { day: next.getDate(), month: esc(MONTH_LABELS[next.getMonth()]), when: tr('due_in_n', { n: daysUntil(next.toISOString().slice(0, 10)), unit: tr('day_other') }) })
         : '';
       const card = el(`
         <div class="card">
-          <span class="tag tag-neutral" style="width:fit-content">${isCartaceo ? 'Cartaceo' : 'Digitale'}</span>
+          <span class="tag tag-neutral" style="width:fit-content">${isCartaceo ? esc(tr('account_type_paper')) : esc(tr('account_type_digital'))}</span>
           <p class="card-title">${esc(a.service)}</p>
           ${isCartaceo
             ? `<p class="card-sub">${esc(a.location) || '—'}${a.payment_method ? ' · ' + esc(a.payment_method) : ''}</p>`
@@ -2022,15 +2029,15 @@
           ${a.billing_frequency || a.amount != null
             ? `<p class="card-sub">${a.billing_frequency ? esc(BILLING_LABELS[a.billing_frequency] || a.billing_frequency) : ''}${a.billing_frequency && a.amount != null ? ' · ' : ''}${a.amount != null ? fmtMoney(a.amount) : ''}</p>`
             : ''}
-          ${a.start_date ? `<p class="card-sub">Inizio: ${fmtDate(a.start_date)}</p>` : ''}
-          ${renewalLabel ? `<p class="card-sub">Rinnovo: ${esc(renewalLabel)}</p>` : ''}
-          ${a.vaultEntry ? `<p class="card-sub">Credenziali: ${esc(a.vaultEntry.site)}${a.vaultEntry.username ? ' · ' + esc(a.vaultEntry.username) : ''}</p>` : ''}
+          ${a.start_date ? `<p class="card-sub">${tr('field_start_date_label', { date: fmtDate(a.start_date) })}</p>` : ''}
+          ${renewalLabel ? `<p class="card-sub">${renewalLabel}</p>` : ''}
+          ${a.vaultEntry ? `<p class="card-sub">${tr('credentials_prefix', { label: esc(a.vaultEntry.site) + (a.vaultEntry.username ? ' · ' + esc(a.vaultEntry.username) : '') })}</p>` : ''}
           <div class="tag-row">${(a.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
           <div class="card-actions">
-            <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm" data-link>Cartella</button>
-            <button class="btn btn-sm" data-vault>${a.vaultEntry ? 'Cambia credenziali' : 'Collega credenziali'}</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina</button>
+            <button class="btn btn-sm" data-edit>${esc(tr('btn_edit'))}</button>
+            <button class="btn btn-sm" data-link>${esc(tr('btn_link_folder'))}</button>
+            <button class="btn btn-sm" data-vault>${a.vaultEntry ? esc(tr('btn_change_credentials')) : esc(tr('btn_link_credentials'))}</button>
+            <button class="btn btn-sm btn-danger" data-del>${esc(tr('btn_delete'))}</button>
           </div>
         </div>
       `);
@@ -2039,17 +2046,17 @@
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           await api(`/accounts/${a.id}`, { method: 'PUT', body: JSON.stringify(accountPayload(form)) });
-          closeModal(); toast('Abbonamento aggiornato'); render('accounts');
+          closeModal(); toast(tr('toast_account_updated')); render('accounts');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Modifica abbonamento', form);
+        openModal(tr('modal_edit_account'), form);
       });
       card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('account', a.id, a.service));
       card.querySelector('[data-vault]').addEventListener('click', () => openLinkVaultModal(a));
       card.querySelector('[data-del]').addEventListener('click', async () => {
-        if (!confirm('Spostare questo abbonamento nel cestino?')) return;
+        if (!confirm(tr('confirm_delete_account'))) return;
         await api(`/accounts/${a.id}`, { method: 'DELETE' });
-        toast('Abbonamento eliminato'); render('accounts');
+        toast(tr('toast_account_deleted')); render('accounts');
       });
       if (highlightId && String(a.id) === highlightId) card.classList.add('card-highlight');
       grid.appendChild(card);
@@ -2614,7 +2621,7 @@
     wallpaperBlock.appendChild(wallpaperRow);
     root.appendChild(wallpaperBlock);
 
-    const langBlock = el(`<div class="section-block"><h3>${esc(t('settings_language'))}</h3><p class="card-sub">${esc(t('settings_language_hint'))}</p></div>`);
+    const langBlock = el(`<div class="section-block"><h3>${esc(tr('settings_language'))}</h3><p class="card-sub">${esc(tr('settings_language_hint'))}</p></div>`);
     const langRow = el('<div class="card-actions" style="padding-top:10px"></div>');
     [['it', 'Italiano'], ['en', 'English']].forEach(([code, label]) => {
       const btn = el(`<button class="btn btn-sm${code === I18N.getLang() ? ' btn-primary' : ''}" data-lang="${code}"></button>`);
@@ -2711,11 +2718,9 @@
     e.preventDefault();
   });
 
-  // Commit da cui gira questa build: si vede sia prima sia dopo l'accesso,
-  // cosi' si controlla a colpo d'occhio se il container e' stato davvero
-  // aggiornato invece di continuare a girare su un'immagine vecchia in cache.
+  // Versione applicativa: si vede sia prima sia dopo l'accesso.
   api('/health').then((health) => {
-    const label = `build ${health.version}`;
+    const label = tr('version_label', { version: health.version });
     const authEl = document.getElementById('auth-version');
     const sidebarEl = document.getElementById('sidebar-version');
     if (authEl) authEl.textContent = label;
@@ -2745,8 +2750,11 @@
     langScreen.querySelectorAll('[data-lang]').forEach((btn) => {
       btn.addEventListener('click', () => {
         I18N.setLang(btn.dataset.lang);
-        langScreen.classList.add('hidden');
-        startAfterLanguage();
+        // Un ricaricamento vero, non solo un re-render: titoli finestra, mesi,
+        // giorni della settimana ecc. sono costanti calcolate una volta sola
+        // all'avvio dello script (prima ancora che questa scelta esistesse),
+        // quindi restano nella lingua di default finche' lo script non riparte.
+        location.reload();
       });
     });
   }
