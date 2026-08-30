@@ -345,6 +345,30 @@ window.MindkeepI18n = (() => {
       wallpaper_sunset: 'Vaporwave — Tramonto',
       wallpaper_palm: 'Vaporwave — Palma',
       wallpaper_gray: 'Grigio',
+      btn_logout: 'Esci',
+
+      // Cattura veloce
+      qc_desc_note: 'nota veloce',
+      qc_desc_doc: 'carica documento',
+      qc_desc_reminder: 'nuovo promemoria',
+      qc_desc_project: 'nuovo progetto',
+      qc_placeholder: 'Scrivi una nota — o / per un altro tipo, @ per una cartella, # per un tag',
+      qc_hint: '/ per il tipo · @ per collegare una cartella · # per un tag',
+      title_remove: 'Rimuovi',
+      qc_desc_folder: 'cartella',
+      qc_desc_tag: 'tag',
+      no_results: 'Nessun risultato',
+      err_notification_permission_denied: 'Permesso negato per le notifiche',
+      err_server_key_unavailable: 'Chiave del server non disponibile',
+      err_offline: 'Sei offline: serve una connessione al server per questa operazione.',
+      err_session_expired: 'Sessione scaduta',
+      err_unexpected: 'Errore imprevisto',
+      aria_search: 'Cerca',
+      aria_close: 'Chiudi',
+      aria_split_app: 'Affianca un\'altra app',
+      aria_minimize: 'Riduci a icona',
+      aria_maximize: 'Ingrandisci',
+      title_quick_capture: 'Cattura veloce — sempre disponibile',
     },
     en: {
       app_name: 'Mindkeep',
@@ -671,6 +695,29 @@ window.MindkeepI18n = (() => {
       wallpaper_sunset: 'Vaporwave — Sunset',
       wallpaper_palm: 'Vaporwave — Palm',
       wallpaper_gray: 'Gray',
+      btn_logout: 'Log out',
+
+      qc_desc_note: 'quick note',
+      qc_desc_doc: 'upload document',
+      qc_desc_reminder: 'new reminder',
+      qc_desc_project: 'new project',
+      qc_placeholder: 'Write a note — or / for another type, @ for a folder, # for a tag',
+      qc_hint: '/ for the type · @ to link a folder · # for a tag',
+      title_remove: 'Remove',
+      qc_desc_folder: 'folder',
+      qc_desc_tag: 'tag',
+      no_results: 'No results',
+      err_notification_permission_denied: 'Notification permission denied',
+      err_server_key_unavailable: 'Server key unavailable',
+      err_offline: 'You\'re offline: this needs a connection to the server.',
+      err_session_expired: 'Session expired',
+      err_unexpected: 'Unexpected error',
+      aria_search: 'Search',
+      aria_close: 'Close',
+      aria_split_app: 'Split with another app',
+      aria_minimize: 'Minimize',
+      aria_maximize: 'Maximize',
+      title_quick_capture: 'Quick capture — always available',
     },
   };
 
@@ -710,6 +757,12 @@ window.MindkeepI18n = (() => {
     });
     (root || document).querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
       el.setAttribute('placeholder', t(el.dataset.i18nPlaceholder));
+    });
+    (root || document).querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+      el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel));
+    });
+    (root || document).querySelectorAll('[data-i18n-title]').forEach((el) => {
+      el.setAttribute('title', t(el.dataset.i18nTitle));
     });
   }
 

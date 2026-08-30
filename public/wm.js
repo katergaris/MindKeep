@@ -247,6 +247,7 @@ window.MindkeepWM = (() => {
     const titlebarEl = el.querySelector('.titlebar');
     const contentEl = el.querySelector('.win-content');
     el.id = id;
+    if (window.MindkeepI18n) window.MindkeepI18n.applyStaticTranslations(el);
     el.querySelector('.titlebar-icon').innerHTML = icon || '';
     el.querySelector('.titlebar-label').textContent = title;
     if (!resizable) el.querySelectorAll('.resize-handle').forEach((h) => h.remove());

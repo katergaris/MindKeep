@@ -32,9 +32,9 @@
 
   async function enablePushNotifications() {
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') throw new Error('Permesso negato per le notifiche');
+    if (permission !== 'granted') throw new Error(tr('err_notification_permission_denied'));
     const { publicKey } = await api('/push/vapid-public-key');
-    if (!publicKey) throw new Error('Chiave del server non disponibile');
+    if (!publicKey) throw new Error(tr('err_server_key_unavailable'));
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -63,20 +63,20 @@
       // fetch() lancia (invece di rispondere con un errore HTTP) quando non
       // c'e' proprio connessione: senza questo l'utente vedeva "Failed to
       // fetch" invece di un messaggio comprensibile.
-      throw new Error('Sei offline: serve una connessione al server per questa operazione.');
+      throw new Error(tr('err_offline'));
     }
     // Un 401 sulle rotte di accesso e' una credenziale sbagliata, non una
     // sessione scaduta: va lasciato passare alla schermata di login, che sa
     // spiegare cosa manca (password errata, codice a due fattori, ...).
     if (res.status === 401 && !path.startsWith('/auth/')) {
       showAuthScreen();
-      throw new Error('Sessione scaduta');
+      throw new Error(tr('err_session_expired'));
     }
     if (res.status === 204) return null;
     let data = null;
     try { data = await res.json(); } catch (e) { /* corpo vuoto */ }
     if (!res.ok) {
-      const err = new Error((data && data.error) || 'Errore imprevisto');
+      const err = new Error((data && data.error) || tr('err_unexpected'));
       err.status = res.status;
       err.data = data || {};
       throw err;
@@ -177,6 +177,7 @@
     closeModal();
     const frag = modalTpl.content.cloneNode(true);
     const backdrop = frag.querySelector('.modal-backdrop');
+    I18N.applyStaticTranslations(backdrop);
     frag.querySelector('.modal-title').textContent = title;
     frag.querySelector('.modal-body').appendChild(bodyNode);
     frag.querySelector('.modal-close').addEventListener('click', closeModal);
@@ -469,7 +470,7 @@
     return (item) => !opts.only || String(item.id) === String(opts.only);
   }
   function backToDossierButtonHtml(opts) {
-    return opts.fromDossier ? '<button type="button" class="btn btn-sm" data-back-to-dossier>← Torna alla cartella</button>' : '';
+    return opts.fromDossier ? `<button type="button" class="btn btn-sm" data-back-to-dossier>${esc(tr('btn_back_to_folder'))}</button>` : '';
   }
   function wireBackToDossier(root, opts) {
     if (!opts.fromDossier) return;
@@ -495,7 +496,7 @@
       items.appendChild(row);
     });
     items.appendChild(el('<div class="menu-divider"></div>'));
-    const esci = el(`<div class="menu-row">${appIcon('esci')}<span>Esci</span></div>`);
+    const esci = el(`<div class="menu-row">${appIcon('esci')}<span>${esc(tr('btn_logout'))}</span></div>`);
     esci.addEventListener('click', () => { closeStartMenu(); logout(); });
     items.appendChild(esci);
     startMenu.appendChild(sidebar);
@@ -610,7 +611,7 @@
     noteEl.innerHTML = `
       <p class="postit-expanded-title">${esc(idea.title)}</p>
       ${idea.body ? `<p class="postit-expanded-body">${esc(idea.body)}</p>` : ''}
-      ${total ? `<p class="postit-expanded-sub">${done}/${total} completati</p>` : ''}
+      ${total ? `<p class="postit-expanded-sub">${esc(tr('label_completed_count', { done, total }))}</p>` : ''}
       ${(idea.tags || []).length ? `<div class="tag-row">${idea.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
     `;
     expandedPostit = { el: noteEl, original };
@@ -658,10 +659,10 @@
   let qcMenuEl = null, qcMenuItems = [], qcMenuActive = 0, qcMenuTrigger = null, qcSelectedDossier = null;
 
   const QC_COMMANDS = [
-    { token: '/nota', desc: 'nota veloce' },
-    { token: '/doc', desc: 'carica documento' },
-    { token: '/scadenza', desc: 'nuovo promemoria' },
-    { token: '/progetto', desc: 'nuovo progetto' },
+    { token: '/nota', desc: tr('qc_desc_note') },
+    { token: '/doc', desc: tr('qc_desc_doc') },
+    { token: '/scadenza', desc: tr('qc_desc_reminder') },
+    { token: '/progetto', desc: tr('qc_desc_project') },
   ];
 
   function closeQuickCapture() {
@@ -677,13 +678,13 @@
     const dossiers = await api('/dossiers').catch(() => []);
     const composer = el(`
       <div class="composer">
-        <textarea id="qc-text" placeholder="Scrivi una nota — o / per un altro tipo, @ per una cartella, # per un tag" rows="2"></textarea>
+        <textarea id="qc-text" placeholder="${esc(tr('qc_placeholder'))}" rows="2"></textarea>
         <div id="qc-link-badge"></div>
         <div class="composer-row">
-          <button type="button" class="btn btn-primary" id="qc-save">Salva</button>
+          <button type="button" class="btn btn-primary" id="qc-save">${esc(tr('btn_save'))}</button>
         </div>
         <div class="composer-hint">
-          <span>/ per il tipo · @ per collegare una cartella · # per un tag</span>
+          <span>${esc(tr('qc_hint'))}</span>
         </div>
       </div>
     `);
@@ -699,7 +700,7 @@
     function renderLinkBadge() {
       linkBadgeWrap.innerHTML = '';
       if (!qcSelectedDossier) return;
-      const badge = el(`<span class="composer-link-badge">→ ${esc(qcSelectedDossier.title)} <button type="button" title="Rimuovi">✕</button></span>`);
+      const badge = el(`<span class="composer-link-badge">→ ${esc(qcSelectedDossier.title)} <button type="button" title="${esc(tr('title_remove'))}">✕</button></span>`);
       badge.querySelector('button').addEventListener('click', () => { qcSelectedDossier = null; renderLinkBadge(); });
       linkBadgeWrap.appendChild(badge);
     }
@@ -739,9 +740,9 @@
       if (trigger.type === '/') {
         openQcMenu(QC_COMMANDS.filter((c) => c.token.slice(1).startsWith(trigger.query)));
       } else if (trigger.type === '@') {
-        openQcMenu(dossiers.filter((d) => d.title.toLowerCase().includes(trigger.query)).map((d) => ({ token: '@' + d.title, desc: 'cartella', dossier: d })));
+        openQcMenu(dossiers.filter((d) => d.title.toLowerCase().includes(trigger.query)).map((d) => ({ token: '@' + d.title, desc: tr('qc_desc_folder'), dossier: d })));
       } else {
-        openQcMenu(knownTags.filter((t) => t.toLowerCase().startsWith(trigger.query)).map((t) => ({ token: '#' + t, desc: 'tag' })));
+        openQcMenu(knownTags.filter((t) => t.toLowerCase().startsWith(trigger.query)).map((t) => ({ token: '#' + t, desc: tr('qc_desc_tag') })));
       }
     }
     async function selectQcMenuItem(i) {
@@ -770,10 +771,10 @@
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
-          closeModal(); toast('Scadenza salvata'); closeQuickCapture(); render('reminders');
+          closeModal(); toast(tr('toast_reminder_saved')); closeQuickCapture(); render('reminders');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Nuova scadenza', form);
+        openModal(tr('modal_new_reminder'), form);
         return;
       }
       if (item.token === '/doc') {
@@ -816,7 +817,7 @@
           await api(`/dossiers/${qcSelectedDossier.id}/links`, { method: 'POST', body: JSON.stringify({ item_type: 'idea', item_id: idea.id }) });
           if (MindkeepWM.getWindow(windowId('dossiers'))) render('dossiers', { highlight: qcSelectedDossier.id });
         }
-        toast('Nota salvata');
+        toast(tr('toast_idea_saved'));
         closeQuickCapture();
         buildDesktop();
       } finally {
@@ -1188,16 +1189,16 @@
           const tags = parseTags(form);
           const checklist = collectChecklist(form, idea.checklist);
           await api(`/ideas/${idea.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, body: form.body.value, tags, checklist }) });
-          closeModal(); toast('Nota aggiornata'); render('ideas');
+          closeModal(); toast(tr('toast_idea_updated')); render('ideas');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Modifica nota', form);
+        openModal(tr('modal_edit_idea'), form);
       });
       card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('idea', idea.id, idea.title));
       card.querySelector('[data-del]').addEventListener('click', async () => {
-        if (!confirm('Spostare questa nota nel cestino?')) return;
+        if (!confirm(tr('confirm_delete_idea'))) return;
         await api(`/ideas/${idea.id}`, { method: 'DELETE' });
-        toast('Nota eliminata'); render('ideas');
+        toast(tr('toast_idea_deleted')); render('ideas');
       });
       if (highlightId && String(idea.id) === highlightId) card.classList.add('card-highlight');
       grid.appendChild(card);
@@ -2674,7 +2675,7 @@
       if (searchInput.value.trim() !== q) return;
       searchResults.innerHTML = '';
       if (!results.length) {
-        searchResults.appendChild(el('<div class="search-result-item">Nessun risultato</div>'));
+        searchResults.appendChild(el(`<div class="search-result-item">${esc(tr('no_results'))}</div>`));
       } else {
         results.slice(0, 20).forEach((r) => {
           const item = el(`<div class="search-result-item"><span>${esc(r.label)}</span><span class="search-result-tag">${esc(TYPE_LABELS[r.type] || r.type)}</span></div>`);
@@ -2705,8 +2706,8 @@
   // Molti handler fanno "await api(...)" senza try/catch: senza questa rete di
   // sicurezza un errore restava solo in console e per l'utente non succedeva nulla.
   window.addEventListener('unhandledrejection', (e) => {
-    const msg = e.reason && e.reason.message ? e.reason.message : 'Errore imprevisto';
-    if (msg !== 'Sessione scaduta') toast(msg);
+    const msg = e.reason && e.reason.message ? e.reason.message : tr('err_unexpected');
+    if (msg !== tr('err_session_expired')) toast(msg);
     e.preventDefault();
   });
 
