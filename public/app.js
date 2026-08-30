@@ -668,19 +668,56 @@
   function closeQuickCapture() {
     quickCaptureEl.classList.add('hidden');
     quickCaptureEl.innerHTML = '';
+    // Riportata alla posizione di default (in alto al centro): uno
+    // spostamento manuale non e' pensato per restare tra un'apertura e
+    // l'altra, solo per togliersi di mezzo da quello che stai facendo ora.
+    quickCaptureEl.style.left = '';
+    quickCaptureEl.style.top = '';
+    quickCaptureEl.style.transform = '';
     btnNuovo.classList.remove('pressed');
     qcMenuEl = null; qcMenuItems = []; qcMenuTrigger = null; qcSelectedDossier = null;
+  }
+
+  // Trascinamento libero del riquadro tramite la barretta in cima — stessa
+  // tecnica pointer-capture di attachDrag() in wm.js, ma indipendente: la
+  // cattura veloce non e' una finestra vera (niente focus/z-index/taskbar).
+  function attachQcDrag(handle) {
+    handle.addEventListener('pointerdown', (e) => {
+      handle.setPointerCapture(e.pointerId);
+      const rect = quickCaptureEl.getBoundingClientRect();
+      quickCaptureEl.style.left = rect.left + 'px';
+      quickCaptureEl.style.top = rect.top + 'px';
+      quickCaptureEl.style.transform = 'none';
+      const startX = e.clientX, startY = e.clientY;
+      const startLeft = rect.left, startTop = rect.top;
+      const onMove = (e2) => {
+        const left = Math.max(4, Math.min(window.innerWidth - 60, startLeft + (e2.clientX - startX)));
+        const top = Math.max(4, Math.min(window.innerHeight - 60, startTop + (e2.clientY - startY)));
+        quickCaptureEl.style.left = left + 'px';
+        quickCaptureEl.style.top = top + 'px';
+      };
+      const onUp = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
   }
 
   async function openQuickCapture(presetDossier) {
     closeStartMenu();
     quickCaptureEl.innerHTML = '';
     const dossiers = await api('/dossiers').catch(() => []);
+    const dragHandle = el(`<div class="qc-drag-handle" title="${esc(tr('qc_drag_title'))}">⋮⋮⋮</div>`);
     const composer = el(`
       <div class="composer">
         <textarea id="qc-text" placeholder="${esc(tr('qc_placeholder'))}" rows="2"></textarea>
         <div id="qc-link-badge"></div>
         <div class="composer-row">
+          <button type="button" class="btn btn-sm" id="qc-type" title="${esc(tr('qc_change_type'))}">…</button>
           <button type="button" class="btn btn-primary" id="qc-save">${esc(tr('btn_save'))}</button>
         </div>
         <div class="composer-hint">
@@ -688,9 +725,11 @@
         </div>
       </div>
     `);
+    quickCaptureEl.appendChild(dragHandle);
     quickCaptureEl.appendChild(composer);
     quickCaptureEl.classList.remove('hidden');
     btnNuovo.classList.add('pressed');
+    attachQcDrag(dragHandle);
 
     const textarea = composer.querySelector('#qc-text');
     const linkBadgeWrap = composer.querySelector('#qc-link-badge');
@@ -745,11 +784,41 @@
         openQcMenu(knownTags.filter((t) => t.toLowerCase().startsWith(trigger.query)).map((t) => ({ token: '#' + t, desc: tr('qc_desc_tag') })));
       }
     }
+    // Cambiare tipo (da /comando digitato o dal tasto "…") non scrive mai
+    // dentro la cattura veloce: /nota resta li' (e' gia' il default), gli
+    // altri chiudono il riquadro e aprono la schermata di inserimento
+    // completa di quel tipo — la stessa che permette anche di scegliere una
+    // cartella, cosa che qui non e' mai stata replicata apposta.
+    function applyTypeCommand(token) {
+      if (token === '/nota') return;
+      if (token === '/scadenza') {
+        const form = reminderModal();
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
+          closeModal(); toast(tr('toast_reminder_saved')); closeQuickCapture(); render('reminders');
+        });
+        form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+        openModal(tr('modal_new_reminder'), form);
+        return;
+      }
+      if (token === '/doc') {
+        closeQuickCapture();
+        render('drive').then(() => { const btn = document.getElementById('new-doc'); if (btn) btn.click(); });
+        return;
+      }
+      if (token === '/progetto') {
+        closeQuickCapture();
+        render('projects').then(() => { const btn = document.getElementById('new-project'); if (btn) btn.click(); });
+      }
+    }
+
     async function selectQcMenuItem(i) {
       const item = qcMenuItems[i];
       const trigger = qcMenuTrigger;
       closeQcMenu();
       if (!item || !trigger) return;
+      if (trigger.type === 'button') { applyTypeCommand(item.token); return; }
       if (trigger.type === '#') {
         const before = textarea.value.slice(0, trigger.start);
         const after = textarea.value.slice(trigger.end);
@@ -765,32 +834,16 @@
       const caret = before.length;
       textarea.focus(); textarea.setSelectionRange(caret, caret);
       if (trigger.type === '@') { qcSelectedDossier = item.dossier; renderLinkBadge(); return; }
-      if (item.token === '/nota') return;
-      if (item.token === '/scadenza') {
-        const form = reminderModal();
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
-          closeModal(); toast(tr('toast_reminder_saved')); closeQuickCapture(); render('reminders');
-        });
-        form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal(tr('modal_new_reminder'), form);
-        return;
-      }
-      if (item.token === '/doc') {
-        closeQuickCapture();
-        await render('drive');
-        const btn = document.getElementById('new-doc');
-        if (btn) btn.click();
-        return;
-      }
-      if (item.token === '/progetto') {
-        closeQuickCapture();
-        await render('projects');
-        const btn = document.getElementById('new-project');
-        if (btn) btn.click();
-      }
+      applyTypeCommand(item.token);
     }
+
+    composer.querySelector('#qc-type').addEventListener('click', () => {
+      qcMenuTrigger = { type: 'button' };
+      openQcMenu(QC_COMMANDS);
+      // Rimette il focus sul testo: le frecce/Invio per scegliere dal menu
+      // sono gestite dal keydown della textarea, non del tasto "…".
+      textarea.focus();
+    });
 
     textarea.addEventListener('input', updateQcMenu);
     textarea.addEventListener('click', updateQcMenu);
@@ -2641,10 +2694,9 @@
   const searchToggle = document.getElementById('search-toggle');
   let searchTimer = null;
 
-  // Su telefono la ricerca sta dietro un'icona: apre a tutta larghezza al tocco
-  // e libera lo spazio che occupava fissa in cima. Su schermo largo l'icona e'
-  // nascosta dal CSS e il campo resta sempre visibile.
-  searchToggle.innerHTML = iconaLinea('cerca');
+  // La ricerca sta sempre dietro l'icona lente in taskbar (desktop e mobile
+  // allo stesso modo): al tocco apre la barra in cima, libera lo spazio
+  // quando non serve.
   searchToggle.addEventListener('click', () => {
     const aperta = topbar.classList.toggle('search-open');
     searchToggle.setAttribute('aria-expanded', String(aperta));

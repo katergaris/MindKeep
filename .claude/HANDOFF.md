@@ -389,6 +389,38 @@ tipo di bug (classe usata in JS/HTML ma mai definita in CSS — gia' visto con
   comprensione e aspetto conferma prima di procedere — controlla la
   conversazione per la risposta dell'utente prima di iniziare.
 
+## Sessione 30/08/2026 (settima parte): redesign ricerca e cattura veloce
+
+Proposta confermata dall'utente (vedi sezione precedente) e implementata:
+
+- **Ricerca**: da barra sempre visibile a icona lente in taskbar (accanto ad
+  Avvio, `#search-toggle` — stesso id di prima, solo spostato dal topbar
+  alla taskbar) che apre `#topbar` al tocco. Stessa barra desktop e mobile
+  adesso, nessuna distinzione responsive: `.topbar { display:none }` di
+  base, `.topbar.search-open { display:flex }` la mostra. La logica JS
+  (`searchToggle`/`topbar` presi per id) non e' cambiata, funziona
+  automaticamente col nuovo markup perche' gli id sono rimasti gli stessi.
+- **Cattura veloce**: tasto "Nuovo" in taskbar ora e' solo "+". Il riquadro
+  si apre in alto al centro (`top:70px; left:50%`) invece che vicino alla
+  taskbar, ed e' trascinabile tramite una barretta in cima
+  (`.qc-drag-handle`, stessa tecnica pointer-capture di `attachDrag()` in
+  `wm.js` ma indipendente — non e' una finestra vera). La posizione
+  trascinata non persiste: si torna sempre alla posizione di default alla
+  riapertura (deciso cosi' per restare semplice, non e' stato chiesto di
+  ricordarla).
+- **Cambio tipo esplicito**: nuovo tasto "…" nella riga dei pulsanti apre
+  lo stesso menu che prima compariva solo digitando "/" — refactoring:
+  la logica "cosa fare quando scegli /doc, /scadenza, /progetto" e' ora in
+  `applyTypeCommand(token)`, chiamata sia da testo digitato
+  (`selectQcMenuItem`) sia dal tasto "…" (`qcMenuTrigger = {type:'button'}`
+  poi la stessa `openQcMenu(QC_COMMANDS)`). Scegliere un tipo diverso da
+  nota chiude la cattura veloce e apre la schermata di inserimento completa
+  di quel tipo (gia' cosi' da prima per i comandi digitati — qui si e' solo
+  aggiunto un secondo modo per arrivarci, la digitazione "/" resta attiva).
+- Verificato con Playwright reale (desktop e mobile): apertura/chiusura
+  ricerca, posizione e trascinamento della cattura veloce, menu "…" e
+  apertura della schermata Drive scegliendo "/doc" da li'.
+
 ## Prossimi passi
 
 Tutte le fasi pianificate (1-4) sono complete. Quello che resta non è più

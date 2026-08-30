@@ -69,10 +69,10 @@
 
 <!-- App principale -->
 <div id="app" class="app hidden">
+  <!-- La ricerca parte sempre dietro l'icona in taskbar (#search-toggle):
+       questa barra resta nascosta finche' non la si apre, cosi' non ruba
+       spazio in cima quando non serve. -->
   <header class="topbar" id="topbar">
-    <!-- Su telefono la ricerca parte come icona e si apre al tocco: a schermo
-         pieno resta sempre visibile come prima. -->
-    <button class="icon-btn search-toggle" id="search-toggle" data-i18n-aria-label="aria_search" aria-label="Cerca" aria-expanded="false"></button>
     <div class="search-wrap">
       <input type="text" id="global-search" data-i18n-placeholder="search_placeholder" placeholder="Cerca in tutto Mindkeep…" autocomplete="off" />
       <div id="search-results" class="search-results hidden"></div>
@@ -95,9 +95,11 @@
       <span class="taskbar-start-icon" aria-hidden="true"></span>
       <span data-i18n="taskbar_start">Avvio</span>
     </button>
+    <button id="search-toggle" class="taskbar-btn raised" data-i18n-aria-label="aria_search" aria-label="Cerca" aria-expanded="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+    </button>
     <button id="btn-nuovo" class="taskbar-btn raised" data-i18n-title="title_quick_capture" title="Cattura veloce — sempre disponibile">
-      <svg width="14" height="14" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8"><line x1="6" y1="1.5" x2="6" y2="10.5"/><line x1="1.5" y1="6" x2="10.5" y2="6"/></svg>
-      <span data-i18n="taskbar_new">Nuovo</span>
+      <svg width="15" height="15" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.8"><line x1="6" y1="1.5" x2="6" y2="10.5"/><line x1="1.5" y1="6" x2="10.5" y2="6"/></svg>
     </button>
     <div id="taskbar-windows" class="taskbar-windows"></div>
     <div id="taskbar-clock" class="taskbar-clock sunken"></div>

@@ -221,8 +221,10 @@ input:focus, textarea:focus, select:focus {
 /* ---------- App shell ---------- */
 #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 
+/* Nascosta finche' non si apre dall'icona lente in taskbar (#search-toggle):
+   stessa barra su desktop e mobile, nessuna distinzione responsive. */
 .topbar {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 16px;
   padding: 8px 14px;
@@ -230,8 +232,9 @@ input:focus, textarea:focus, select:focus {
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset 0 -1px 0 var(--bevel-lo);
   flex: none;
 }
+.topbar.search-open { display: flex; }
 
-.search-wrap { position: relative; max-width: 440px; flex: 1; margin-left: auto; }
+.search-wrap { position: relative; max-width: 440px; flex: 1; }
 .search-wrap input {
   width: 100%; padding: 8px 12px; font-size: 13.5px;
 }
@@ -274,7 +277,6 @@ input:focus, textarea:focus, select:focus {
 }
 .icon-btn:hover { color: var(--text); background: var(--surface-hover); }
 .icon-btn .icon { width: 22px; height: 22px; }
-.icon-btn.search-toggle { display: none; }
 
 body.no-scroll { overflow: hidden; }
 
@@ -431,16 +433,25 @@ body.no-scroll { overflow: hidden; }
 .menu-row:hover { background: var(--sel-bg); color: #fff; }
 .menu-divider { height: 1px; background: var(--bevel-lo); margin: 4px 8px; }
 
+/* Piu' prominente in alto/al centro invece che vicino alla taskbar — resta
+   raggiungibile da qualunque finestra sia aperta, come prima. Spostabile
+   tramite .qc-drag-handle (vedi attachQcDrag in app.js), che passa a
+   left/top e toglie transform/bottom: da li' in poi la trascini dove vuoi. */
 .quick-capture {
-  position: fixed; z-index: 95; left: 96px; bottom: calc(var(--taskbar-h) + 6px);
-  width: 360px; padding: 9px;
+  position: fixed; z-index: 95; top: 70px; left: 50%; transform: translateX(-50%);
+  width: 380px; padding: 9px;
+}
+.qc-drag-handle {
+  cursor: move; touch-action: none; text-align: center; padding: 3px 0;
+  margin: -9px -9px 8px -9px; letter-spacing: 3px; font-size: 10px; color: var(--text-muted);
+  background: var(--win-face); box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
 }
 
 @media (max-width: 760px) {
   .start-menu { left: 0; right: 0; bottom: var(--taskbar-h); width: auto; }
   .start-menu-items { min-width: 0; flex: 1; }
   .menu-row { padding: 12px 14px; font-size: 13px; }
-  .quick-capture { left: 10px; right: 10px; width: auto; }
+  .quick-capture { left: 10px; right: 10px; width: auto; transform: none; }
 }
 
 /* ---------- Composer (usato dal riquadro "Nuovo") ---------- */
@@ -716,10 +727,7 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
 
 @media (max-width: 760px) {
   .topbar { padding: 6px 10px; min-height: 48px; }
-  .icon-btn.search-toggle { display: inline-flex; }
-  .topbar .search-wrap { display: none; max-width: none; margin-left: 0; }
-  .topbar.search-open .search-wrap { display: block; flex: 1; }
-  .topbar.search-open .search-toggle { margin-left: 8px; order: 2; }
+  .search-wrap { max-width: none; }
 
   .composer-hint-kb { display: none; }
 
