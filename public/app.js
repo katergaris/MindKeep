@@ -230,8 +230,8 @@
         <div class="preview-head">
           <span class="preview-title"></span>
           <div style="display:flex;gap:8px;align-items:center">
-            <a class="btn btn-sm" href="/api/drive/${doc.id}/download">Scarica</a>
-            <button type="button" class="preview-close" aria-label="Chiudi">✕</button>
+            <a class="btn btn-sm" href="/api/drive/${doc.id}/download">${esc(tr('btn_download'))}</a>
+            <button type="button" class="preview-close" aria-label="${esc(tr('btn_close'))}">✕</button>
           </div>
         </div>
       </div>
@@ -556,10 +556,10 @@
   // Lo sfondo e' una preferenza solo del dispositivo (localStorage), non un
   // dato di Mindkeep: niente migrazione, niente sincronizzazione fra dispositivi.
   const WALLPAPERS = {
-    classico: { label: 'Classico' },
-    'vaporwave-tramonto': { label: 'Vaporwave — Tramonto', url: '/wallpapers/wp-tramonto.jpg' },
-    'vaporwave-palma': { label: 'Vaporwave — Palma', url: '/wallpapers/wp-palma.jpg' },
-    grigio: { label: 'Grigio', color: '#6b6b76' },
+    classico: { label: tr('wallpaper_classic') },
+    'vaporwave-tramonto': { label: tr('wallpaper_sunset'), url: '/wallpapers/wp-tramonto.jpg' },
+    'vaporwave-palma': { label: tr('wallpaper_palm'), url: '/wallpapers/wp-palma.jpg' },
+    grigio: { label: tr('wallpaper_gray'), color: '#6b6b76' },
   };
   const desktopWallpaperEl = document.getElementById('desktop-wallpaper');
   const desktopIconsEl = document.getElementById('desktop-icons');
@@ -899,15 +899,15 @@
   function reminderModal(existing) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Cosa</label><input type="text" name="label" required /></div>
+        <div class="form-row"><label>${esc(tr('field_what'))}</label><input type="text" name="label" required /></div>
         <div style="display:flex;gap:10px">
-          <div class="form-row" style="flex:1"><label>Quando</label><input type="date" name="date" required /></div>
-          <div class="form-row" style="flex:1"><label>Ora (opzionale)</label><input type="time" name="time" /></div>
+          <div class="form-row" style="flex:1"><label>${esc(tr('field_when'))}</label><input type="date" name="date" required /></div>
+          <div class="form-row" style="flex:1"><label>${esc(tr('field_time_optional'))}</label><input type="time" name="time" /></div>
         </div>
-        <div class="form-row"><label>Note</label><textarea name="notes" rows="3"></textarea></div>
+        <div class="form-row"><label>${esc(tr('field_notes'))}</label><textarea name="notes" rows="3"></textarea></div>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_save'))}</button>
         </div>
       </form>
     `);
@@ -926,8 +926,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Scadenze</h2>
-        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-reminder">+ Nuova scadenza</button></div>
+        <h2>${esc(tr('nav_reminders_title'))}</h2>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-reminder">${esc(tr('btn_new_reminder'))}</button></div>
       </div>
     `));
     wireBackToDossier(root, opts);
@@ -937,14 +937,14 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
-        closeModal(); toast('Scadenza salvata'); render('reminders');
+        closeModal(); toast(tr('toast_reminder_saved')); render('reminders');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuova scadenza', form);
+      openModal(tr('modal_new_reminder'), form);
     });
 
     if (!reminders.length) {
-      root.appendChild(el('<div class="empty-state">Nessuna scadenza ancora.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_reminders'))}</div>`));
       return;
     }
 
@@ -953,7 +953,8 @@
       .sort((a, b) => new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`))
       .forEach((r) => {
         const days = daysUntil(r.date);
-        const dayLabel = days === 0 ? 'oggi' : days > 0 ? `tra ${days} giorn${days === 1 ? 'o' : 'i'}` : `passata da ${-days} giorn${days === -1 ? 'o' : 'i'}`;
+        const unit = tr(Math.abs(days) === 1 ? 'day_one' : 'day_other');
+        const dayLabel = days === 0 ? tr('today_lc') : days > 0 ? tr('due_in_n', { n: days, unit }) : tr('overdue_by_passed', { n: -days, unit });
         const row = el(`
           <div class="trash-row row-card">
             <span>
@@ -961,9 +962,9 @@
               <span class="card-sub" style="display:block">${fmtDate(r.date)}${r.time ? ' · ' + esc(r.time) : ''} · ${esc(dayLabel)}${r.notes ? ' · ' + escTrim(r.notes, 80) : ''}</span>
             </span>
             <span class="card-actions" style="padding:0">
-              <button class="btn btn-sm" data-edit>Modifica</button>
-              <button class="btn btn-sm" data-link>Cartella</button>
-              <button class="btn btn-sm btn-danger" data-del>Elimina</button>
+              <button class="btn btn-sm" data-edit>${esc(tr('btn_edit'))}</button>
+              <button class="btn btn-sm" data-link>${esc(tr('btn_link_folder'))}</button>
+              <button class="btn btn-sm btn-danger" data-del>${esc(tr('btn_delete'))}</button>
             </span>
           </div>
         `);
@@ -972,16 +973,16 @@
           form.addEventListener('submit', async (e) => {
             e.preventDefault();
             await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
-            closeModal(); toast('Scadenza aggiornata'); render('reminders');
+            closeModal(); toast(tr('toast_reminder_updated')); render('reminders');
           });
           form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-          openModal('Modifica scadenza', form);
+          openModal(tr('modal_edit_reminder'), form);
         });
         row.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('reminder', r.id, r.label));
         row.querySelector('[data-del]').addEventListener('click', async () => {
-          if (!confirm('Spostare questa scadenza nel cestino?')) return;
+          if (!confirm(tr('confirm_delete_reminder'))) return;
           await api(`/reminders/${r.id}`, { method: 'DELETE' });
-          toast('Scadenza eliminata'); render('reminders');
+          toast(tr('toast_reminder_deleted')); render('reminders');
         });
         if (highlightId && String(r.id) === highlightId) row.classList.add('card-highlight');
         root.appendChild(row);
@@ -1000,8 +1001,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Calendario</h2>
-        <div class="view-header-actions"><button class="btn btn-primary" id="new-reminder-cal">+ Nuova scadenza</button></div>
+        <h2>${esc(tr('nav_calendar_title'))}</h2>
+        <div class="view-header-actions"><button class="btn btn-primary" id="new-reminder-cal">${esc(tr('btn_new_reminder'))}</button></div>
       </div>
     `));
 
@@ -1011,10 +1012,10 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await api('/reminders', { method: 'POST', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
-        closeModal(); toast('Scadenza salvata'); render('calendar', { month: monthKey(cursor) });
+        closeModal(); toast(tr('toast_reminder_saved')); render('calendar', { month: monthKey(cursor) });
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuova scadenza', form);
+      openModal(tr('modal_new_reminder'), form);
     }
 
     function saveEdit(r) {
@@ -1022,10 +1023,10 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await api(`/reminders/${r.id}`, { method: 'PUT', body: JSON.stringify({ label: form.label.value, date: form.date.value, time: form.time.value, notes: form.notes.value }) });
-        closeModal(); toast('Scadenza aggiornata'); render('calendar', { month: monthKey(cursor) });
+        closeModal(); toast(tr('toast_reminder_updated')); render('calendar', { month: monthKey(cursor) });
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Modifica scadenza', form);
+      openModal(tr('modal_edit_reminder'), form);
     }
 
     root.querySelector('#new-reminder-cal').addEventListener('click', () => saveNew());
@@ -1039,7 +1040,7 @@
         <button type="button" class="btn" id="cal-prev">◄</button>
         <span class="calendar-label" id="cal-label"></span>
         <button type="button" class="btn" id="cal-next">►</button>
-        <button type="button" class="btn" id="cal-today">Oggi</button>
+        <button type="button" class="btn" id="cal-today">${esc(tr('btn_today'))}</button>
       </div>
     `);
     const gridWrap = el('<div class="calendar-grid"></div>');
@@ -2072,7 +2073,7 @@
   // DRIVE
   // ==================================================================
   function dossierSelectOptions(dossiers, selectedId) {
-    return `<option value="">— nessuna —</option>` + dossiers.map((ds) =>
+    return `<option value="">${esc(tr('dossier_select_none'))}</option>` + dossiers.map((ds) =>
       `<option value="${ds.id}"${String(ds.id) === String(selectedId) ? ' selected' : ''}>${esc(ds.title)}</option>`
     ).join('');
   }
@@ -2080,14 +2081,14 @@
   function documentModal(existing, dossiers, currentDossierId) {
     const form = el(`
       <form class="modal-body" style="padding:0">
-        <div class="form-row"><label>Nome (opzionale)</label><input type="text" name="display_name" placeholder="Lascia vuoto per usare il nome del file" /></div>
-        <p class="card-sub" style="margin:-6px 0 0">File originale: ${esc(existing.original_name)}</p>
-        <div class="form-row"><label>Cartella</label><select name="dossier_id">${dossierSelectOptions(dossiers, currentDossierId)}</select></div>
-        <div class="form-row"><label>Scadenza (opzionale)</label><input type="date" name="expiry_date" /></div>
-        <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
+        <div class="form-row"><label>${esc(tr('field_display_name'))}</label><input type="text" name="display_name" placeholder="${esc(tr('field_display_name_placeholder'))}" /></div>
+        <p class="card-sub" style="margin:-6px 0 0">${tr('original_file_label', { name: esc(existing.original_name) })}</p>
+        <div class="form-row"><label>${esc(tr('field_folder'))}</label><select name="dossier_id">${dossierSelectOptions(dossiers, currentDossierId)}</select></div>
+        <div class="form-row"><label>${esc(tr('field_expiry_optional'))}</label><input type="date" name="expiry_date" /></div>
+        <div class="form-row"><label>${esc(tr('field_tags'))}</label><input type="text" name="tags" /></div>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_save'))}</button>
         </div>
       </form>
     `);
@@ -2123,8 +2124,8 @@
     root.innerHTML = '';
     root.appendChild(el(`
       <div class="view-header">
-        <h2>Drive</h2>
-        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-doc">+ Carica documento</button></div>
+        <h2>${esc(tr('nav_drive_title'))}</h2>
+        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-doc">${esc(tr('btn_upload_document'))}</button></div>
       </div>
     `));
     wireBackToDossier(root, opts);
@@ -2132,14 +2133,14 @@
     root.querySelector('#new-doc').addEventListener('click', () => {
       const form = el(`
         <form class="modal-body" style="padding:0">
-          <div class="form-row"><label>File</label><input type="file" name="file" required /></div>
-          <div class="form-row"><label>Nome (opzionale)</label><input type="text" name="display_name" placeholder="Lascia vuoto per usare il nome del file" /></div>
-          <div class="form-row"><label>Cartella (opzionale)</label><select name="dossier_id">${dossierSelectOptions(dossiers, '')}</select></div>
-          <div class="form-row"><label>Scadenza (opzionale)</label><input type="date" name="expiry_date" /></div>
-          <div class="form-row"><label>Tag (separati da virgola)</label><input type="text" name="tags" /></div>
+          <div class="form-row"><label>${esc(tr('field_file'))}</label><input type="file" name="file" required /></div>
+          <div class="form-row"><label>${esc(tr('field_display_name'))}</label><input type="text" name="display_name" placeholder="${esc(tr('field_display_name_placeholder'))}" /></div>
+          <div class="form-row"><label>${esc(tr('field_folder_optional'))}</label><select name="dossier_id">${dossierSelectOptions(dossiers, '')}</select></div>
+          <div class="form-row"><label>${esc(tr('field_expiry_optional'))}</label><input type="date" name="expiry_date" /></div>
+          <div class="form-row"><label>${esc(tr('field_tags'))}</label><input type="text" name="tags" /></div>
           <div class="form-actions">
-            <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-            <button type="submit" class="btn btn-primary">Carica</button>
+            <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+            <button type="submit" class="btn btn-primary">${esc(tr('btn_upload'))}</button>
           </div>
         </form>
       `);
@@ -2155,14 +2156,14 @@
         if (form.dossier_id.value) {
           await api(`/dossiers/${form.dossier_id.value}/links`, { method: 'POST', body: JSON.stringify({ item_type: 'document', item_id: doc.id }) });
         }
-        closeModal(); toast('Documento caricato'); render('drive');
+        closeModal(); toast(tr('toast_document_uploaded')); render('drive');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Carica documento', form);
+      openModal(tr('modal_upload_document'), form);
     });
 
     if (!docs.length) {
-      root.appendChild(el('<div class="empty-state">Nessun documento ancora.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_documents'))}</div>`));
       return;
     }
 
@@ -2180,14 +2181,14 @@
             <div style="min-width:0">
               <div class="doc-name">${esc(d.display_name || d.original_name)}</div>
               ${d.display_name ? `<div class="doc-original">${esc(d.original_name)}</div>` : ''}
-              <div class="doc-meta">${d.folder ? esc(d.folder) + ' · ' : ''}${fmtSize(d.size)}${d.expiry_date ? ' · scade ' + fmtDate(d.expiry_date) : ''}</div>
-              ${linkedDossiers.length ? `<div class="doc-dossier">→ ${linkedDossiers.map((ds) => esc(ds.title)).join(', ')}</div>` : ''}
+              <div class="doc-meta">${d.folder ? esc(d.folder) + ' · ' : ''}${fmtSize(d.size)}${d.expiry_date ? tr('doc_expiry_suffix', { date: fmtDate(d.expiry_date) }) : ''}</div>
+              ${linkedDossiers.length ? `<div class="doc-dossier">${tr('doc_dossier_link', { names: linkedDossiers.map((ds) => esc(ds.title)).join(', ') })}</div>` : ''}
             </div>
           </div>
           <span class="card-actions" style="padding:0">
-            <a class="btn btn-sm" href="/api/drive/${d.id}/download">Scarica</a>
-            <button class="btn btn-sm" data-edit>Modifica</button>
-            <button class="btn btn-sm btn-danger" data-del>Elimina</button>
+            <a class="btn btn-sm" href="/api/drive/${d.id}/download">${esc(tr('btn_download'))}</a>
+            <button class="btn btn-sm" data-edit>${esc(tr('btn_edit'))}</button>
+            <button class="btn btn-sm btn-danger" data-del>${esc(tr('btn_delete'))}</button>
           </span>
         </div>
       `);
@@ -2200,15 +2201,15 @@
           const tags = parseTags(form);
           await api(`/drive/${d.id}`, { method: 'PUT', body: JSON.stringify({ display_name: form.display_name.value, expiry_date: form.expiry_date.value || null, tags }) });
           await setSingleDossierLink('document', d.id, currentIds, form.dossier_id.value);
-          closeModal(); toast('Documento aggiornato'); render('drive');
+          closeModal(); toast(tr('toast_document_updated')); render('drive');
         });
         form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-        openModal('Modifica documento', form);
+        openModal(tr('modal_edit_document'), form);
       });
       row.querySelector('[data-del]').addEventListener('click', async () => {
-        if (!confirm('Spostare questo documento nel cestino?')) return;
+        if (!confirm(tr('confirm_delete_document'))) return;
         await api(`/drive/${d.id}`, { method: 'DELETE' });
-        toast('Documento eliminato'); render('drive');
+        toast(tr('toast_document_deleted')); render('drive');
       });
       if (highlightId && String(d.id) === highlightId) row.classList.add('card-highlight');
       root.appendChild(row);
@@ -2234,10 +2235,10 @@
 
     const toolbar = el(`
       <div class="explorer-toolbar">
-        <button type="button" class="btn" id="explorer-up" disabled>⬆ Su</button>
-        <span class="explorer-path" id="explorer-path">Cartelle</span>
-        <button type="button" class="btn btn-primary" id="new-dossier">+ Nuova cartella</button>
-        <button type="button" class="btn btn-primary hidden" id="new-item-in-dossier">+ Nuovo elemento</button>
+        <button type="button" class="btn" id="explorer-up" disabled>${esc(tr('btn_up'))}</button>
+        <span class="explorer-path" id="explorer-path">${esc(tr('nav_dossiers_title'))}</span>
+        <button type="button" class="btn btn-primary" id="new-dossier">${esc(tr('btn_new_dossier'))}</button>
+        <button type="button" class="btn btn-primary hidden" id="new-item-in-dossier">${esc(tr('btn_new_item'))}</button>
       </div>
     `);
     const gridWrap = el('<div></div>');
@@ -2253,21 +2254,21 @@
     toolbar.querySelector('#new-dossier').addEventListener('click', () => {
       const form = el(`
         <form class="modal-body" style="padding:0">
-          <div class="form-row"><label>Titolo</label><input type="text" name="title" required /></div>
-          <div class="form-row"><label>Descrizione</label><textarea name="description" rows="3"></textarea></div>
+          <div class="form-row"><label>${esc(tr('field_title'))}</label><input type="text" name="title" required /></div>
+          <div class="form-row"><label>${esc(tr('field_description'))}</label><textarea name="description" rows="3"></textarea></div>
           <div class="form-actions">
-            <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-            <button type="submit" class="btn btn-primary">Crea</button>
+            <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+            <button type="submit" class="btn btn-primary">${esc(tr('btn_create'))}</button>
           </div>
         </form>
       `);
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         await api('/dossiers', { method: 'POST', body: JSON.stringify({ title: form.title.value, description: form.description.value }) });
-        closeModal(); toast('Cartella creata'); render('dossiers');
+        closeModal(); toast(tr('toast_dossier_created')); render('dossiers');
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-      openModal('Nuova cartella', form);
+      openModal(tr('modal_new_dossier'), form);
     });
 
     let currentDossier = null;
@@ -2275,12 +2276,12 @@
     function renderRoot() {
       currentDossier = null;
       upBtn.disabled = true;
-      pathEl.textContent = 'Cartelle';
+      pathEl.textContent = tr('nav_dossiers_title');
       newDossierBtn.classList.remove('hidden');
       newItemBtn.classList.add('hidden');
       gridWrap.innerHTML = '';
       if (!dossiers.length) {
-        gridWrap.appendChild(el('<div class="empty-state">Nessuna cartella ancora.</div>'));
+        gridWrap.appendChild(el(`<div class="empty-state">${esc(tr('empty_dossiers'))}</div>`));
         return;
       }
       const grid = el('<div class="explorer-grid"></div>');
@@ -2288,10 +2289,10 @@
         const n = d.items.length;
         const icon = el(`
           <button type="button" class="explorer-icon">
-            <span class="unlink-badge" data-del title="Elimina cartella">✕</span>
+            <span class="unlink-badge" data-del title="${esc(tr('title_delete_dossier'))}">✕</span>
             ${appIcon('dossiers', 34)}
             <span class="label">${esc(d.title)}</span>
-            <span class="count">${n} element${n === 1 ? 'o' : 'i'}</span>
+            <span class="count">${esc(tr(n === 1 ? 'count_items_one' : 'count_items_other', { n }))}</span>
           </button>
         `);
         icon.addEventListener('click', (e) => {
@@ -2300,9 +2301,9 @@
         });
         icon.querySelector('[data-del]').addEventListener('click', async (e) => {
           e.stopPropagation();
-          if (!confirm('Spostare questa cartella nel cestino? Gli elementi collegati non verranno eliminati.')) return;
+          if (!confirm(tr('confirm_delete_dossier'))) return;
           await api(`/dossiers/${d.id}`, { method: 'DELETE' });
-          toast('Cartella eliminata'); render('dossiers');
+          toast(tr('toast_dossier_deleted')); render('dossiers');
         });
         grid.appendChild(icon);
       });
@@ -2312,12 +2313,12 @@
     function renderDossier(d) {
       currentDossier = d;
       upBtn.disabled = false;
-      pathEl.textContent = `Cartelle > ${d.title}`;
+      pathEl.textContent = tr('dossier_path', { title: d.title });
       newDossierBtn.classList.add('hidden');
       newItemBtn.classList.remove('hidden');
       gridWrap.innerHTML = '';
       if (!d.items.length) {
-        gridWrap.appendChild(el('<div class="empty-state">Nessun elemento collegato.</div>'));
+        gridWrap.appendChild(el(`<div class="empty-state">${esc(tr('empty_dossier_items'))}</div>`));
         return;
       }
       const grid = el('<div class="explorer-grid"></div>');
@@ -2325,7 +2326,7 @@
         const view = TYPE_TO_VIEW[item.type];
         const icon = el(`
           <button type="button" class="explorer-icon">
-            <span class="unlink-badge" data-unlink title="Scollega">✕</span>
+            <span class="unlink-badge" data-unlink title="${esc(tr('title_unlink'))}">✕</span>
             ${appIcon(view, 34)}
             <span class="label">${esc(item.label)}</span>
           </button>
@@ -2337,7 +2338,7 @@
         icon.querySelector('[data-unlink]').addEventListener('click', async (e) => {
           e.stopPropagation();
           await api(`/dossiers/${d.id}/links/${item.type}/${item.id}`, { method: 'DELETE' });
-          toast('Elemento scollegato'); render('dossiers');
+          toast(tr('toast_item_unlinked')); render('dossiers');
         });
         grid.appendChild(icon);
       });
@@ -2356,15 +2357,15 @@
   // ==================================================================
   // CESTINO
   // ==================================================================
-  const TYPE_LABELS = { idea: 'Nota', project: 'Progetto', vault: 'Vault', account: 'Abbonamento', document: 'Documento', dossier: 'Cartella', reminder: 'Scadenza' };
+  const TYPE_LABELS = { idea: tr('type_idea'), project: tr('type_project'), vault: tr('type_vault'), account: tr('type_account'), document: tr('type_document'), dossier: tr('type_dossier'), reminder: tr('type_reminder') };
 
   views.trash = async (root) => {
     const items = await api('/trash');
     root.innerHTML = '';
-    root.appendChild(el('<div class="view-header"><h2>Cestino</h2></div>'));
+    root.appendChild(el(`<div class="view-header"><h2>${esc(tr('nav_trash_title'))}</h2></div>`));
 
     if (!items.length) {
-      root.appendChild(el('<div class="empty-state">Il cestino e\' vuoto.</div>'));
+      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_trash'))}</div>`));
       return;
     }
 
@@ -2373,19 +2374,19 @@
         <div class="trash-row row-card">
           <span><span class="chip-type">${esc(TYPE_LABELS[item.type] || item.type)}</span> &nbsp;${esc(item.label)}</span>
           <span class="card-actions" style="padding:0">
-            <button class="btn btn-sm" data-restore>Ripristina</button>
-            <button class="btn btn-sm btn-danger" data-purge>Elimina definitivamente</button>
+            <button class="btn btn-sm" data-restore>${esc(tr('btn_restore'))}</button>
+            <button class="btn btn-sm btn-danger" data-purge>${esc(tr('btn_purge'))}</button>
           </span>
         </div>
       `);
       row.querySelector('[data-restore]').addEventListener('click', async () => {
         await api(`/trash/${item.type}/${item.id}/restore`, { method: 'POST' });
-        toast('Ripristinato'); render('trash');
+        toast(tr('toast_restored')); render('trash');
       });
       row.querySelector('[data-purge]').addEventListener('click', async () => {
-        if (!confirm('Eliminare definitivamente? L\'operazione non e\' reversibile.')) return;
+        if (!confirm(tr('confirm_purge'))) return;
         await api(`/trash/${item.type}/${item.id}`, { method: 'DELETE' });
-        toast('Eliminato definitivamente'); render('trash');
+        toast(tr('toast_purged')); render('trash');
       });
       root.appendChild(row);
     });
@@ -2397,41 +2398,39 @@
   function showRecoveryCodes(codes) {
     const wrap = el('<div></div>');
     wrap.appendChild(el(`
-      <p class="card-sub">Conservali <strong>ora</strong>: stampali o mettili in un posto sicuro,
-      lontano dal telefono. Ognuno funziona una volta sola e servono per entrare se perdi
-      il telefono. Non potrai piu' rivederli.</p>
+      <p class="card-sub">${tr('recovery_codes_intro')}</p>
     `));
     const list = el('<div class="recovery-codes"></div>');
     codes.forEach((c) => list.appendChild(el(`<code>${esc(c)}</code>`)));
     wrap.appendChild(list);
 
     const actions = el('<div class="form-actions"></div>');
-    const copy = el('<button type="button" class="btn btn-ghost">Copia tutti</button>');
+    const copy = el(`<button type="button" class="btn btn-ghost">${esc(tr('btn_copy_all'))}</button>`);
     copy.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(codes.join('\n'));
-        toast('Codici copiati');
+        toast(tr('toast_codes_copied'));
       } catch (e) {
-        toast('Copia non riuscita: selezionali a mano');
+        toast(tr('toast_copy_failed'));
       }
     });
-    const done = el('<button type="button" class="btn btn-primary">Li ho salvati</button>');
+    const done = el(`<button type="button" class="btn btn-primary">${esc(tr('btn_codes_saved'))}</button>`);
     done.addEventListener('click', () => { closeModal(); render('security'); });
     actions.appendChild(copy);
     actions.appendChild(done);
     wrap.appendChild(actions);
-    openModal('Codici di recupero', wrap);
+    openModal(tr('modal_recovery_codes'), wrap);
   }
 
   function askPassword(title, testo, onConfirm) {
     const form = el(`
       <form class="modal-body" style="padding:0">
         <p class="card-sub">${esc(testo)}</p>
-        <div class="form-row"><label>Password</label><input type="password" name="password" required /></div>
+        <div class="form-row"><label>${esc(tr('field_password'))}</label><input type="password" name="password" required /></div>
         <p class="form-error hidden" data-err></p>
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-          <button type="submit" class="btn btn-primary">Conferma</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+          <button type="submit" class="btn btn-primary">${esc(tr('btn_confirm'))}</button>
         </div>
       </form>
     `);
@@ -2455,27 +2454,27 @@
       const wrap = el('<div class="totp-setup"></div>');
       wrap.appendChild(el(`
         <ol class="totp-steps">
-          <li>Apri <strong>Google Authenticator</strong> (o Aegis, 1Password, Authy: vanno tutte bene) e tocca "+".</li>
-          <li>Scegli "Scansiona un codice QR" e inquadra questo:</li>
+          <li>${tr('totp_step1')}</li>
+          <li>${tr('totp_step2')}</li>
         </ol>
       `));
       const qr = el(`<div class="qr-box">${data.qr}</div>`);
       wrap.appendChild(qr);
       wrap.appendChild(el(`
-        <p class="card-sub">Se non riesci a inquadrarlo, nell'app scegli "Inserisci chiave di configurazione"
-        e digita:<br /><code class="totp-secret">${esc(data.secret)}</code></p>
+        <p class="card-sub">${tr('totp_manual_hint')}
+        <br /><code class="totp-secret">${esc(data.secret)}</code></p>
       `));
 
       const form = el(`
         <form class="modal-body" style="padding:0">
           <div class="form-row">
-            <label>Scrivi il codice a 6 cifre che vedi nell'app</label>
+            <label>${esc(tr('totp_code_label'))}</label>
             <input type="text" name="code" inputmode="numeric" maxlength="7" placeholder="123456" required />
           </div>
           <p class="form-error hidden" data-err></p>
           <div class="form-actions">
-            <button type="button" class="btn btn-ghost" data-cancel>Annulla</button>
-            <button type="submit" class="btn btn-primary">Attiva</button>
+            <button type="button" class="btn btn-ghost" data-cancel>${esc(tr('btn_cancel'))}</button>
+            <button type="submit" class="btn btn-primary">${esc(tr('btn_activate'))}</button>
           </div>
         </form>
       `);
@@ -2489,7 +2488,7 @@
             body: JSON.stringify({ code: form.code.value }),
           });
           closeModal();
-          toast('Verifica in due passaggi attiva');
+          toast(tr('toast_totp_enabled'));
           showRecoveryCodes(res.recoveryCodes);
         } catch (err) {
           errEl.textContent = err.message;
@@ -2498,38 +2497,36 @@
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
       wrap.appendChild(form);
-      openModal('Attiva la verifica in due passaggi', wrap);
+      openModal(tr('modal_activate_totp'), wrap);
     });
   }
 
   views.security = async (root) => {
     const info = await api('/security');
     root.innerHTML = '';
-    root.appendChild(el('<div class="view-header"><h2>Sicurezza</h2></div>'));
+    root.appendChild(el(`<div class="view-header"><h2>${esc(tr('nav_security_title'))}</h2></div>`));
 
-    const block = el('<div class="section-block"><h3>Verifica in due passaggi</h3></div>');
+    const block = el(`<div class="section-block"><h3>${esc(tr('section_2fa'))}</h3></div>`);
 
     if (!info.totpEnabled) {
       block.appendChild(el(`
-        <p class="card-sub">Non attiva: per entrare basta la password. Attivandola servira' anche
-        un codice a 6 cifre generato dal telefono, che cambia ogni 30 secondi.
-        Funziona senza connessione a internet e senza inviare nulla a nessuno.</p>
+        <p class="card-sub">${esc(tr('totp_disabled_hint'))}</p>
       `));
-      const btn = el('<button class="btn btn-primary">Attiva con QR</button>');
+      const btn = el(`<button class="btn btn-primary">${esc(tr('btn_activate_qr'))}</button>`);
       btn.addEventListener('click', startTotpSetup);
       block.appendChild(btn);
     } else {
       block.appendChild(el(`
-        <p class="card-sub">Attiva. All'accesso viene chiesto il codice dell'app di autenticazione.</p>
-        <p class="card-sub">Codici di recupero ancora utilizzabili: <strong>${info.recoveryCodesLeft}</strong> su 8.</p>
+        <p class="card-sub">${esc(tr('totp_enabled_hint'))}</p>
+        <p class="card-sub">${tr('recovery_codes_left', { n: info.recoveryCodesLeft })}</p>
       `));
       const actions = el('<div class="card-actions" style="padding:12px 0 0"></div>');
 
-      const nuovi = el('<button class="btn btn-sm">Genera nuovi codici di recupero</button>');
+      const nuovi = el(`<button class="btn btn-sm">${esc(tr('btn_new_recovery_codes'))}</button>`);
       nuovi.addEventListener('click', () => {
         askPassword(
-          'Nuovi codici di recupero',
-          'I codici precedenti smetteranno di funzionare. Conferma con la tua password.',
+          tr('modal_new_recovery_codes'),
+          tr('confirm_new_recovery_codes'),
           async (password) => {
             const res = await api('/security/totp/recovery-codes', {
               method: 'POST',
@@ -2541,15 +2538,15 @@
         );
       });
 
-      const off = el('<button class="btn btn-sm btn-danger">Disattiva</button>');
+      const off = el(`<button class="btn btn-sm btn-danger">${esc(tr('btn_deactivate'))}</button>`);
       off.addEventListener('click', () => {
         askPassword(
-          'Disattiva la verifica in due passaggi',
-          'Dopo la disattivazione per entrare bastera\' di nuovo la sola password. Conferma con la tua password.',
+          tr('modal_deactivate_totp'),
+          tr('confirm_deactivate_totp'),
           async (password) => {
             await api('/security/totp/disable', { method: 'POST', body: JSON.stringify({ password }) });
             closeModal();
-            toast('Verifica in due passaggi disattivata');
+            toast(tr('toast_totp_disabled'));
             render('security');
           }
         );
@@ -2561,46 +2558,42 @@
 
       if (info.recoveryCodesLeft === 0) {
         block.appendChild(el(`
-          <p class="form-error">Hai finito i codici di recupero: se perdi il telefono non potrai
-          piu' entrare dall'app. Generane di nuovi.</p>
+          <p class="form-error">${esc(tr('recovery_codes_zero_warning'))}</p>
         `));
       }
     }
 
     root.appendChild(block);
 
-    const notifyBlock = el('<div class="section-block"><h3>Notifiche scadenze</h3></div>');
+    const notifyBlock = el(`<div class="section-block"><h3>${esc(tr('section_push_notifications'))}</h3></div>`);
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     if (!supported) {
-      notifyBlock.appendChild(el('<p class="card-sub">Il browser non supporta le notifiche push.</p>'));
+      notifyBlock.appendChild(el(`<p class="card-sub">${esc(tr('push_not_supported'))}</p>`));
     } else {
       const existingSub = await getPushSubscription();
       if (Notification.permission === 'denied') {
         notifyBlock.appendChild(el(`
-          <p class="card-sub">Notifiche bloccate dal browser. Per riattivarle, sblocca le notifiche
-          per questo sito dalle impostazioni del browser.</p>
+          <p class="card-sub">${esc(tr('push_blocked'))}</p>
         `));
       } else if (existingSub) {
         notifyBlock.appendChild(el(`
-          <p class="card-sub">Attive: ricevi una notifica quando una scadenza arriva a termine
-          (funziona anche ad app chiusa).</p>
+          <p class="card-sub">${esc(tr('push_active_hint'))}</p>
         `));
-        const off = el('<button class="btn btn-sm btn-danger">Disattiva</button>');
+        const off = el(`<button class="btn btn-sm btn-danger">${esc(tr('btn_deactivate'))}</button>`);
         off.addEventListener('click', async () => {
           await disablePushNotifications();
-          toast('Notifiche disattivate'); render('security');
+          toast(tr('toast_push_disabled')); render('security');
         });
         notifyBlock.appendChild(off);
       } else {
         notifyBlock.appendChild(el(`
-          <p class="card-sub">Non attive: ricevi una notifica quando una scadenza arriva a termine,
-          anche ad app chiusa. Nessun dato lascia il tuo server.</p>
+          <p class="card-sub">${esc(tr('push_inactive_hint'))}</p>
         `));
-        const on = el('<button class="btn btn-primary">Attiva notifiche</button>');
+        const on = el(`<button class="btn btn-primary">${esc(tr('btn_enable_notifications'))}</button>`);
         on.addEventListener('click', async () => {
           try {
             await enablePushNotifications();
-            toast('Notifiche attivate'); render('security');
+            toast(tr('toast_push_enabled')); render('security');
           } catch (err) {
             toast(err.message);
           }
@@ -2610,7 +2603,7 @@
     }
     root.appendChild(notifyBlock);
 
-    const wallpaperBlock = el('<div class="section-block"><h3>Sfondo desktop</h3><p class="card-sub">Solo su questo dispositivo — non viene sincronizzato.</p></div>');
+    const wallpaperBlock = el(`<div class="section-block"><h3>${esc(tr('section_wallpaper'))}</h3><p class="card-sub">${esc(tr('wallpaper_device_only'))}</p></div>`);
     const wallpaperRow = el('<div class="card-actions" style="padding-top:10px"></div>');
     Object.entries(WALLPAPERS).forEach(([key, wp]) => {
       const btn = el(`<button class="btn btn-sm${key === currentWallpaper() ? ' btn-primary' : ''}" data-wp="${key}"></button>`);
@@ -2632,10 +2625,9 @@
     langBlock.appendChild(langRow);
     root.appendChild(langBlock);
 
-    const help = el('<div class="section-block"><h3>Se perdi il telefono</h3></div>');
+    const help = el(`<div class="section-block"><h3>${esc(tr('section_lost_phone'))}</h3></div>`);
     help.appendChild(el(`
-      <p class="card-sub">Usa uno dei codici di recupero al posto delle 6 cifre nella schermata di accesso.
-      Se non hai nemmeno quelli, dal computer dove gira Mindkeep puoi disattivare la verifica con:</p>
+      <p class="card-sub">${esc(tr('lost_phone_hint'))}</p>
       <p><code class="cmd-line">docker compose exec mindkeep node server/disable-2fa.js</code></p>
     `));
     root.appendChild(help);
