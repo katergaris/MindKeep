@@ -520,6 +520,7 @@ body.no-scroll { overflow: hidden; }
   position: fixed; top: 0; left: 0; z-index: 500; pointer-events: none;
   box-shadow: 3px 3px 0 rgba(0,0,0,.35); opacity: 0.95; transform: rotate(-1deg);
 }
+.board-checklist { display: flex; flex-direction: column; gap: 6px; }
 .board-progress-row { display: flex; align-items: center; gap: 8px; }
 .board-progress {
   flex: 1; height: 10px; background: var(--surface); border: 1px solid var(--border-soft);

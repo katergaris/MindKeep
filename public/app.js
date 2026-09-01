@@ -1358,7 +1358,7 @@
       card.addEventListener('pointerdown', (e) => {
         if (e.pointerType && e.pointerType !== 'mouse') return;
         if (e.button !== 0) return;
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button, label, input')) return;
         const startX = e.clientX, startY = e.clientY;
         const rect = card.getBoundingClientRect();
         const offsetX = startX - rect.left, offsetY = startY - rect.top;
@@ -1450,12 +1450,6 @@
               ${deadlineChip}
             </div>
             ${p.description ? `<p class="board-card-desc">${escTrim(p.description, 90)}</p>` : ''}
-            ${total ? `
-              <div class="board-progress-row" title="${esc(tr('label_completed_count', { done, total }))}">
-                <div class="board-progress"><div class="board-progress-fill" style="width:${pct}%"></div></div>
-                <span class="board-progress-label">${done}/${total}</span>
-              </div>
-            ` : ''}
             ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">${tr('budget_label', { amount: fmtMoney(totalBudget) })}</p>` : ''}
             ${(p.contacts || []).length ? `<p class="card-sub">${tr('contacts_prefix', { names: escTrim(p.contacts.join(', '), 60) })}</p>` : ''}
             <div class="board-card-actions">
@@ -1471,6 +1465,34 @@
             </div>
           </div>
         `);
+        if (total) {
+          const checklistWrap = el('<div class="board-checklist"></div>');
+          checklistWrap.appendChild(el(`
+            <div class="board-progress-row" title="${esc(tr('label_completed_count', { done, total }))}">
+              <div class="board-progress"><div class="board-progress-fill" style="width:${pct}%"></div></div>
+              <span class="board-progress-label">${done}/${total}</span>
+            </div>
+          `));
+          const itemsEl = el('<div class="idea-checklist"></div>');
+          (p.checklist || []).forEach((item, idx) => {
+            const row = el(`
+              <label class="idea-checklist-item">
+                <input type="checkbox" ${item.done ? 'checked' : ''} />
+                <span>${esc(item.text)}</span>
+                ${item.done ? `<span class="idea-checklist-badge" title="${esc(tr('label_completed_title'))}">✓</span>` : ''}
+              </label>
+            `);
+            row.querySelector('input').addEventListener('change', async (e) => {
+              const updated = p.checklist.map((c, j) => (j === idx ? { ...c, done: e.target.checked } : c));
+              await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ checklist: updated }) });
+              render('projects');
+            });
+            itemsEl.appendChild(row);
+          });
+          checklistWrap.appendChild(itemsEl);
+          const anchor = card.querySelector('.board-card-desc') || card.querySelector('.board-card-top');
+          anchor.insertAdjacentElement('afterend', checklistWrap);
+        }
         async function moveTo(newStatus) {
           await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
           render('projects');
