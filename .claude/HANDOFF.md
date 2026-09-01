@@ -7,7 +7,7 @@ anche i file collegati sotto, poi procedi.
 ## Leggi prima questo: stato al 01/09/2026, fine sessione
 
 - **Branch**: si lavora su `main` (non piu' `redesign-retro-ui`, mergiato —
-  vedi nota sotto). Ultimo commit pushato: `ef753f1`. Nessuna PR in sospeso.
+  vedi nota sotto). Ultimo commit pushato: `d6e8183`. Nessuna PR in sospeso.
 - **Il redesign Windows 95 (Fasi 1-4) e' completo da tempo**; da allora si
   sono susseguiti tanti piccoli giri di bug fix/rifiniture dall'uso reale
   dell'utente — vedi le sezioni "Sessione 30/08/2026 (N-esima parte)" e
@@ -27,15 +27,17 @@ anche i file collegati sotto, poi procedi.
      tag per-scadenza — vedi "ottava parte") ma NON confermato risolutivo:
      probabile che il Pi girasse ancora su una build vecchia. Prossima
      volta che se ne riparla, verificare prima il punto 1, poi ritestare.
-  3. **Card Progetti/Bacheca ridisegnata (01/09/2026)**: l'utente ha
-     segnalato che la gestione progetti era illeggibile/difficile sia su
-     desktop che mobile (card troppo densa, barra di progresso allo 0%
-     che sembrava una riga random, 5 pulsanti di testo minuscoli che
-     andavano a capo in modo imprevedibile, nessun target di tocco reale
-     su mobile). Vedi sezione dedicata sotto per il dettaglio — non
-     risulta ancora confermato dall'utente sull'uso reale, solo verificato
-     con Playwright su un'istanza isolata (DB in-memory, non quella
-     reale).
+  3. **Card Progetti/Bacheca ridisegnata (01/09/2026)**, poi corretta nella
+     stessa sessione dopo un feedback duro dell'utente: il primo giro
+     mostrava solo la barra di progresso aggregata ma non gli elementi
+     della checklist, e non c'era MODO nell'interfaccia di segnare una
+     voce fatta — regressione funzionale, non solo estetica, mai notata
+     prima di spedire. Ora ogni card mostra la checklist con checkbox
+     spuntabili al volo (commit `d6e8183`). Vedi sezione dedicata sotto
+     per il dettaglio completo. Verificato con Playwright su un'istanza
+     isolata (DB in-memory, non quella reale) incluso un reload per
+     confermare che il toggle persiste lato server — **non ancora
+     confermato dall'utente sull'uso reale**.
   4. Non risultano altre richieste esplicite in sospeso a fine sessione.
 
 ## Nota sul branch
@@ -531,6 +533,41 @@ già usa pulsanti a icona 40×40 su mobile).
   `ENCRYPTION_KEY` dummy, così da non toccare `data/mindkeep.db` né
   `data/.secrets.env` reali (verificato: mtime invariato). Il processo
   di test è stato terminato a fine verifica.
+
+### Correzione nella stessa sessione: checklist non spuntabile (regressione)
+
+Subito dopo aver riportato il redesign come fatto, l'utente ha fatto
+notare — giustamente e con ragione — che il primo giro mostrava solo la
+barra di progresso aggregata (N/M) ma **non gli elementi della
+checklist**, e non c'era alcun modo nell'interfaccia per segnare una
+voce come fatta: la textarea nella modale "Modifica" serve solo a
+definire il *testo* delle voci (`collectChecklist` in `public/app.js`
+preserva `done` solo per righe che matchano testo già presente in
+precedenza — nessun controllo lo mette mai a `true`). Le Note/Idee
+hanno da tempo una checklist reale spuntabile dalla card
+(`views.ideas`, `.idea-checklist-item`) — questo pattern non era mai
+stato applicato ai Progetti, ed è passato inosservato durante il
+redesign perché l'attenzione era tutta sulla leggibilità visiva, non
+sulla funzionalità sottostante.
+
+- **Fix** (commit `d6e8183`): ogni card Progetti ora mostra gli
+  elementi della checklist con checkbox reali sotto la barra di
+  avanzamento (stesso markup/pattern di `.idea-checklist-item`,
+  riusato as-is), spuntabili al volo con PUT immediato e re-render.
+- **Bug scoperto e risolto nello stesso commit**: la checkbox andava in
+  conflitto col trascinamento della card tra colonne — `attachCardDrag`
+  catturava il puntatore (`setPointerCapture`) su qualunque
+  `pointerdown` che non fosse su un `<button>`, il che impediva il
+  toggle nativo della checkbox (click "assorbito" dal drag-listener).
+  Ora l'esclusione copre anche `label`/`input`. Scoperto verificando
+  con Playwright che un `.check()` sulla checkbox non cambiava stato;
+  confermato risolto anche con un reload di pagina (il toggle persiste
+  lato server, non solo nel DOM locale).
+- **Lezione per il prossimo giro di lavoro su Progetti/Bacheca**: prima
+  di considerare un redesign visivo "fatto", verificare che ogni azione
+  che l'utente si aspetterebbe di poter fare (qui: aggiornare
+  l'avanzamento di un progetto) sia effettivamente raggiungibile
+  dall'interfaccia, non solo leggibile — non fermarsi alla resa grafica.
 
 ## Prossimi passi
 
