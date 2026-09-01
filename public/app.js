@@ -434,6 +434,8 @@
     musica: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
     video: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none"/>',
     documento: '<path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/>',
+    frecciaSx: '<path d="M14.5 5.5l-6.5 6.5 6.5 6.5"/>',
+    frecciaDx: '<path d="M9.5 5.5l6.5 6.5-6.5 6.5"/>',
   };
   function iconaLinea(nome) {
     return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -1426,7 +1428,11 @@
         </div>
       `);
       const body = col.querySelector('.board-col-body');
-      projects.filter((p) => p.status === s.key).forEach((p) => {
+      const colProjects = projects.filter((p) => p.status === s.key);
+      if (!colProjects.length) {
+        body.appendChild(el(`<p class="board-col-empty">${esc(tr('empty_none_yet'))}</p>`));
+      }
+      colProjects.forEach((p) => {
         const { done, total } = checklistProgress(p.checklist);
         const pct = total ? Math.round((done / total) * 100) : 0;
         const totalBudget = budgetTotal(p.budget);
@@ -1439,20 +1445,29 @@
         }
         const card = el(`
           <div class="board-card">
-            <p class="board-card-title">${esc(p.title)}</p>
+            <div class="board-card-top">
+              <p class="board-card-title">${esc(p.title)}</p>
+              ${deadlineChip}
+            </div>
+            ${p.description ? `<p class="board-card-desc">${escTrim(p.description, 90)}</p>` : ''}
             ${total ? `
-              <div class="board-progress" title="${esc(tr('label_completed_count', { done, total }))}"><div class="board-progress-fill" style="width:${pct}%"></div></div>
-              <p class="card-sub">${esc(tr('label_completed_count', { done, total }))}</p>
+              <div class="board-progress-row" title="${esc(tr('label_completed_count', { done, total }))}">
+                <div class="board-progress"><div class="board-progress-fill" style="width:${pct}%"></div></div>
+                <span class="board-progress-label">${done}/${total}</span>
+              </div>
             ` : ''}
-            ${deadlineChip}
             ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">${tr('budget_label', { amount: fmtMoney(totalBudget) })}</p>` : ''}
             ${(p.contacts || []).length ? `<p class="card-sub">${tr('contacts_prefix', { names: escTrim(p.contacts.join(', '), 60) })}</p>` : ''}
             <div class="board-card-actions">
-              <button type="button" data-prev ${i === 0 ? 'disabled' : ''} title="${esc(tr('move_back'))}">←</button>
-              <button type="button" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="${esc(tr('move_forward'))}">→</button>
-              <button type="button" data-edit>${esc(tr('btn_edit'))}</button>
-              <button type="button" data-link>${esc(tr('btn_link_folder'))}</button>
-              <button type="button" data-del>${esc(tr('btn_delete'))}</button>
+              <div class="board-card-move">
+                <button type="button" class="btn btn-sm btn-icon" data-prev ${i === 0 ? 'disabled' : ''} title="${esc(tr('move_back'))}">${iconaLinea('frecciaSx')}</button>
+                <button type="button" class="btn btn-sm btn-icon" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="${esc(tr('move_forward'))}">${iconaLinea('frecciaDx')}</button>
+              </div>
+              <div class="board-card-ops">
+                <button type="button" class="btn btn-sm btn-icon" data-edit title="${esc(tr('btn_edit'))}">${iconaLinea('matita')}</button>
+                <button type="button" class="btn btn-sm btn-icon" data-link title="${esc(tr('btn_link_folder'))}">${iconaLinea('cartellaLinea')}</button>
+                <button type="button" class="btn btn-sm btn-icon btn-danger" data-del title="${esc(tr('btn_delete'))}">${iconaLinea('cestino')}</button>
+              </div>
             </div>
           </div>
         `);
