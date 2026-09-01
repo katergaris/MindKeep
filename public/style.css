@@ -496,30 +496,28 @@ body.no-scroll { overflow: hidden; }
 .composer-menu-item.active, .composer-menu-item:hover { background: var(--sel-bg); color: #fff; }
 .composer-menu-item.active .cmi-token, .composer-menu-item:hover .cmi-token { color: #fff; }
 
-/* ---------- Vista Bacheca (Progetti) ---------- */
-.board { display: grid; grid-template-columns: repeat(3, minmax(240px, 1fr)); gap: 14px; }
-@media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
-.board-col { background: var(--surface-2); border: 1px solid var(--border-soft); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.board-col-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 2px 4px; }
-.board-col-count { font-family: var(--font-mono); }
-.board-col-body { display: flex; flex-direction: column; gap: 10px; min-height: 30px; }
-.board-col-empty { margin: 0; padding: 6px 4px; color: var(--text-muted); font-size: 0.8rem; font-style: italic; }
-.board-card { background: var(--surface); border: 1px solid var(--border-soft); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+/* ---------- Vista Progetti: griglia a icone + dettaglio singolo ---------- */
+.chip-status { display: inline-block; width: fit-content; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; }
+.chip-status-da_fare { background: var(--surface-2); color: var(--text-muted); }
+.chip-status-in_corso { background: var(--accent-bg); color: var(--accent-soft); }
+.chip-status-fatto { background: #d7ecd9; color: var(--moss); }
+.explorer-icon .count-late { color: var(--danger-soft); font-weight: 700; }
+
+.project-detail { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+.project-detail-title { font-size: 1.05rem; }
+.status-switch { display: flex; gap: 6px; flex-wrap: wrap; }
+.status-switch-opt {
+  flex: 1 1 0; min-width: 90px; background: var(--win-face); border: none; cursor: pointer;
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+  color: var(--text-muted); font: inherit; font-size: 0.82rem; font-weight: 600; padding: 8px 10px;
+}
+.status-switch-opt.active {
+  background: var(--accent-bg); color: var(--accent-soft);
+  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+}
+
 .board-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .board-card-title { margin: 0; font-size: 0.95rem; font-weight: 700; overflow-wrap: break-word; flex: 1 1 auto; min-width: 0; }
-.board-card-desc {
-  margin: 0; font-size: 0.82rem; color: var(--text-muted); overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.board-card-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; }
-.board-card-move, .board-card-ops { display: flex; gap: 6px; }
-.board-card { cursor: grab; }
-.board-card.board-card-dragging { opacity: 0.4; }
-.board-col.board-col-drop-target { outline: 2px dashed var(--accent-soft); outline-offset: -2px; background: var(--accent-bg); }
-.board-card-ghost {
-  position: fixed; top: 0; left: 0; z-index: 500; pointer-events: none;
-  box-shadow: 3px 3px 0 rgba(0,0,0,.35); opacity: 0.95; transform: rotate(-1deg);
-}
 .board-checklist { display: flex; flex-direction: column; gap: 6px; }
 .board-progress-row { display: flex; align-items: center; gap: 8px; }
 .board-progress {
@@ -784,8 +782,6 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   .composer-link-badge, .composer-link-badge button { font-size: 12.5px; }
   .composer-menu-item { font-size: 13px; }
   .composer-menu-item .cmi-desc { font-size: 12px; }
-
-  .board-col-head { font-size: 12.5px; }
 
   .doc-original { font-size: 0.85rem; }
   .chip-type { font-size: 0.75rem; }

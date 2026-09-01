@@ -434,8 +434,6 @@
     musica: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
     video: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none"/>',
     documento: '<path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4"/><path d="M8.5 12h7M8.5 15.5h5"/>',
-    frecciaSx: '<path d="M14.5 5.5l-6.5 6.5 6.5 6.5"/>',
-    frecciaDx: '<path d="M9.5 5.5l6.5 6.5-6.5 6.5"/>',
   };
   function iconaLinea(nome) {
     return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -1308,21 +1306,39 @@
     return form.contacts.value.split(',').map((c) => c.trim()).filter(Boolean);
   }
 
-  // Bacheca: i progetti in kanban, spostabili tra gli stati con le frecce
-  // (nessun trascinamento reale ancora — arriva in un secondo momento).
+  // Progetti: griglia di icone (stile Esplora Risorse, come le Cartelle) —
+  // aprendo un'icona si entra nel dettaglio del singolo progetto, dove si
+  // vede/spunta la checklist e si cambia stato con un selettore a 3 vie che
+  // riprende visivamente le vecchie colonne del kanban.
+  const STATUSES = [
+    { key: 'da_fare', label: tr('status_todo') },
+    { key: 'in_corso', label: tr('status_doing') },
+    { key: 'fatto', label: tr('status_done') },
+  ];
+
   views.projects = async (root, opts = {}) => {
     const highlightId = opts.highlight ? String(opts.highlight) : null;
     const projects = (await api('/projects')).filter(onlyFilter(opts));
     root.innerHTML = '';
-    root.appendChild(el(`
-      <div class="view-header">
-        <h2>${esc(tr('nav_projects'))}</h2>
-        <div class="view-header-actions">${backToDossierButtonHtml(opts)}<button class="btn btn-primary" id="new-project">${esc(tr('btn_new_project'))}</button></div>
-      </div>
-    `));
-    wireBackToDossier(root, opts);
 
-    root.querySelector('#new-project').addEventListener('click', () => {
+    const toolbar = el(`
+      <div class="explorer-toolbar">
+        <button type="button" class="btn" id="explorer-up" disabled>${esc(tr('btn_up'))}</button>
+        <span class="explorer-path" id="explorer-path">${esc(tr('nav_projects'))}</span>
+        ${backToDossierButtonHtml(opts)}
+        <button type="button" class="btn btn-primary" id="new-project">${esc(tr('btn_new_project'))}</button>
+      </div>
+    `);
+    const bodyWrap = el('<div></div>');
+    root.appendChild(toolbar);
+    root.appendChild(bodyWrap);
+    wireBackToDossier(toolbar, opts);
+
+    const upBtn = toolbar.querySelector('#explorer-up');
+    const pathEl = toolbar.querySelector('#explorer-path');
+    const newProjectBtn = toolbar.querySelector('#new-project');
+
+    newProjectBtn.addEventListener('click', () => {
       const form = projectModal();
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1330,206 +1346,171 @@
         const contacts = parseContacts(form);
         const budget = parseBudgetLines(form.budget.value);
         const checklist = collectChecklist(form, []);
-        await api('/projects', { method: 'POST', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-        closeModal(); toast(tr('toast_project_saved')); render('projects');
+        const created = await api('/projects', { method: 'POST', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
+        projects.push(created);
+        closeModal(); toast(tr('toast_project_saved')); renderRoot();
       });
       form.querySelector('[data-cancel]').addEventListener('click', closeModal);
       openModal(tr('modal_new_project'), form);
     });
 
-    if (!projects.length) {
-      root.appendChild(el(`<div class="empty-state">${esc(tr('empty_none_yet'))}</div>`));
-      return;
-    }
-
-    const STATUSES = [
-      { key: 'da_fare', label: tr('status_todo') },
-      { key: 'in_corso', label: tr('status_doing') },
-      { key: 'fatto', label: tr('status_done') },
-    ];
-    const board = el('<div class="board"></div>');
-
-    // Trascinamento vero delle card tra colonne (le frecce restano come
-    // alternativa funzionante, es. per chi preferisce non trascinare).
-    // Solo mouse: su schermi stretti le colonne si impilano una sopra
-    // l'altra e "trascinare tra colonne" coinciderebbe con lo scroll
-    // verticale della pagina — le frecce restano l'unico modo su touch.
-    function attachCardDrag(card, p) {
-      card.addEventListener('pointerdown', (e) => {
-        if (e.pointerType && e.pointerType !== 'mouse') return;
-        if (e.button !== 0) return;
-        if (e.target.closest('button, label, input')) return;
-        const startX = e.clientX, startY = e.clientY;
-        const rect = card.getBoundingClientRect();
-        const offsetX = startX - rect.left, offsetY = startY - rect.top;
-        let dragging = false;
-        let ghost = null;
-
-        function clearHighlights() {
-          board.querySelectorAll('.board-col.board-col-drop-target').forEach((c) => c.classList.remove('board-col-drop-target'));
-        }
-        function dropColAt(x, y) {
-          const target = document.elementFromPoint(x, y);
-          return target ? target.closest('.board-col') : null;
-        }
-        function startDrag() {
-          dragging = true;
-          card.classList.add('board-card-dragging');
-          ghost = card.cloneNode(true);
-          ghost.classList.add('board-card-ghost');
-          ghost.style.width = rect.width + 'px';
-          document.body.appendChild(ghost);
-        }
-        function moveGhost(x, y) {
-          ghost.style.left = (x - offsetX) + 'px';
-          ghost.style.top = (y - offsetY) + 'px';
-        }
-        function cleanup() {
-          card.removeEventListener('pointermove', onMove);
-          card.removeEventListener('pointerup', onUp);
-          card.removeEventListener('pointercancel', onCancel);
-          if (ghost) { ghost.remove(); ghost = null; }
-          card.classList.remove('board-card-dragging');
-          clearHighlights();
-        }
-        function onMove(e2) {
-          if (!dragging) {
-            if (Math.abs(e2.clientX - startX) < 6 && Math.abs(e2.clientY - startY) < 6) return;
-            startDrag();
-          }
-          moveGhost(e2.clientX, e2.clientY);
-          clearHighlights();
-          const col = dropColAt(e2.clientX, e2.clientY);
-          if (col) col.classList.add('board-col-drop-target');
-        }
-        function onUp(e2) {
-          const wasDragging = dragging;
-          const col = wasDragging ? dropColAt(e2.clientX, e2.clientY) : null;
-          cleanup();
-          const newStatus = col && col.dataset.status;
-          if (wasDragging && newStatus && newStatus !== p.status) {
-            api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) }).then(() => render('projects'));
-          }
-        }
-        function onCancel() { cleanup(); }
-
-        card.setPointerCapture(e.pointerId);
-        card.addEventListener('pointermove', onMove);
-        card.addEventListener('pointerup', onUp);
-        card.addEventListener('pointercancel', onCancel);
-      });
-    }
-
-    STATUSES.forEach((s, i) => {
-      const col = el(`
-        <div class="board-col" data-status="${s.key}">
-          <div class="board-col-head"><span>${esc(s.label)}</span><span class="board-col-count">${projects.filter((p) => p.status === s.key).length}</span></div>
-          <div class="board-col-body"></div>
-        </div>
-      `);
-      const body = col.querySelector('.board-col-body');
-      const colProjects = projects.filter((p) => p.status === s.key);
-      if (!colProjects.length) {
-        body.appendChild(el(`<p class="board-col-empty">${esc(tr('empty_none_yet'))}</p>`));
+    function renderRoot() {
+      upBtn.disabled = true;
+      pathEl.textContent = tr('nav_projects');
+      newProjectBtn.classList.remove('hidden');
+      bodyWrap.innerHTML = '';
+      if (!projects.length) {
+        bodyWrap.appendChild(el(`<div class="empty-state">${esc(tr('empty_none_yet'))}</div>`));
+        return;
       }
-      colProjects.forEach((p) => {
+      const grid = el('<div class="explorer-grid"></div>');
+      projects.forEach((p) => {
         const { done, total } = checklistProgress(p.checklist);
-        const pct = total ? Math.round((done / total) * 100) : 0;
-        const totalBudget = budgetTotal(p.budget);
-        const budgetTitle = (p.budget || []).map((b) => `${b.label}: ${fmtMoney(b.amount)}`).join(', ');
-        let deadlineChip = '';
+        const statusInfo = STATUSES.find((s) => s.key === p.status) || STATUSES[0];
+        let lateBit = '';
         if (p.deadline) {
           const days = daysUntil(p.deadline);
-          const kind = days < 0 ? 'late' : days <= 3 ? 'soon' : 'far';
-          deadlineChip = `<span class="chip-deadline chip-deadline-${kind}">${esc(dueLabel(days))}</span>`;
+          if (days < 0) lateBit = `<span class="count count-late">${esc(dueLabel(days))}</span>`;
         }
-        const card = el(`
-          <div class="board-card">
-            <div class="board-card-top">
-              <p class="board-card-title">${esc(p.title)}</p>
-              ${deadlineChip}
-            </div>
-            ${p.description ? `<p class="board-card-desc">${escTrim(p.description, 90)}</p>` : ''}
-            ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">${tr('budget_label', { amount: fmtMoney(totalBudget) })}</p>` : ''}
-            ${(p.contacts || []).length ? `<p class="card-sub">${tr('contacts_prefix', { names: escTrim(p.contacts.join(', '), 60) })}</p>` : ''}
-            <div class="board-card-actions">
-              <div class="board-card-move">
-                <button type="button" class="btn btn-sm btn-icon" data-prev ${i === 0 ? 'disabled' : ''} title="${esc(tr('move_back'))}">${iconaLinea('frecciaSx')}</button>
-                <button type="button" class="btn btn-sm btn-icon" data-next ${i === STATUSES.length - 1 ? 'disabled' : ''} title="${esc(tr('move_forward'))}">${iconaLinea('frecciaDx')}</button>
-              </div>
-              <div class="board-card-ops">
-                <button type="button" class="btn btn-sm btn-icon" data-edit title="${esc(tr('btn_edit'))}">${iconaLinea('matita')}</button>
-                <button type="button" class="btn btn-sm btn-icon" data-link title="${esc(tr('btn_link_folder'))}">${iconaLinea('cartellaLinea')}</button>
-                <button type="button" class="btn btn-sm btn-icon btn-danger" data-del title="${esc(tr('btn_delete'))}">${iconaLinea('cestino')}</button>
-              </div>
-            </div>
-          </div>
+        const icon = el(`
+          <button type="button" class="explorer-icon">
+            <span class="unlink-badge" data-del title="${esc(tr('btn_delete'))}">✕</span>
+            ${appIcon('projects', 34)}
+            <span class="label">${esc(p.title)}</span>
+            <span class="chip-status chip-status-${p.status}">${esc(statusInfo.label)}</span>
+            ${total ? `<span class="count">${done}/${total}</span>` : ''}
+            ${lateBit}
+          </button>
         `);
-        if (total) {
-          const checklistWrap = el('<div class="board-checklist"></div>');
-          checklistWrap.appendChild(el(`
-            <div class="board-progress-row" title="${esc(tr('label_completed_count', { done, total }))}">
-              <div class="board-progress"><div class="board-progress-fill" style="width:${pct}%"></div></div>
-              <span class="board-progress-label">${done}/${total}</span>
-            </div>
-          `));
-          const itemsEl = el('<div class="idea-checklist"></div>');
-          (p.checklist || []).forEach((item, idx) => {
-            const row = el(`
-              <label class="idea-checklist-item">
-                <input type="checkbox" ${item.done ? 'checked' : ''} />
-                <span>${esc(item.text)}</span>
-                ${item.done ? `<span class="idea-checklist-badge" title="${esc(tr('label_completed_title'))}">✓</span>` : ''}
-              </label>
-            `);
-            row.querySelector('input').addEventListener('change', async (e) => {
-              const updated = p.checklist.map((c, j) => (j === idx ? { ...c, done: e.target.checked } : c));
-              await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ checklist: updated }) });
-              render('projects');
-            });
-            itemsEl.appendChild(row);
-          });
-          checklistWrap.appendChild(itemsEl);
-          const anchor = card.querySelector('.board-card-desc') || card.querySelector('.board-card-top');
-          anchor.insertAdjacentElement('afterend', checklistWrap);
-        }
-        async function moveTo(newStatus) {
-          await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
-          render('projects');
-        }
-        card.querySelector('[data-prev]').addEventListener('click', () => moveTo(STATUSES[i - 1].key));
-        card.querySelector('[data-next]').addEventListener('click', () => moveTo(STATUSES[i + 1].key));
-        card.querySelector('[data-edit]').addEventListener('click', () => {
-          const form = projectModal(p);
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const tags = parseTags(form);
-            const contacts = parseContacts(form);
-            const budget = parseBudgetLines(form.budget.value);
-            const checklist = collectChecklist(form, p.checklist);
-            await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
-            closeModal(); toast(tr('toast_project_updated')); render('projects');
-          });
-          form.querySelector('[data-cancel]').addEventListener('click', closeModal);
-          openModal(tr('modal_edit_project'), form);
+        if (highlightId && String(p.id) === highlightId) icon.classList.add('card-highlight');
+        icon.addEventListener('click', (e) => {
+          if (e.target.closest('[data-del]')) return;
+          renderProject(p);
         });
-        card.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('project', p.id, p.title));
-        attachCardDrag(card, p);
-        card.querySelector('[data-del]').addEventListener('click', async () => {
+        icon.querySelector('[data-del]').addEventListener('click', async (e) => {
+          e.stopPropagation();
           if (!confirm(tr('confirm_delete_project'))) return;
           await api(`/projects/${p.id}`, { method: 'DELETE' });
-          toast(tr('toast_project_deleted')); render('projects');
+          const idx = projects.findIndex((x) => x.id === p.id);
+          if (idx !== -1) projects.splice(idx, 1);
+          toast(tr('toast_project_deleted')); renderRoot();
         });
-        if (highlightId && String(p.id) === highlightId) card.classList.add('card-highlight');
-        body.appendChild(card);
+        grid.appendChild(icon);
       });
-      board.appendChild(col);
-    });
-    root.appendChild(board);
-    if (highlightId) {
-      const target = board.querySelector('.card-highlight');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      bodyWrap.appendChild(grid);
     }
+
+    function renderProject(p) {
+      upBtn.disabled = false;
+      pathEl.textContent = p.title;
+      newProjectBtn.classList.add('hidden');
+      bodyWrap.innerHTML = '';
+
+      const { done, total } = checklistProgress(p.checklist);
+      const totalBudget = budgetTotal(p.budget);
+      const budgetTitle = (p.budget || []).map((b) => `${b.label}: ${fmtMoney(b.amount)}`).join(', ');
+      let deadlineChip = '';
+      if (p.deadline) {
+        const days = daysUntil(p.deadline);
+        const kind = days < 0 ? 'late' : days <= 3 ? 'soon' : 'far';
+        deadlineChip = `<span class="chip-deadline chip-deadline-${kind}">${esc(dueLabel(days))}</span>`;
+      }
+
+      const panel = el(`
+        <div class="project-detail">
+          <div class="board-card-top">
+            <p class="board-card-title project-detail-title">${esc(p.title)}</p>
+            ${deadlineChip}
+          </div>
+          <div class="status-switch">
+            ${STATUSES.map((s) => `<button type="button" class="status-switch-opt${s.key === p.status ? ' active' : ''}" data-status="${s.key}">${esc(s.label)}</button>`).join('')}
+          </div>
+          ${p.description ? `<p class="card-body">${esc(p.description)}</p>` : ''}
+          ${totalBudget ? `<p class="card-sub" title="${esc(budgetTitle)}">${tr('budget_label', { amount: fmtMoney(totalBudget) })}</p>` : ''}
+          ${(p.contacts || []).length ? `<p class="card-sub">${tr('contacts_prefix', { names: escTrim(p.contacts.join(', '), 200) })}</p>` : ''}
+          <div class="card-actions">
+            <button class="btn btn-sm" data-edit>${esc(tr('btn_edit'))}</button>
+            <button class="btn btn-sm" data-link>${esc(tr('btn_link_folder'))}</button>
+            <button class="btn btn-sm btn-danger" data-del>${esc(tr('btn_delete'))}</button>
+          </div>
+        </div>
+      `);
+      bodyWrap.appendChild(panel);
+
+      if (total) {
+        const checklistWrap = el('<div class="board-checklist"></div>');
+        checklistWrap.appendChild(el(`
+          <div class="board-progress-row" title="${esc(tr('label_completed_count', { done, total }))}">
+            <div class="board-progress"><div class="board-progress-fill" style="width:${total ? Math.round((done / total) * 100) : 0}%"></div></div>
+            <span class="board-progress-label">${done}/${total}</span>
+          </div>
+        `));
+        const itemsEl = el('<div class="idea-checklist"></div>');
+        (p.checklist || []).forEach((item, idx) => {
+          const row = el(`
+            <label class="idea-checklist-item">
+              <input type="checkbox" ${item.done ? 'checked' : ''} />
+              <span>${esc(item.text)}</span>
+              ${item.done ? `<span class="idea-checklist-badge" title="${esc(tr('label_completed_title'))}">✓</span>` : ''}
+            </label>
+          `);
+          row.querySelector('input').addEventListener('change', async (e) => {
+            const updatedChecklist = p.checklist.map((c, j) => (j === idx ? { ...c, done: e.target.checked } : c));
+            const updated = await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ checklist: updatedChecklist }) });
+            applyUpdate(updated);
+          });
+          itemsEl.appendChild(row);
+        });
+        checklistWrap.appendChild(itemsEl);
+        panel.querySelector('.status-switch').insertAdjacentElement('afterend', checklistWrap);
+      }
+
+      function applyUpdate(updated) {
+        const idx = projects.findIndex((x) => x.id === updated.id);
+        if (idx !== -1) projects[idx] = updated;
+        renderProject(updated);
+      }
+
+      panel.querySelectorAll('.status-switch-opt').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const newStatus = btn.dataset.status;
+          if (newStatus === p.status) return;
+          const updated = await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+          applyUpdate(updated);
+        });
+      });
+      panel.querySelector('[data-edit]').addEventListener('click', () => {
+        const form = projectModal(p);
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const tags = parseTags(form);
+          const contacts = parseContacts(form);
+          const budget = parseBudgetLines(form.budget.value);
+          const checklist = collectChecklist(form, p.checklist);
+          const updated = await api(`/projects/${p.id}`, { method: 'PUT', body: JSON.stringify({ title: form.title.value, description: form.description.value, status: form.status.value, deadline: form.deadline.value || null, checklist, contacts, budget, tags }) });
+          closeModal(); toast(tr('toast_project_updated')); applyUpdate(updated);
+        });
+        form.querySelector('[data-cancel]').addEventListener('click', closeModal);
+        openModal(tr('modal_edit_project'), form);
+      });
+      panel.querySelector('[data-link]').addEventListener('click', () => openLinkToDossierModal('project', p.id, p.title));
+      panel.querySelector('[data-del]').addEventListener('click', async () => {
+        if (!confirm(tr('confirm_delete_project'))) return;
+        await api(`/projects/${p.id}`, { method: 'DELETE' });
+        const idx = projects.findIndex((x) => x.id === p.id);
+        if (idx !== -1) projects.splice(idx, 1);
+        toast(tr('toast_project_deleted')); renderRoot();
+      });
+    }
+
+    upBtn.addEventListener('click', renderRoot);
+
+    if (opts.only && projects.length) { renderProject(projects[0]); return; }
+    if (highlightId) {
+      const match = projects.find((p) => String(p.id) === highlightId);
+      if (match) { renderProject(match); return; }
+    }
+    renderRoot();
   };
 
   // ==================================================================
