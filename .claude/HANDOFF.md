@@ -4,16 +4,16 @@ Se stai leggendo questo file all'inizio di una nuova chat: questo documento ti d
 tutto il contesto per continuare esattamente da dove si era interrotto. Leggi
 anche i file collegati sotto, poi procedi.
 
-## Leggi prima questo: stato al 30/08/2026, fine sessione
+## Leggi prima questo: stato al 01/09/2026, fine sessione
 
 - **Branch**: si lavora su `main` (non piu' `redesign-retro-ui`, mergiato —
-  vedi nota sotto). Ultimo commit pushato: `7f9ec7a`. Nessuna PR in sospeso.
+  vedi nota sotto). Ultimo commit pushato: `ef753f1`. Nessuna PR in sospeso.
 - **Il redesign Windows 95 (Fasi 1-4) e' completo da tempo**; da allora si
   sono susseguiti tanti piccoli giri di bug fix/rifiniture dall'uso reale
-  dell'utente — vedi le sezioni "Sessione 30/08/2026 (N-esima parte)" sotto,
-  in ordine cronologico, per il dettaglio di ciascuno. Non c'e' piu' un
-  piano/roadmap residuo da seguire: nuovo lavoro = nuove richieste esplicite
-  dell'utente.
+  dell'utente — vedi le sezioni "Sessione 30/08/2026 (N-esima parte)" e
+  "Sessione 01/09/2026" sotto, in ordine cronologico, per il dettaglio di
+  ciascuno. Non c'e' piu' un piano/roadmap residuo da seguire: nuovo
+  lavoro = nuove richieste esplicite dell'utente.
 - **Cosa fare appena riprendi, PRIMA di aggiungere altro**:
   1. L'utente deve ancora aggiornare il suo Raspberry Pi con gli ultimi
      commit (vedi "ottava parte" sotto: `git pull` poi `./setup.sh` o
@@ -27,7 +27,16 @@ anche i file collegati sotto, poi procedi.
      tag per-scadenza — vedi "ottava parte") ma NON confermato risolutivo:
      probabile che il Pi girasse ancora su una build vecchia. Prossima
      volta che se ne riparla, verificare prima il punto 1, poi ritestare.
-  3. Non risultano altre richieste esplicite in sospeso a fine sessione.
+  3. **Card Progetti/Bacheca ridisegnata (01/09/2026)**: l'utente ha
+     segnalato che la gestione progetti era illeggibile/difficile sia su
+     desktop che mobile (card troppo densa, barra di progresso allo 0%
+     che sembrava una riga random, 5 pulsanti di testo minuscoli che
+     andavano a capo in modo imprevedibile, nessun target di tocco reale
+     su mobile). Vedi sezione dedicata sotto per il dettaglio — non
+     risulta ancora confermato dall'utente sull'uso reale, solo verificato
+     con Playwright su un'istanza isolata (DB in-memory, non quella
+     reale).
+  4. Non risultano altre richieste esplicite in sospeso a fine sessione.
 
 ## Nota sul branch
 
@@ -479,6 +488,49 @@ commit di questa sessione.
   ingrandita l'icona (17px → 26px) e il contenitore (40px → 48px): ora
   l'icona e l'estensione stanno semplicemente sopra lo sfondo della riga,
   senza margini visibili.
+
+## Sessione 01/09/2026: ridisegno card Progetti/Bacheca
+
+L'utente ha mandato uno screenshot della vista Progetti segnalando che la
+gestione era illeggibile e difficile sia su desktop che mobile. Diagnosi
+dal codice + screenshot: la card stipava titolo, una barra di progresso
+allo 0% che sembrava una riga a caso (nessun bordo visibile), il testo
+"X/Y completati", il chip scadenza e 5 pulsanti di solo testo minuscoli
+(colore muto, quasi nessun contrasto) in una colonna larga ~220px — le
+azioni andavano a capo in modo imprevedibile, e su mobile restavano lo
+stesso stile senza un vero target di tocco (a differenza del Vault, che
+già usa pulsanti a icona 40×40 su mobile).
+
+- **Card riscritta** (`public/app.js`, `views.projects`): titolo e chip
+  scadenza ora su una riga che va a capo in blocco se serve (mai più
+  spezzata a metà parola); anteprima descrizione (2 righe, troncata);
+  barra di progresso con bordo sempre visibile + percentuale numerica
+  accanto (mai più ambigua a 0/N); colonne vuote mostrano ora
+  "Ancora niente qui." invece di restare bianche.
+- **Azioni come pulsanti a icona**, non più testo: frecce ← → (nuove
+  icone SVG `frecciaSx`/`frecciaDx` in `VECTOR_ICONS`), poi
+  matita/cartella/cestino — stesso pattern icone già usato nel Vault,
+  raggruppate in due blocchi separati (spostamento a sinistra, resto a
+  destra) così non si accavallano mai.
+- **CSS** (`public/style.css`): generalizzata `.btn-icon` (prima era
+  scoped solo a `.vs-actions`, ora è una classe base riusabile — stessa
+  dimensione 27px desktop / 40px mobile di prima, nessun cambio
+  visivo per il Vault); aggiunto `.btn:disabled` globale (prima lo stile
+  disabilitato esisteva solo per i vecchi pulsanti di testo del board,
+  ora serve anche alle nuove frecce a icona); card con più respiro
+  (padding/gap aumentati).
+- **Verificato con Playwright reale** su un'istanza isolata dell'app
+  (server temporaneo su porta 3911, `DB_PATH=:memory:`, non il database
+  reale dell'utente — vedi nota sotto) sia a 1280px che a 390px: nessun
+  overlap, nessun a-capo imprevedibile, touch target da 40px su mobile.
+  Suite server (34/34) invariata. **Non ancora confermato dall'utente
+  sull'uso reale** — se ne riparla, verificare prima l'impressione a
+  caldo prima di considerare la richiesta chiusa.
+- Nota tecnica: per il test è stato lanciato un secondo processo
+  `node server/index.js` con `DB_PATH=:memory:` e `SESSION_SECRET`/
+  `ENCRYPTION_KEY` dummy, così da non toccare `data/mindkeep.db` né
+  `data/.secrets.env` reali (verificato: mtime invariato). Il processo
+  di test è stato terminato a fine verifica.
 
 ## Prossimi passi
 
