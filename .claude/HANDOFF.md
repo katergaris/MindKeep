@@ -7,7 +7,7 @@ anche i file collegati sotto, poi procedi.
 ## Leggi prima questo: stato al 01/09/2026, fine sessione
 
 - **Branch**: si lavora su `main` (non piu' `redesign-retro-ui`, mergiato —
-  vedi nota sotto). Ultimo commit pushato: `d6e8183`. Nessuna PR in sospeso.
+  vedi nota sotto). Ultimo commit pushato: `27c16e8`. Nessuna PR in sospeso.
 - **Il redesign Windows 95 (Fasi 1-4) e' completo da tempo**; da allora si
   sono susseguiti tanti piccoli giri di bug fix/rifiniture dall'uso reale
   dell'utente — vedi le sezioni "Sessione 30/08/2026 (N-esima parte)" e
@@ -27,17 +27,20 @@ anche i file collegati sotto, poi procedi.
      tag per-scadenza — vedi "ottava parte") ma NON confermato risolutivo:
      probabile che il Pi girasse ancora su una build vecchia. Prossima
      volta che se ne riparla, verificare prima il punto 1, poi ritestare.
-  3. **Card Progetti/Bacheca ridisegnata (01/09/2026)**, poi corretta nella
-     stessa sessione dopo un feedback duro dell'utente: il primo giro
-     mostrava solo la barra di progresso aggregata ma non gli elementi
-     della checklist, e non c'era MODO nell'interfaccia di segnare una
-     voce fatta — regressione funzionale, non solo estetica, mai notata
-     prima di spedire. Ora ogni card mostra la checklist con checkbox
-     spuntabili al volo (commit `d6e8183`). Vedi sezione dedicata sotto
-     per il dettaglio completo. Verificato con Playwright su un'istanza
-     isolata (DB in-memory, non quella reale) incluso un reload per
-     confermare che il toggle persiste lato server — **non ancora
-     confermato dall'utente sull'uso reale**.
+  3. **Progetti ripensato in tre passaggi nella sessione del 01/09/2026**
+     (vedi sezione dedicata sotto per il dettaglio di ciascuno):
+     (a) card kanban ridisegnata per leggibilita' → (b) l'utente ha fatto
+     notare che mancava un modo di spuntare la checklist, corretto → (c)
+     l'utente ha fatto notare che con tanti progetti le 3 colonne sempre
+     aperte con checklist inclusa sarebbero diventate confuse, quindi la
+     vista e' stata rifatta da zero come esploratore a icone (stesso
+     stile delle Cartelle): griglia con titolo/stato/urgenza scadenza,
+     apri un'icona per il dettaglio completo (checklist, descrizione,
+     budget, contatti, selettore di stato a 3 vie che sostituisce le
+     vecchie colonne). Commit finale: `27c16e8`. Verificato con
+     Playwright reale (intero flusso: crea/apri/spunta/cambia stato/
+     modifica/collega/elimina) su un'istanza isolata, desktop e mobile
+     — **non ancora confermato dall'utente sull'uso reale**.
   4. Non risultano altre richieste esplicite in sospeso a fine sessione.
 
 ## Nota sul branch
@@ -491,7 +494,7 @@ commit di questa sessione.
   l'icona e l'estensione stanno semplicemente sopra lo sfondo della riga,
   senza margini visibili.
 
-## Sessione 01/09/2026: ridisegno card Progetti/Bacheca
+## Sessione 01/09/2026: Progetti rifatto in 3 giri (card leggibile → checklist funzionante → griglia+dettaglio)
 
 L'utente ha mandato uno screenshot della vista Progetti segnalando che la
 gestione era illeggibile e difficile sia su desktop che mobile. Diagnosi
@@ -568,6 +571,70 @@ sulla funzionalità sottostante.
   che l'utente si aspetterebbe di poter fare (qui: aggiornare
   l'avanzamento di un progetto) sia effettivamente raggiungibile
   dall'interfaccia, non solo leggibile — non fermarsi alla resa grafica.
+
+### Terzo giro nella stessa sessione: via il kanban sempre aperto, griglia + dettaglio
+
+Dopo il fix della checklist, l'utente ha fatto notare che con tanti
+progetti le 3 colonne sempre visibili (ora ciascuna con checklist
+inclusa) sarebbero diventate difficili da scorrere — un problema di
+scala, non un bug. Prima di implementare e' stata fatta una domanda di
+chiarimento (`AskUserQuestion`, due opzioni con preview ASCII: kanban
+con card compatte vs. griglia di icone stile Cartelle); l'utente ha
+scelto un ibrido — griglia di icone come vista d'insieme, con il
+concetto di kanban recuperato dentro il dettaglio del singolo
+progetto.
+
+- **`views.projects` riscritta da zero** (`public/app.js`) seguendo
+  esattamente il pattern gia' usato da `views.dossiers` (Cartelle):
+  toolbar con bottone "Su"/breadcrumb, `renderRoot()` (griglia
+  `.explorer-icon`, riusa `appIcon('projects', ...)` gia' esistente in
+  `APP_ICON_PATHS`) e `renderProject(p)` (pannello di dettaglio),
+  swap in-place nello stesso `bodyWrap` — nessuna nuova finestra/modale
+  per l'apertura.
+  - Griglia: icona + titolo + chip di stato colorato (`.chip-status-*`,
+    nuovo) + frazione checklist +, solo se scaduto, un avviso rosso
+    sotto (`.count-late`) — deliberatamente minimale, tutto il resto
+    sta nel dettaglio.
+  - Dettaglio (`.project-detail`): titolo + chip scadenza, un
+    selettore di stato a 3 vie (`.status-switch`, nuovo — visivamente
+    richiama le vecchie colonne del kanban, click cambia stato via
+    PUT), poi la checklist spuntabile (stesso markup del giro
+    precedente), descrizione **non troncata** (prima lo era a 90
+    caratteri), budget, contatti, azioni Modifica/Cartella/Elimina.
+  - Ogni PUT (checklist, stato, modifica campi) ora usa la riga
+    aggiornata restituita dalla risposta del server per aggiornare
+    l'array `projects` in memoria e richiamare `renderProject()` sullo
+    stesso oggetto, **senza** un `render('projects')` da zero — cosi'
+    il dettaglio resta aperto dopo ogni azione invece di tornare alla
+    griglia (prima il redesign era rifatto ogni volta, qui sarebbe
+    stato fastidioso: si perderebbe il posto dopo ogni singola spunta).
+- **Rimosso**: le colonne DA FARE/IN CORSO/FATTO sempre visibili, il
+  trascinamento reale delle card tra colonne (`attachCardDrag`, con
+  tutta la logica pointer capture — non serve piu', non c'e' piu' nulla
+  tra cui trascinare), le frecce ← → di spostamento rapido e le relative
+  icone SVG (`frecciaSx`/`frecciaDx`, rimosse da `VECTOR_ICONS` perche'
+  non piu' referenziate). CSS `.board`, `.board-col*`, `.board-card`
+  (il contenitore), `.board-card-desc/-actions/-move/-ops`,
+  `.board-card-ghost/-dragging`, `.board-col-drop-target` rimossi da
+  `style.css` — non piu' usati da nessun markup. Tenute (riusate dal
+  nuovo dettaglio): `.board-card-top`, `.board-card-title`,
+  `.board-checklist`, `.board-progress*`, `.chip-deadline*`.
+- **Verificato con Playwright reale** su un'istanza isolata (porta
+  diversa, `DB_PATH=:memory:`): creazione di piu' progetti, apertura
+  dal grid, spunta checklist, cambio stato dal selettore a 3 vie
+  (verificato che la griglia rifletta poi lo stato/progresso aggiornati
+  tornando indietro), modifica titolo via modale, apertura della
+  modale "Collega a cartella" (nessun errore, anche a zero cartelle
+  esistenti), eliminazione — tutto testato sia a 1280px che a 390px,
+  zero errori console. Suite server 34/34 invariata.
+- Commit: `27c16e8` (+ skill `mindkeep-run`/`mindkeep-handoff` in
+  `8e51d42`, create nella stessa sessione su richiesta esplicita
+  dell'utente, non legate a questo lavoro sui Progetti).
+- **Non ancora confermato dall'utente sull'uso reale** — quando se ne
+  riparla, verificare prima l'impressione a caldo (in particolare: il
+  selettore di stato a 3 vie comunica bene il "kanban" che l'utente
+  aveva chiesto? la griglia resta leggibile con molti progetti reali,
+  non solo i 1-2 di test?).
 
 ## Prossimi passi
 
