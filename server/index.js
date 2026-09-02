@@ -15,6 +15,18 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // ENCRYPTION_KEY viene ulteriormente validata (presenza/lunghezza minima) da server/crypto.js al primo require
 
+// Mindkeep gira spesso dietro un reverse proxy che termina TLS (Caddy/Traefik/
+// Nginx, vedi README): senza "trust proxy" Express vede solo la connessione
+// in chiaro tra proxy e app, quindi req.protocol risulta sempre "http" (anche
+// se il browser e' su https) e req.ip e' sempre l'IP del proxy, non del
+// client vero. Rompe sia la verifica dell'origine WebAuthn (si aspetta
+// "http://..." ma il browser manda "https://...") sia il blocco anti forza
+// bruta sul login (tutte le richieste sembrano venire dallo stesso IP). Ci si
+// fida degli header X-Forwarded-* solo se la connessione arriva da una rete
+// privata/locale (dove tipicamente gira il proxy), non da un client pubblico
+// che potrebbe falsificarli con Mindkeep esposto direttamente senza proxy.
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
+
 // --- Durata dell'accesso (SESSION_DAYS nel file .env) ---
 // 0 (valore predefinito) = l'accesso non scade mai da solo: si esce solo con
 // il pulsante "Esci". Un numero N > 0 = l'accesso dura N giorni, che ripartono
