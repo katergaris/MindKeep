@@ -51,7 +51,11 @@ router.get('/:id/reveal', (req, res) => {
   // una semplice GET: il client deve rifare la richiesta come POST qui sotto,
   // dopo aver ottenuto una sfida da /reveal/options e averla firmata col tocco.
   if (user && webauthn.hasCredentials(user.id)) {
-    return res.status(401).json({ error: 'Serve la conferma con impronta digitale', webauthnRequired: true });
+    // 403, non 401: l'utente e' autenticato (la sessione va benissimo), gli
+    // manca solo il secondo passo dell'impronta. Un 401 qui verrebbe
+    // intercettato da api() lato client come sessione scaduta, disconnettendo
+    // l'utente invece di fargli fare il tocco.
+    return res.status(403).json({ error: 'Serve la conferma con impronta digitale', webauthnRequired: true });
   }
   res.json(serialize(row, { reveal: true }));
 });
@@ -78,7 +82,9 @@ router.post('/:id/reveal', async (req, res) => {
   try {
     await webauthn.verifyReveal(req, user, credential, row.id);
   } catch (e) {
-    return res.status(401).json({ error: e.message });
+    // Anche qui 403, non 401: una verifica fallita (tocco annullato, sfida
+    // scaduta, ...) non deve disconnettere una sessione che resta valida.
+    return res.status(403).json({ error: e.message });
   }
   res.json(serialize(row, { reveal: true }));
 });

@@ -60,7 +60,9 @@ test('reveal della password: con un\'impronta registrata, la GET si rifiuta e ch
 
   await withServer(async (base) => {
     const res = await fetch(`${base}/vault/${entry.lastInsertRowid}/reveal`);
-    assert.equal(res.status, 401);
+    // 403, non 401: la sessione e' valida, manca solo la conferma con
+    // l'impronta. Un 401 qui verrebbe letto dal client come sessione scaduta.
+    assert.equal(res.status, 403);
     const body = await res.json();
     assert.equal(body.webauthnRequired, true);
     assert.equal(body.password, undefined, 'la password non deve mai comparire senza la verifica');
@@ -79,7 +81,7 @@ test('reveal della password: con un\'impronta registrata, la GET si rifiuta e ch
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential: { id: 'cred-finto', response: {} } }),
     });
-    assert.equal(postRes.status, 401);
+    assert.equal(postRes.status, 403);
     const postBody = await postRes.json();
     assert.equal(postBody.password, undefined);
   });
