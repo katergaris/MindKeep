@@ -50,6 +50,96 @@
     await sub.unsubscribe();
   }
 
+  // ---------------- Impronta digitale / Face ID (WebAuthn) ----------------
+  function b64urlToBuffer(b64url) {
+    const padding = '='.repeat((4 - (b64url.length % 4)) % 4);
+    const base64 = (b64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i += 1) arr[i] = raw.charCodeAt(i);
+    return arr.buffer;
+  }
+
+  function bufferToB64url(buf) {
+    const bytes = new Uint8Array(buf);
+    let str = '';
+    for (let i = 0; i < bytes.length; i += 1) str += String.fromCharCode(bytes[i]);
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function webauthnSupported() {
+    return !!(window.PublicKeyCredential && navigator.credentials);
+  }
+
+  function guessDeviceName() {
+    const ua = navigator.userAgent;
+    if (/ipad/i.test(ua)) return 'iPad';
+    if (/iphone/i.test(ua)) return 'iPhone';
+    if (/android/i.test(ua)) return 'Android';
+    if (/macintosh/i.test(ua)) return 'Mac';
+    if (/windows/i.test(ua)) return 'Windows';
+    return 'Dispositivo';
+  }
+
+  async function enrollFingerprint() {
+    const options = await api('/security/webauthn/register/options', { method: 'POST' });
+    const publicKey = {
+      ...options,
+      challenge: b64urlToBuffer(options.challenge),
+      user: { ...options.user, id: b64urlToBuffer(options.user.id) },
+      excludeCredentials: (options.excludeCredentials || []).map((c) => ({ ...c, id: b64urlToBuffer(c.id) })),
+    };
+    let cred;
+    try {
+      cred = await navigator.credentials.create({ publicKey });
+    } catch (e) {
+      throw new Error(tr('err_webauthn_cancelled'));
+    }
+    const credentialJSON = {
+      id: cred.id,
+      rawId: bufferToB64url(cred.rawId),
+      type: cred.type,
+      response: {
+        clientDataJSON: bufferToB64url(cred.response.clientDataJSON),
+        attestationObject: bufferToB64url(cred.response.attestationObject),
+        transports: cred.response.getTransports ? cred.response.getTransports() : undefined,
+      },
+      clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {},
+    };
+    await api('/security/webauthn/register/verify', {
+      method: 'POST',
+      body: JSON.stringify({ credential: credentialJSON, deviceName: guessDeviceName() }),
+    });
+  }
+
+  async function revealWithFingerprint(vaultId) {
+    const options = await api(`/vault/${vaultId}/reveal/options`);
+    const publicKey = {
+      ...options,
+      challenge: b64urlToBuffer(options.challenge),
+      allowCredentials: (options.allowCredentials || []).map((c) => ({ ...c, id: b64urlToBuffer(c.id) })),
+    };
+    let assertion;
+    try {
+      assertion = await navigator.credentials.get({ publicKey });
+    } catch (e) {
+      throw new Error(tr('err_webauthn_cancelled'));
+    }
+    const credentialJSON = {
+      id: assertion.id,
+      rawId: bufferToB64url(assertion.rawId),
+      type: assertion.type,
+      response: {
+        clientDataJSON: bufferToB64url(assertion.response.clientDataJSON),
+        authenticatorData: bufferToB64url(assertion.response.authenticatorData),
+        signature: bufferToB64url(assertion.response.signature),
+        userHandle: assertion.response.userHandle ? bufferToB64url(assertion.response.userHandle) : undefined,
+      },
+      clientExtensionResults: assertion.getClientExtensionResults ? assertion.getClientExtensionResults() : {},
+    };
+    return api(`/vault/${vaultId}/reveal`, { method: 'POST', body: JSON.stringify({ credential: credentialJSON }) });
+  }
+
   // ---------------- API helper ----------------
   async function api(path, opts = {}) {
     let res;
@@ -1736,7 +1826,18 @@
       revealBtn.addEventListener('click', async () => {
         const pwdEl = row.querySelector('[data-pwd]');
         if (!revealed) {
-          const full = await api(`/vault/${entry.id}/reveal`);
+          let full;
+          try {
+            try {
+              full = await api(`/vault/${entry.id}/reveal`);
+            } catch (err) {
+              if (!(err.data && err.data.webauthnRequired)) throw err;
+              full = await revealWithFingerprint(entry.id);
+            }
+          } catch (err) {
+            toast(err.message);
+            return;
+          }
           pwdEl.textContent = entry.type === 'card'
             ? tr('vault_card_cvv_inline', { password: full.password || tr('vault_empty_value'), cvv: full.cvv || '—' })
             : (full.password || tr('vault_empty_value'));
@@ -2636,6 +2737,52 @@
     }
 
     root.appendChild(block);
+
+    const bioBlock = el(`<div class="section-block"><h3>${esc(tr('section_biometric'))}</h3></div>`);
+    if (!webauthnSupported()) {
+      bioBlock.appendChild(el(`<p class="card-sub">${esc(tr('biometric_not_supported'))}</p>`));
+    } else {
+      const bioData = await api('/security/webauthn');
+      bioBlock.appendChild(el(`<p class="card-sub">${esc(tr('biometric_hint'))}</p>`));
+      if (bioData.credentials.length) {
+        const list = el('<div class="card-actions" style="flex-direction:column;align-items:stretch;gap:6px"></div>');
+        bioData.credentials.forEach((c) => {
+          const item = el(`
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <span class="card-sub">${esc(c.deviceName)}</span>
+            </div>
+          `);
+          const del = el(`<button class="btn btn-sm btn-danger">${esc(tr('btn_delete'))}</button>`);
+          del.addEventListener('click', () => {
+            askPassword(
+              tr('modal_remove_fingerprint'),
+              tr('confirm_remove_fingerprint'),
+              async (password) => {
+                await api(`/security/webauthn/${c.id}`, { method: 'DELETE', body: JSON.stringify({ password }) });
+                closeModal();
+                toast(tr('toast_fingerprint_removed'));
+                render('security');
+              }
+            );
+          });
+          item.appendChild(del);
+          list.appendChild(item);
+        });
+        bioBlock.appendChild(list);
+      }
+      const addBtn = el(`<button class="btn btn-sm btn-primary" style="margin-top:8px">${esc(tr('btn_add_fingerprint'))}</button>`);
+      addBtn.addEventListener('click', async () => {
+        try {
+          await enrollFingerprint();
+          toast(tr('toast_fingerprint_added'));
+          render('security');
+        } catch (err) {
+          toast(err.message);
+        }
+      });
+      bioBlock.appendChild(addBtn);
+    }
+    root.appendChild(bioBlock);
 
     const notifyBlock = el(`<div class="section-block"><h3>${esc(tr('section_push_notifications'))}</h3></div>`);
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;

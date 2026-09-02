@@ -2,6 +2,7 @@ const express = require('express');
 const qrcode = require('qrcode-generator');
 const auth = require('../auth');
 const totp = require('../totp');
+const webauthn = require('../webauthn');
 
 const router = express.Router();
 
@@ -83,6 +84,55 @@ router.post('/totp/disable', (req, res) => {
   }
   auth.disableTotp(user.id);
   res.json({ ok: true });
+});
+
+// --- Impronta digitale / Face ID (WebAuthn) per sbloccare il vault ---
+router.get('/webauthn', (req, res) => {
+  const user = currentUser(req);
+  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  res.json({
+    credentials: webauthn.credentialsForUser(user.id).map((c) => ({
+      id: c.id,
+      deviceName: c.device_name,
+      createdAt: c.created_at,
+      lastUsedAt: c.last_used_at,
+    })),
+  });
+});
+
+// Registrazione additiva (come il QR del TOTP): non serve la password, basta
+// la sessione gia' autenticata su questo stesso dispositivo.
+router.post('/webauthn/register/options', async (req, res) => {
+  const user = currentUser(req);
+  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  const options = await webauthn.generateEnrollOptions(req, user);
+  res.json(options);
+});
+
+router.post('/webauthn/register/verify', async (req, res) => {
+  const user = currentUser(req);
+  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  const { credential, deviceName } = req.body || {};
+  if (!credential) return res.status(400).json({ error: 'Corpo della richiesta non valido' });
+  try {
+    await webauthn.verifyEnroll(req, user, credential, deviceName);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  res.json({ ok: true });
+});
+
+// Rimozione: serve la password, come per la disattivazione del TOTP (chi
+// trovasse una sessione aperta non deve poter togliere la protezione da solo).
+router.delete('/webauthn/:id', (req, res) => {
+  const user = currentUser(req);
+  if (!user) return res.status(401).json({ error: 'Non autenticato' });
+  const { password } = req.body || {};
+  if (!auth.verifyUser(user.username, password)) {
+    return res.status(403).json({ error: 'Password non corretta' });
+  }
+  webauthn.removeCredential(user.id, req.params.id);
+  res.status(204).end();
 });
 
 module.exports = router;

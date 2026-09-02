@@ -4,9 +4,15 @@ const { parse } = require('csv-parse/sync');
 const db = require('../db');
 const { encrypt, decrypt } = require('../crypto');
 const totp = require('../totp');
+const auth = require('../auth');
+const webauthn = require('../webauthn');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+function currentUser(req) {
+  return req.session ? auth.getUser(req.session.userId) : null;
+}
 
 // Tipi di voce: cambia solo il significato dei campi condivisi (site/username/
 // password_encrypted), non lo schema. "password_encrypted" contiene sempre
@@ -40,6 +46,40 @@ router.get('/', (req, res) => {
 router.get('/:id/reveal', (req, res) => {
   const row = db.prepare('SELECT * FROM vault_entries WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Voce non trovata' });
+  const user = currentUser(req);
+  // Se l'utente ha registrato un'impronta, la password non si rivela mai con
+  // una semplice GET: il client deve rifare la richiesta come POST qui sotto,
+  // dopo aver ottenuto una sfida da /reveal/options e averla firmata col tocco.
+  if (user && webauthn.hasCredentials(user.id)) {
+    return res.status(401).json({ error: 'Serve la conferma con impronta digitale', webauthnRequired: true });
+  }
+  res.json(serialize(row, { reveal: true }));
+});
+
+// Passo 1 dello sblocco con impronta: genera la sfida da firmare col tocco.
+router.get('/:id/reveal/options', async (req, res) => {
+  const row = db.prepare('SELECT id FROM vault_entries WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Voce non trovata' });
+  const user = currentUser(req);
+  if (!user || !webauthn.hasCredentials(user.id)) {
+    return res.status(400).json({ error: 'Nessuna impronta registrata per questo account' });
+  }
+  const options = await webauthn.generateRevealOptions(req, user, row.id);
+  res.json(options);
+});
+
+// Passo 2: verifica la risposta del dispositivo e, solo se valida, rivela la password.
+router.post('/:id/reveal', async (req, res) => {
+  const row = db.prepare('SELECT * FROM vault_entries WHERE id = ? AND deleted_at IS NULL').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Voce non trovata' });
+  const user = currentUser(req);
+  const { credential } = req.body || {};
+  if (!user || !credential) return res.status(400).json({ error: 'Corpo della richiesta non valido' });
+  try {
+    await webauthn.verifyReveal(req, user, credential, row.id);
+  } catch (e) {
+    return res.status(401).json({ error: e.message });
+  }
   res.json(serialize(row, { reveal: true }));
 });
 

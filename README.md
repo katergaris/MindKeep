@@ -124,6 +124,15 @@ docker compose exec mindkeep node server/disable-2fa.js
 
 > La verifica in due passaggi protegge l'*accesso all'app*, non i dati sul disco: chi ha in mano il file `.env` e il database può comunque decifrare il vault. Serve contro chi indovina o ruba la password, non contro chi ha accesso fisico al server.
 
+## Impronta digitale / Face ID per il vault
+
+Facoltativa, si attiva da **Sicurezza** con "Aggiungi impronta su questo dispositivo". Una volta registrata almeno un'impronta per l'account, **rivelare una password del vault** (l'icona a occhio) chiede il tocco (impronta, Face ID o Windows Hello) invece di bastare la sola sessione aperta — utile soprattutto da telefono, dove la sessione resta spesso aperta a lungo.
+
+- È per dispositivo: registrala separatamente su ogni telefono/computer da cui vuoi il tocco per rivelare le password. Se non la registri su un dispositivo, lì il reveal continua a funzionare come prima (nessuna impronta = nessun blocco).
+- Usa WebAuthn (lo standard delle passkey): la chiave privata resta nel dispositivo, sul server viene salvata solo quella pubblica.
+- Richiede **HTTPS** (va bene anche `localhost` in sviluppo): i browser non espongono l'impronta su un semplice `http://`, incluso l'accesso via IP della rete locale senza certificato.
+- Per rimuoverla da **Sicurezza** serve la password dell'account, come per disattivare la verifica in due passaggi.
+
 ## Backup
 
 Dal menu laterale, "Esporta backup" scarica uno `.zip` con il database e tutti i documenti del Drive. Conservalo, insieme a una copia del file `.env`, in un posto sicuro e separato dal server.
@@ -172,6 +181,7 @@ rm -rf data uploads   # attenzione: cancella tutti i dati salvati
 
 - Le password del vault sono cifrate con AES-256-GCM; la chiave deriva dalla `ENCRYPTION_KEY` che imposti tu (o che lo script genera per te) e non viene mai salvata nel database.
 - L'accesso all'app è protetto da un singolo utente (username + password, hash bcrypt) con sessione via cookie, e facoltativamente da una verifica in due passaggi con app di autenticazione (TOTP).
+- La rivelazione di una password del vault può essere protetta per-dispositivo con impronta/Face ID (WebAuthn); senza dispositivi registrati funziona come prima, con la sola sessione autenticata.
 - Dopo 10 tentativi di accesso falliti dallo stesso indirizzo, il login si blocca per 15 minuti.
 - Questo è uno strumento pensato per uso personale su una rete che controlli (rete domestica, VPN, NAS). Non ha avuto un audit di sicurezza professionale: per password particolarmente critiche, valuta di affiancare uno strumento dedicato e verificato come Vaultwarden, usando Mindkeep per il resto.
 - Se esponi Mindkeep su internet, mettilo dietro HTTPS (es. reverse proxy con Caddy/Traefik/Nginx) e considera un livello aggiuntivo di autenticazione (es. VPN).

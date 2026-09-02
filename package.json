@@ -8,6 +8,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^14.0.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.3.0",
