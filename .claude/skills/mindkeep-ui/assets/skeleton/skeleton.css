@@ -80,7 +80,7 @@
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
-body{font-family:var(--mk-font-ui);color:var(--mk-text);}
+body{font-family:var(--mk-font-ui);color:var(--mk-text);background:var(--mk-bg-desktop);}
 button{font-family:inherit;color:inherit;cursor:pointer;}
 
 /* ---------- Desktop ---------- */
