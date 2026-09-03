@@ -1,0 +1,64 @@
+/* Theme: macOS moderno — traffic-light controls, centered title, floating dock. */
+:root[data-theme="macos-modern"] {
+  --mk-font-ui: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --mk-bg-desktop: linear-gradient(165deg,#1e3c72 0%,#3a6186 55%,#89a7c2 100%);
+  --mk-text: #1d1d1f;
+  --mk-text-muted: #8a8a8e;
+  --mk-surface: #ffffff;
+  --mk-surface-alt: #f5f5f6;
+  --mk-border-soft: #ececec;
+  --mk-accent: #0a6cff;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #e8f0fe;
+  --mk-accent-soft-fg: #0a6cff;
+
+  --mk-win-bg: #f7f7f8;
+  --mk-win-radius: 12px;
+  --mk-win-shadow: 0 24px 48px rgba(0,0,0,.35);
+  --mk-win-border: none;
+
+  --mk-titlebar-height: 36px;
+  --mk-titlebar-radius: 12px 12px 0 0;
+  --mk-titlebar-active-bg: #eceded;
+  --mk-titlebar-active-fg: #1d1d1f;
+  --mk-titlebar-inactive-bg: #f2f2f3;
+  --mk-titlebar-inactive-fg: #a3a3a5;
+  --mk-titlebar-weight: 600;
+  --mk-titlebar-justify: center;
+  --mk-titlebar-border: 1px solid #dcdcdd;
+  --mk-titlebar-icon-display: none;
+
+  --mk-control-size: 12px;
+  --mk-control-radius: 50%;
+  --mk-control-bg: #28c840;
+  --mk-control-fg: transparent;
+  --mk-control-close-bg: #ff5f57;
+  --mk-control-gap: 8px;
+  --mk-control-order: -1;
+  --mk-control-position: absolute;
+
+  --mk-taskbar-bg: rgba(255,255,255,.6);
+  --mk-taskbar-blur: blur(24px);
+  --mk-taskbar-radius: 20px;
+  --mk-taskbar-shadow: 0 12px 30px rgba(0,0,0,.3);
+  --mk-taskbar-border: 1px solid rgba(255,255,255,.6);
+  --mk-taskbar-width: auto;
+  --mk-taskbar-inset: 0;
+  --mk-taskbar-justify: center;
+
+  --mk-app-active-bg: rgba(10,108,255,.12);
+  --mk-app-active-fg: #0a6cff;
+  --mk-app-radius: 12px;
+
+  --mk-launcher-bg: rgba(255,255,255,.85);
+  --mk-launcher-shadow: 0 20px 50px rgba(0,0,0,.35);
+  --mk-launcher-radius: 16px;
+
+  --mk-radius-sm: 8px;
+  --mk-tag-bg: #e8f0fe;
+  --mk-tag-fg: #0a6cff;
+}
+[data-theme="macos-modern"] #mk-taskbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);}
+[data-theme="macos-modern"] .mk-tb-controls{left:14px;top:50%;transform:translateY(-50%);}
+[data-theme="macos-modern"] .mk-wctl svg{display:none;}
+[data-theme="macos-modern"] .mk-launcher-items{backdrop-filter:blur(20px);}

@@ -1,0 +1,56 @@
+/* Theme: Aero glass — glossy reflective glass, vivid blue, refined Windows 7 lineage. */
+:root[data-theme="aero-glass"] {
+  --mk-font-ui: 'Manrope', sans-serif;
+  --mk-bg-desktop: linear-gradient(160deg,#1b3a6b 0%,#2f6fb0 60%,#8fc4e8 100%);
+  --mk-text: #0d2340;
+  --mk-text-muted: #4a5a6c;
+  --mk-surface: #ffffff;
+  --mk-surface-alt: #eef4fa;
+  --mk-border-soft: #eaf0f6;
+  --mk-accent: #1c5ba8;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #e0f0ff;
+  --mk-accent-soft-fg: #1c5ba8;
+
+  --mk-win-bg: rgba(255,255,255,.92);
+  --mk-win-radius: 11px;
+  --mk-win-shadow: 0 22px 46px rgba(5,20,45,.4), inset 0 1px 0 rgba(255,255,255,.8);
+  --mk-win-border: none;
+
+  --mk-titlebar-height: 40px;
+  --mk-titlebar-radius: 11px 11px 0 0;
+  --mk-titlebar-active-bg: linear-gradient(180deg,#7fc4ff 0%,#2f7fd6 45%,#1c5ba8 100%);
+  --mk-titlebar-active-fg: #ffffff;
+  --mk-titlebar-inactive-bg: linear-gradient(180deg,#cfd8e0,#aab4bf);
+  --mk-titlebar-inactive-fg: #eef2f5;
+  --mk-titlebar-weight: 700;
+
+  --mk-control-size: 24px;
+  --mk-control-radius: 5px;
+  --mk-control-bg: linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.05));
+  --mk-control-fg: #ffffff;
+  --mk-control-border: 1px solid rgba(255,255,255,.5);
+  --mk-control-close-bg: linear-gradient(180deg,#ff8a7a,#e0402a);
+
+  --mk-taskbar-bg: linear-gradient(180deg,rgba(255,255,255,.5),rgba(200,220,240,.35));
+  --mk-taskbar-blur: blur(18px);
+  --mk-taskbar-radius: 0px;
+  --mk-taskbar-shadow: none;
+  --mk-taskbar-border: 1px solid rgba(255,255,255,.6);
+
+  --mk-app-active-bg: linear-gradient(180deg,#bfe0ff,#7fc4ff);
+  --mk-app-active-fg: #0d2340;
+  --mk-app-radius: 8px;
+  --mk-app-border: 1px solid rgba(255,255,255,.6);
+
+  --mk-launcher-bg: rgba(255,255,255,.9);
+  --mk-launcher-shadow: 0 20px 50px rgba(5,20,45,.35);
+  --mk-launcher-radius: 11px;
+
+  --mk-radius-sm: 6px;
+  --mk-tag-bg: #e0f0ff;
+  --mk-tag-fg: #1c5ba8;
+}
+[data-theme="aero-glass"] .mk-titlebar-active{position:relative;overflow:hidden;}
+[data-theme="aero-glass"] .mk-titlebar-active::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;}
+[data-theme="aero-glass"] .mk-launcher-btn{background:linear-gradient(180deg,#7fc4ff,#1c5ba8);color:#fff;}

@@ -1,0 +1,57 @@
+/* Theme: Neumorphism — soft extruded shapes, single-hue surface, dual shadow. */
+:root[data-theme="neumorphism"] {
+  --mk-font-ui: 'Quicksand', sans-serif;
+  --mk-bg-desktop: linear-gradient(160deg,#e6ebf3,#dbe1ec);
+  --mk-text: #3a4557;
+  --mk-text-muted: #8b95a8;
+  --mk-surface: #e6ebf3;
+  --mk-surface-alt: #dfe5ee;
+  --mk-border-soft: transparent;
+  --mk-accent: #5b7fdb;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #e6ebf3;
+  --mk-accent-soft-fg: #5b7fdb;
+
+  --mk-win-bg: #e6ebf3;
+  --mk-win-radius: 22px;
+  --mk-win-shadow: 12px 12px 24px #bfc7d9, -12px -12px 24px #ffffff;
+  --mk-win-border: none;
+
+  --mk-titlebar-height: 44px;
+  --mk-titlebar-radius: 22px 22px 0 0;
+  --mk-titlebar-active-bg: #e6ebf3;
+  --mk-titlebar-active-fg: #3a4557;
+  --mk-titlebar-inactive-bg: #e6ebf3;
+  --mk-titlebar-inactive-fg: #9aa5ba;
+  --mk-titlebar-weight: 700;
+
+  --mk-control-size: 26px;
+  --mk-control-radius: 50%;
+  --mk-control-bg: #e6ebf3;
+  --mk-control-fg: #7c8aa5;
+  --mk-control-close-bg: #e6ebf3;
+  --mk-control-shadow: 3px 3px 6px #c3cadb, -3px -3px 6px #ffffff;
+
+  --mk-taskbar-bg: #e6ebf3;
+  --mk-taskbar-radius: 24px;
+  --mk-taskbar-shadow: 8px 8px 16px #c3cadb, -8px -8px 16px #ffffff;
+  --mk-taskbar-width: calc(100% - 48px);
+  --mk-taskbar-inset: 0 24px 20px;
+
+  --mk-app-active-bg: #e6ebf3;
+  --mk-app-active-fg: #5b7fdb;
+  --mk-app-radius: 16px;
+  --mk-app-shadow: 4px 4px 8px #c3cadb, -4px -4px 8px #ffffff;
+
+  --mk-launcher-bg: #e6ebf3;
+  --mk-launcher-shadow: 12px 12px 24px #bfc7d9, -12px -12px 24px #ffffff;
+  --mk-launcher-radius: 22px;
+
+  --mk-radius-sm: 8px;
+  --mk-radius-md: 14px;
+  --mk-tag-bg: #e6ebf3;
+  --mk-tag-fg: #5b7fdb;
+}
+[data-theme="neumorphism"] .mk-app-btn.mk-active{box-shadow:inset 3px 3px 6px #c3cadb,inset -3px -3px 6px #ffffff;}
+[data-theme="neumorphism"] .mk-dossier-row{box-shadow:4px 4px 8px #c3cadb,-4px -4px 8px #fff;border-radius:14px;padding:10px 10px;margin-bottom:8px;border-bottom:none;}
+[data-theme="neumorphism"] .mk-tag{box-shadow:2px 2px 5px #c3cadb,-2px -2px 5px #fff;}

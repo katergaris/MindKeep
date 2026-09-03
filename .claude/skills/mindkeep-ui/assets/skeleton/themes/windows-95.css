@@ -1,0 +1,63 @@
+/* Theme: Windows 95 — reference skin, matches MindKeep's own chrome exactly.
+   Pairs with mindkeep-ui skeleton.css. See windows-95-web-designer for the
+   full authentic component library this theme is drawn from. */
+:root[data-theme="windows-95"] {
+  --mk-font-ui: 'Tahoma', 'Segoe UI', Verdana, sans-serif;
+  --mk-font-mono: 'Courier New', monospace;
+  --mk-bg-desktop: #008080;
+  --mk-text: #0b0b0b;
+  --mk-text-muted: #4a4a4a;
+  --mk-surface: #ffffff;
+  --mk-surface-alt: #f2f2f2;
+  --mk-border-soft: #d8d8d8;
+  --mk-accent: #000080;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #c9defb;
+  --mk-accent-soft-fg: #123a5c;
+
+  --mk-win-bg: #c0c0c0;
+  --mk-win-radius: 0px;
+  --mk-win-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000, inset 2px 2px 0 #dfdfdf, inset -2px -2px 0 #808080, 4px 4px 0 rgba(0,0,0,.28);
+  --mk-win-border: none;
+  --mk-win-padding: 2px;
+
+  --mk-titlebar-height: 26px;
+  --mk-titlebar-radius: 0px;
+  --mk-titlebar-active-bg: linear-gradient(90deg,#000080,#1084d0);
+  --mk-titlebar-active-fg: #ffffff;
+  --mk-titlebar-inactive-bg: #808080;
+  --mk-titlebar-inactive-fg: #e6e6e6;
+  --mk-titlebar-weight: 700;
+  --mk-titlebar-transform: none;
+
+  --mk-control-size: 20px;
+  --mk-control-radius: 0px;
+  --mk-control-bg: #c0c0c0;
+  --mk-control-fg: #111111;
+  --mk-control-border: none;
+  --mk-control-close-bg: #c0c0c0;
+  --mk-control-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000;
+
+  --mk-taskbar-bg: #c0c0c0;
+  --mk-taskbar-blur: none;
+  --mk-taskbar-radius: 0px;
+  --mk-taskbar-shadow: inset 1px 1px 0 #fff;
+  --mk-taskbar-border: none;
+
+  --mk-app-active-bg: transparent;
+  --mk-app-active-fg: #111111;
+  --mk-app-radius: 0px;
+  --mk-app-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #000;
+
+  --mk-launcher-bg: #c0c0c0;
+  --mk-launcher-shadow: 2px 2px 0 rgba(0,0,0,.4);
+  --mk-launcher-radius: 0px;
+  --mk-launcher-sidebar-display: flex;
+
+  --mk-radius-sm: 0px;
+  --mk-radius-md: 0px;
+  --mk-tag-bg: #c9defb;
+  --mk-tag-fg: #123a5c;
+}
+[data-theme="windows-95"] .mk-app-btn.mk-active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff;}
+[data-theme="windows-95"] .mk-win{padding:2px;}

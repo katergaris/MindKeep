@@ -1,0 +1,71 @@
+/* Theme: Glassmorphism — frosted glass panels over a vivid gradient backdrop. */
+:root[data-theme="glassmorphism"] {
+  --mk-font-ui: 'Sora', sans-serif;
+  --mk-bg-desktop: linear-gradient(135deg,#4338ca 0%,#0891b2 55%,#ec4899 100%);
+  --mk-text: #ffffff;
+  --mk-text-muted: rgba(255,255,255,.7);
+  --mk-surface: rgba(255,255,255,.6);
+  --mk-surface-alt: rgba(255,255,255,.08);
+  --mk-border-soft: rgba(255,255,255,.25);
+  --mk-accent: #ffffff;
+  --mk-accent-fg: #1e1b4b;
+  --mk-accent-soft-bg: rgba(255,255,255,.2);
+  --mk-accent-soft-fg: #ffffff;
+
+  --mk-win-bg: rgba(255,255,255,.16);
+  --mk-win-radius: 18px;
+  --mk-win-shadow: 0 20px 50px rgba(0,0,0,.3);
+  --mk-win-border: 1px solid rgba(255,255,255,.35);
+  --mk-win-padding: 0px;
+
+  --mk-titlebar-height: 40px;
+  --mk-titlebar-radius: 18px 18px 0 0;
+  --mk-titlebar-active-bg: rgba(255,255,255,.16);
+  --mk-titlebar-active-fg: #ffffff;
+  --mk-titlebar-inactive-bg: rgba(255,255,255,.05);
+  --mk-titlebar-inactive-fg: rgba(255,255,255,.6);
+  --mk-titlebar-weight: 600;
+  --mk-titlebar-border: 1px solid rgba(255,255,255,.25);
+
+  --mk-control-size: 22px;
+  --mk-control-radius: 50%;
+  --mk-control-bg: rgba(255,255,255,.1);
+  --mk-control-fg: #ffffff;
+  --mk-control-border: 1px solid rgba(255,255,255,.4);
+  --mk-control-close-bg: rgba(255,255,255,.1);
+
+  --mk-taskbar-bg: rgba(255,255,255,.16);
+  --mk-taskbar-blur: blur(20px);
+  --mk-taskbar-radius: 24px;
+  --mk-taskbar-shadow: 0 12px 32px rgba(0,0,0,.28);
+  --mk-taskbar-border: 1px solid rgba(255,255,255,.35);
+  --mk-taskbar-width: calc(100% - 40px);
+  --mk-taskbar-inset: 0 20px 20px;
+
+  --mk-app-active-bg: rgba(255,255,255,.22);
+  --mk-app-active-fg: #ffffff;
+  --mk-app-radius: 14px;
+  --mk-app-border: 1px solid transparent;
+
+  --mk-launcher-bg: rgba(30,20,60,.55);
+  --mk-launcher-shadow: 0 20px 50px rgba(0,0,0,.4);
+  --mk-launcher-radius: 18px;
+
+  --mk-radius-sm: 8px;
+  --mk-tag-bg: rgba(255,255,255,.2);
+  --mk-tag-fg: #ffffff;
+}
+/* The content pane is a more opaque frosted card than the chrome around
+   it (titlebar/taskbar stay very translucent with light text) — that
+   layering is what keeps body copy readable against a moving gradient
+   backdrop instead of washing out to near-invisible white-on-white. */
+[data-theme="glassmorphism"] .mk-win{backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);}
+[data-theme="glassmorphism"] .mk-wincontent{color:#241f5c;}
+[data-theme="glassmorphism"] .mk-wincontent .mk-note-body,
+[data-theme="glassmorphism"] .mk-wincontent .mk-d-sub{color:#5b5490;}
+[data-theme="glassmorphism"] .mk-wincontent .mk-d-title,
+[data-theme="glassmorphism"] .mk-wincontent .mk-note-title{color:#241f5c;}
+[data-theme="glassmorphism"] .mk-wincontent svg{color:#4338ca;}
+[data-theme="glassmorphism"] .mk-dossier-row{border-bottom:1px solid rgba(36,31,92,.12);}
+[data-theme="glassmorphism"] .mk-tag{background:rgba(67,56,202,.14);color:#4338ca;}
+[data-theme="glassmorphism"] .mk-launcher-items{backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}

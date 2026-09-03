@@ -1,0 +1,58 @@
+/* Theme: Windows 11 — Fluent/Mica. Centered floating dock, icon-only app buttons. */
+:root[data-theme="windows-11-fluent"] {
+  --mk-font-ui: 'Plus Jakarta Sans', sans-serif;
+  --mk-bg-desktop: linear-gradient(160deg,#dfe7f5 0%,#eef2fb 100%);
+  --mk-text: #1b1b1f;
+  --mk-text-muted: #6c6c74;
+  --mk-surface: rgba(255,255,255,.5);
+  --mk-surface-alt: rgba(255,255,255,.3);
+  --mk-border-soft: rgba(0,0,0,.06);
+  --mk-accent: #0067c0;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #e0edfb;
+  --mk-accent-soft-fg: #0067c0;
+
+  --mk-win-bg: rgba(249,249,252,.85);
+  --mk-win-radius: 12px;
+  --mk-win-shadow: 0 18px 40px rgba(20,30,60,.18);
+  --mk-win-border: 1px solid rgba(255,255,255,.6);
+
+  --mk-titlebar-height: 38px;
+  --mk-titlebar-radius: 12px 12px 0 0;
+  --mk-titlebar-active-bg: rgba(255,255,255,.55);
+  --mk-titlebar-active-fg: #1b1b1f;
+  --mk-titlebar-inactive-bg: rgba(255,255,255,.25);
+  --mk-titlebar-inactive-fg: #8a8a92;
+  --mk-titlebar-weight: 600;
+
+  --mk-control-size: 30px;
+  --mk-control-radius: 6px;
+  --mk-control-bg: transparent;
+  --mk-control-fg: #3a3a40;
+  --mk-control-close-bg: transparent;
+
+  --mk-taskbar-bg: rgba(249,249,252,.75);
+  --mk-taskbar-blur: blur(28px);
+  --mk-taskbar-radius: 14px;
+  --mk-taskbar-shadow: 0 8px 24px rgba(20,30,60,.18);
+  --mk-taskbar-border: 1px solid rgba(255,255,255,.6);
+  --mk-taskbar-width: auto;
+  --mk-taskbar-inset: 0;
+  --mk-taskbar-justify: center;
+  --mk-taskbar-label-display: none;
+
+  --mk-app-active-bg: rgba(0,103,192,.12);
+  --mk-app-active-fg: #0067c0;
+  --mk-app-radius: 8px;
+
+  --mk-launcher-bg: rgba(249,249,252,.9);
+  --mk-launcher-shadow: 0 20px 50px rgba(20,30,60,.25);
+  --mk-launcher-radius: 12px;
+
+  --mk-radius-sm: 6px;
+  --mk-tag-bg: #e0edfb;
+  --mk-tag-fg: #0067c0;
+}
+[data-theme="windows-11-fluent"] #mk-taskbar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);}
+[data-theme="windows-11-fluent"] .mk-launcher-btn span{display:none;}
+[data-theme="windows-11-fluent"] .mk-dossier-row svg,[data-theme="windows-11-fluent"] .mk-check-item svg{color:#0067c0;}

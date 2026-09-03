@@ -1,0 +1,181 @@
+/* mindkeep-ui skeleton — structural CSS only.
+   Every visual value comes from a --mk-* custom property; skeleton.css
+   never hardcodes a color, radius, shadow, or font. The :root block below
+   is a neutral fallback so the skeleton is usable with no theme loaded —
+   real themes live in themes/*.css and override these on [data-theme="…"].
+   See ../SKILL.md "Skin Compatibility Checklist" for what a theme must
+   define; this file is that checklist made concrete. */
+
+:root {
+  --mk-font-ui: system-ui, -apple-system, sans-serif;
+  --mk-font-mono: ui-monospace, 'Courier New', monospace;
+  --mk-bg-desktop: #6b7280;
+  --mk-text: #1a1a1a;
+  --mk-text-muted: #6b6b6b;
+  --mk-surface: #ffffff;
+  --mk-surface-alt: #f2f2f2;
+  --mk-border-soft: #dddddd;
+  --mk-accent: #2563eb;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #dbeafe;
+  --mk-accent-soft-fg: #1e3a8a;
+
+  --mk-win-bg: #ffffff;
+  --mk-win-radius: 8px;
+  --mk-win-shadow: 0 12px 28px rgba(0,0,0,.18);
+  --mk-win-border: 1px solid #e2e2e2;
+  --mk-win-padding: 0px;
+
+  --mk-titlebar-height: 38px;
+  --mk-titlebar-radius: 8px 8px 0 0;
+  --mk-titlebar-active-bg: #2563eb;
+  --mk-titlebar-active-fg: #ffffff;
+  --mk-titlebar-inactive-bg: #eeeeee;
+  --mk-titlebar-inactive-fg: #8a8a8a;
+  --mk-titlebar-weight: 600;
+  --mk-titlebar-transform: none;
+  --mk-titlebar-tracking: normal;
+  --mk-titlebar-justify: space-between;
+  --mk-titlebar-border: none;
+  --mk-titlebar-icon-display: inline-flex;
+
+  --mk-control-size: 22px;
+  --mk-control-gap: 4px;
+  --mk-control-radius: 5px;
+  --mk-control-bg: rgba(0,0,0,.06);
+  --mk-control-fg: currentColor;
+  --mk-control-border: none;
+  --mk-control-close-bg: rgba(0,0,0,.06);
+  --mk-control-order: 0;
+  --mk-control-position: static;
+  --mk-control-shadow: none;
+
+  --mk-taskbar-bg: #ffffff;
+  --mk-taskbar-blur: none;
+  --mk-taskbar-radius: 0px;
+  --mk-taskbar-shadow: 0 -1px 0 #e2e2e2;
+  --mk-taskbar-border: none;
+  --mk-taskbar-justify: flex-start;
+  --mk-taskbar-width: 100%;
+  --mk-taskbar-inset: 0px;
+  --mk-taskbar-label-display: inline;
+
+  --mk-app-active-bg: #dbeafe;
+  --mk-app-active-fg: #1e3a8a;
+  --mk-app-radius: 6px;
+  --mk-app-border: none;
+  --mk-app-shadow: none;
+
+  --mk-launcher-bg: #ffffff;
+  --mk-launcher-shadow: 0 20px 40px rgba(0,0,0,.28);
+  --mk-launcher-radius: 8px;
+  --mk-launcher-sidebar-display: none;
+  --mk-launcher-sidebar-bg: var(--mk-accent);
+
+  --mk-radius-sm: 4px;
+  --mk-radius-md: 8px;
+  --mk-tag-bg: #f0f0f0;
+  --mk-tag-fg: #444444;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{font-family:var(--mk-font-ui);color:var(--mk-text);}
+button{font-family:inherit;color:inherit;cursor:pointer;}
+
+/* ---------- Desktop ---------- */
+#mk-app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+#mk-desktop{position:relative;flex:1;min-height:0;background:var(--mk-bg-desktop);overflow:hidden;}
+#mk-window-layer{position:absolute;inset:0;}
+#mk-window-layer.mk-split-mode{display:flex;flex-direction:column;gap:4px;padding:4px;}
+
+#mk-desktop-icons{position:absolute;top:20px;left:20px;display:flex;flex-direction:column;flex-wrap:wrap;gap:18px;max-height:calc(100% - 40px);pointer-events:none;}
+.mk-dicon{display:flex;flex-direction:column;align-items:center;gap:5px;width:88px;background:none;border:none;pointer-events:auto;color:#fff;}
+.mk-dicon svg{width:30px;height:30px;filter:drop-shadow(1px 1px 2px rgba(0,0,0,.45));}
+.mk-dicon-label{font-size:11px;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.mk-postit{width:130px;padding:10px;font-size:11px;line-height:1.4;background:#fff2a8;color:#4a3f14;box-shadow:3px 4px 0 rgba(0,0,0,.3);border:none;pointer-events:auto;text-align:left;}
+
+/* ---------- Window ---------- */
+.mk-win{position:absolute;display:flex;flex-direction:column;min-width:280px;min-height:200px;background:var(--mk-win-bg);border-radius:var(--mk-win-radius);box-shadow:var(--mk-win-shadow);border:var(--mk-win-border);padding:var(--mk-win-padding);overflow:hidden;}
+.mk-win.mk-minimized{display:none;}
+.mk-win.mk-maximized{left:0 !important;top:0 !important;width:100% !important;height:100% !important;border-radius:0;}
+.mk-win.mk-mobile-full{position:absolute;inset:0;width:auto !important;height:auto !important;}
+#mk-window-layer.mk-split-mode .mk-win.mk-mobile-full{position:relative;inset:auto;flex:1 1 50%;min-height:0;}
+
+.mk-titlebar{flex:none;height:var(--mk-titlebar-height);display:flex;align-items:center;justify-content:var(--mk-titlebar-justify);gap:8px;padding:0 6px 0 14px;font-weight:var(--mk-titlebar-weight);text-transform:var(--mk-titlebar-transform);letter-spacing:var(--mk-titlebar-tracking);font-size:13px;border-bottom:var(--mk-titlebar-border);border-radius:var(--mk-titlebar-radius);position:relative;touch-action:manipulation;}
+.mk-titlebar-active{background:var(--mk-titlebar-active-bg);color:var(--mk-titlebar-active-fg);}
+.mk-titlebar-inactive{background:var(--mk-titlebar-inactive-bg);color:var(--mk-titlebar-inactive-fg);}
+.mk-tb-left{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;}
+.mk-tb-icon{display:var(--mk-titlebar-icon-display);flex-shrink:0;}
+.mk-tb-icon svg{width:16px;height:16px;}
+.mk-tb-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mk-tb-controls{display:flex;gap:var(--mk-control-gap);flex-shrink:0;order:var(--mk-control-order);position:var(--mk-control-position);}
+.mk-wctl{width:var(--mk-control-size);height:var(--mk-control-size);border-radius:var(--mk-control-radius);display:flex;align-items:center;justify-content:center;border:var(--mk-control-border);background:var(--mk-control-bg);color:var(--mk-control-fg);padding:0;box-shadow:var(--mk-control-shadow);}
+.mk-wctl svg{width:45%;height:45%;}
+.mk-wctl-close{background:var(--mk-control-close-bg);}
+
+.mk-wincontent{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px 20px;background:var(--mk-surface);color:var(--mk-text);}
+.mk-resize-handle{position:absolute;}
+.mk-resize-e{right:-3px;top:var(--mk-titlebar-height);bottom:3px;width:6px;cursor:ew-resize;}
+.mk-resize-s{left:3px;right:3px;bottom:-3px;height:6px;cursor:ns-resize;}
+.mk-resize-se{right:-3px;bottom:-3px;width:12px;height:12px;cursor:nwse-resize;}
+.mk-mobile-full .mk-resize-handle,.mk-maximized .mk-resize-handle{display:none;}
+
+/* Demo content reused across windows */
+.mk-dossier-row{display:flex;align-items:center;gap:13px;padding:9px 4px;border-bottom:1px solid var(--mk-border-soft);}
+.mk-dossier-row:last-child{border-bottom:none;}
+.mk-dossier-row svg{width:20px;height:20px;flex-shrink:0;color:var(--mk-accent);}
+.mk-d-text{display:flex;flex-direction:column;min-width:0;}
+.mk-d-title{font-size:12.5px;font-weight:600;color:var(--mk-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mk-d-sub{font-size:10.5px;color:var(--mk-text-muted);}
+.mk-note-title{margin:0 0 9px;font-size:14px;font-weight:700;}
+.mk-note-body{margin:0 0 12px;font-size:12px;line-height:1.55;color:var(--mk-text-muted);}
+.mk-checklist{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;}
+.mk-check-item{display:flex;align-items:center;gap:9px;font-size:12px;}
+.mk-check-item svg{width:16px;height:16px;flex-shrink:0;color:var(--mk-accent);}
+.mk-check-item.mk-checked{opacity:.5;text-decoration:line-through;}
+.mk-tags{display:flex;gap:6px;}
+.mk-tag{font-size:10px;font-weight:600;padding:3px 10px;border-radius:var(--mk-radius-sm);background:var(--mk-tag-bg);color:var(--mk-tag-fg);}
+
+/* ---------- Taskbar / switcher ---------- */
+#mk-taskbar{flex:none;width:var(--mk-taskbar-width);margin:var(--mk-taskbar-inset);display:flex;align-items:center;gap:6px;padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));background:var(--mk-taskbar-bg);backdrop-filter:var(--mk-taskbar-blur);border-radius:var(--mk-taskbar-radius);box-shadow:var(--mk-taskbar-shadow);border:var(--mk-taskbar-border);justify-content:var(--mk-taskbar-justify);color:var(--mk-text);}
+.mk-launcher-btn,.mk-app-btn,.mk-icon-btn,.mk-theme-btn{display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;font-size:12px;font-weight:600;border-radius:var(--mk-app-radius);border:var(--mk-app-border);background:transparent;box-shadow:var(--mk-app-shadow);color:inherit;}
+.mk-launcher-btn svg,.mk-app-btn svg,.mk-icon-btn svg,.mk-theme-btn svg{width:16px;height:16px;flex-shrink:0;}
+.mk-app-btn{max-width:150px;overflow:hidden;}
+.mk-app-btn-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:var(--mk-taskbar-label-display);}
+.mk-app-btn.mk-active{background:var(--mk-app-active-bg);color:var(--mk-app-active-fg);}
+.mk-icon-btn{padding:0;width:36px;justify-content:center;}
+.mk-spacer{flex:1;}
+.mk-clock{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 12px;font-family:var(--mk-font-mono);font-size:11px;}
+.mk-clock-date{font-size:9px;color:var(--mk-text-muted);}
+.mk-theme-switcher{position:relative;}
+.mk-theme-btn select{appearance:none;background:transparent;border:none;color:inherit;font:inherit;cursor:pointer;padding-right:4px;}
+
+/* ---------- Launcher ---------- */
+#mk-launcher{position:fixed;z-index:95;display:flex;border-radius:var(--mk-launcher-radius);box-shadow:var(--mk-launcher-shadow);overflow:hidden;}
+#mk-launcher.mk-hidden{display:none;}
+.mk-launcher-sidebar{display:var(--mk-launcher-sidebar-display);width:26px;flex:none;background:var(--mk-launcher-sidebar-bg);writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-weight:700;letter-spacing:3px;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.mk-launcher-items{background:var(--mk-launcher-bg);color:var(--mk-text);padding:6px 0;min-width:220px;max-height:70vh;overflow-y:auto;}
+.mk-launcher-row{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13px;}
+.mk-launcher-row:hover{background:var(--mk-accent-soft-bg);color:var(--mk-accent-soft-fg);}
+.mk-launcher-row svg{width:17px;height:17px;flex-shrink:0;}
+
+/* ---------- Mobile ---------- */
+/* Below 760px, touch targets are enforced at the skeleton level regardless
+   of theme — a theme is free to make its window controls a compact 20px
+   circle for desktop precision pointing, but on a touchscreen every control
+   that stays tappable (minimize/maximize/close/split all remain wired on
+   mobile even though drag/resize are disabled) must meet the ~44px minimum,
+   with enough gap that adjacent controls in a tight titlebar don't miscatch
+   a touch. See mobile-ux-optimizer's "44px rule" and its guidance on
+   dense icon-button clusters. */
+@media (max-width:760px){
+  #mk-taskbar{width:100%;margin:0;border-radius:0;}
+  .mk-wctl{width:44px;height:44px;}
+  .mk-tb-controls{gap:10px;}
+  .mk-app-btn,.mk-launcher-btn,.mk-icon-btn,.mk-theme-btn{min-height:44px;}
+  .mk-wctl,.mk-app-btn,.mk-launcher-btn,.mk-icon-btn,.mk-theme-btn,.mk-launcher-row,.mk-dicon,.mk-postit{touch-action:manipulation;}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important;}
+}

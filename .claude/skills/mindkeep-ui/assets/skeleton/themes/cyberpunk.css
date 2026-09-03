@@ -1,0 +1,62 @@
+/* Theme: Cyberpunk / terminal — dark ground, neon cyan/magenta accents, monospace. */
+:root[data-theme="cyberpunk"] {
+  --mk-font-ui: 'JetBrains Mono', monospace;
+  --mk-font-mono: 'JetBrains Mono', monospace;
+  --mk-bg-desktop: #08070f;
+  --mk-text: #c9f9ff;
+  --mk-text-muted: #6f6c8f;
+  --mk-surface: #0a0912;
+  --mk-surface-alt: #12101f;
+  --mk-border-soft: #201d34;
+  --mk-accent: #00f6ff;
+  --mk-accent-fg: #08070f;
+  --mk-accent-soft-bg: #161326;
+  --mk-accent-soft-fg: #ff2ec4;
+
+  --mk-win-bg: #0d0c18;
+  --mk-win-radius: 0px;
+  --mk-win-shadow: 0 0 30px rgba(0,246,255,.12), 0 20px 40px rgba(0,0,0,.6);
+  --mk-win-border: 1px solid #2a2740;
+
+  --mk-titlebar-height: 32px;
+  --mk-titlebar-radius: 0px;
+  --mk-titlebar-active-bg: #161326;
+  --mk-titlebar-active-fg: #00f6ff;
+  --mk-titlebar-inactive-bg: #0d0c18;
+  --mk-titlebar-inactive-fg: #5a5875;
+  --mk-titlebar-weight: 700;
+  --mk-titlebar-transform: uppercase;
+  --mk-titlebar-tracking: .06em;
+  --mk-titlebar-border: 1px solid #2a2740;
+
+  --mk-control-size: 20px;
+  --mk-control-radius: 0px;
+  --mk-control-bg: #161326;
+  --mk-control-fg: #8a87a5;
+  --mk-control-border: 1px solid #2a2740;
+  --mk-control-close-bg: #161326;
+
+  --mk-taskbar-bg: #0d0c18;
+  --mk-taskbar-radius: 0px;
+  --mk-taskbar-shadow: 0 -2px 14px rgba(0,246,255,.15);
+  --mk-taskbar-border: 1px solid #00f6ff;
+
+  --mk-app-active-bg: transparent;
+  --mk-app-active-fg: #00f6ff;
+  --mk-app-radius: 0px;
+  --mk-app-border: 1px solid #2a2740;
+
+  --mk-launcher-bg: #0d0c18;
+  --mk-launcher-shadow: 0 0 40px rgba(0,246,255,.2);
+  --mk-launcher-radius: 0px;
+
+  --mk-radius-sm: 0px;
+  --mk-tag-bg: #161326;
+  --mk-tag-fg: #ff2ec4;
+}
+[data-theme="cyberpunk"] .mk-app-btn.mk-active{border-color:#00f6ff;box-shadow:0 0 8px rgba(0,246,255,.4);}
+[data-theme="cyberpunk"] .mk-wctl-close{color:#ff2ec4;border-color:#ff2ec4;}
+[data-theme="cyberpunk"] .mk-tag{border:1px solid #ff2ec4;}
+[data-theme="cyberpunk"] .mk-launcher-row:hover{background:#161326;color:#00f6ff;}
+[data-theme="cyberpunk"] .mk-dicon,[data-theme="cyberpunk"] .mk-clock{color:#00f6ff;}
+[data-theme="cyberpunk"] .mk-postit{background:#12101f;color:#ff2ec4;border:1px solid #ff2ec4;box-shadow:0 0 10px rgba(255,46,196,.4);}

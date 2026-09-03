@@ -1,0 +1,54 @@
+/* Theme: Material 3 / Material You — tonal surfaces, big radii, dynamic-color feel. */
+:root[data-theme="material-3"] {
+  --mk-font-ui: 'Outfit', sans-serif;
+  --mk-bg-desktop: #fef7ff;
+  --mk-text: #1d1b20;
+  --mk-text-muted: #79747e;
+  --mk-surface: #fffbfe;
+  --mk-surface-alt: #f3edf7;
+  --mk-border-soft: #f0e9f5;
+  --mk-accent: #65558f;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #e8def8;
+  --mk-accent-soft-fg: #4a4459;
+
+  --mk-win-bg: #fef7ff;
+  --mk-win-radius: 24px;
+  --mk-win-shadow: 0 8px 24px rgba(103,80,164,.22);
+  --mk-win-border: none;
+
+  --mk-titlebar-height: 42px;
+  --mk-titlebar-radius: 24px 24px 0 0;
+  --mk-titlebar-active-bg: #e8def8;
+  --mk-titlebar-active-fg: #1d1b20;
+  --mk-titlebar-inactive-bg: #f3edf7;
+  --mk-titlebar-inactive-fg: #8a8494;
+  --mk-titlebar-weight: 600;
+
+  --mk-control-size: 32px;
+  --mk-control-radius: 50%;
+  --mk-control-bg: transparent;
+  --mk-control-fg: #4a4459;
+  --mk-control-close-bg: transparent;
+
+  --mk-taskbar-bg: #e8def8;
+  --mk-taskbar-radius: 24px 24px 0 0;
+  --mk-taskbar-shadow: none;
+
+  --mk-app-active-bg: #d0bcff;
+  --mk-app-active-fg: #21005d;
+  --mk-app-radius: 22px;
+
+  --mk-launcher-bg: #fef7ff;
+  --mk-launcher-shadow: 0 8px 24px rgba(103,80,164,.3);
+  --mk-launcher-radius: 24px;
+
+  --mk-radius-sm: 12px;
+  --mk-tag-bg: #ffd8e4;
+  --mk-tag-fg: #5e1128;
+}
+[data-theme="material-3"] #mk-taskbar{height:64px;}
+[data-theme="material-3"] .mk-launcher-btn{background:#65558f;color:#fff;border-radius:22px;}
+[data-theme="material-3"] .mk-dossier-row{border-radius:16px;padding:10px;}
+[data-theme="material-3"] .mk-dossier-row svg{background:#e8def8;color:#65558f;border-radius:10px;padding:8px;width:36px;height:36px;box-sizing:border-box;}
+[data-theme="material-3"] .mk-dicon-ico,[data-theme="material-3"] .mk-postit{border-radius:16px;}

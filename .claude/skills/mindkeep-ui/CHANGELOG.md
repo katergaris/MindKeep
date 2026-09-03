@@ -2,6 +2,37 @@
 
 All notable changes to the mindkeep-ui skill.
 
+## [1.1.0] - 2026-09-03
+
+### Added
+- `assets/skeleton/` — a working, themeable implementation of the whole
+  behavior contract: `index.html` (demo shell), `skeleton.css` (structural,
+  100% token-driven), `wm.js` (the real window manager: drag/resize,
+  focus/z-index, launcher, Deliberate Split View)
+- A `--mk-*` CSS custom-property token contract (colors, window chrome,
+  titlebar, controls, taskbar, launcher, radii) that makes a skin a pure
+  drop-in — swapping `data-theme` re-skins the whole app with no JS changes
+- 10 ready-made themes in `assets/skeleton/themes/`, refined from the design
+  canvas exploration into working token sets: `windows-95` (the reference
+  skin, matches MindKeep's real chrome), `neumorphism`, `glassmorphism`,
+  `macos-modern`, `windows-11-fluent`, `material-3`, `neubrutalism`,
+  `cyberpunk`, `minimal-flat`, `aero-glass`
+- A "Ready-Made Skeleton + Themes" section in SKILL.md explaining how to
+  scaffold a new app from the skeleton and how to author a new theme
+- A mobile touch-target override (window controls forced to ≥44px under
+  760px regardless of theme) applied uniformly in skeleton.css, per
+  mobile-ux-optimizer's guidance — themes stay free to size controls for
+  desktop precision pointing without compromising mobile usability
+
+### Design Decisions
+- Themes are CSS custom-property sets, not markup variants — the two
+  exceptions (macOS's traffic-light controls, Windows 11's centered
+  floating dock) are handled as small theme-scoped structural overrides
+  rather than forking the skeleton's HTML, keeping one shared DOM/JS for
+  every skin
+- Dropped the "cancelleria" (skeuomorphic paper) mockup from the theme set
+  at the user's request; the other ten survived unchanged in character
+
 ## [1.0.0] - 2026-09-03
 
 ### Added

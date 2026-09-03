@@ -1,0 +1,51 @@
+/* Theme: Minimal flat — Notion/Linear-like calm productivity surface. */
+:root[data-theme="minimal-flat"] {
+  --mk-font-ui: 'IBM Plex Sans', sans-serif;
+  --mk-bg-desktop: #f6f5f3;
+  --mk-text: #2b2a28;
+  --mk-text-muted: #9b988f;
+  --mk-surface: #ffffff;
+  --mk-surface-alt: #faf9f7;
+  --mk-border-soft: #f0efeb;
+  --mk-accent: #3b6e5e;
+  --mk-accent-fg: #ffffff;
+  --mk-accent-soft-bg: #eef3ef;
+  --mk-accent-soft-fg: #3b6e5e;
+
+  --mk-win-bg: #ffffff;
+  --mk-win-radius: 4px;
+  --mk-win-shadow: 0 10px 28px rgba(30,28,24,.1);
+  --mk-win-border: 1px solid #e4e2dd;
+
+  --mk-titlebar-height: 38px;
+  --mk-titlebar-radius: 4px 4px 0 0;
+  --mk-titlebar-active-bg: #ffffff;
+  --mk-titlebar-active-fg: #2b2a28;
+  --mk-titlebar-inactive-bg: #faf9f7;
+  --mk-titlebar-inactive-fg: #a5a29a;
+  --mk-titlebar-weight: 600;
+  --mk-titlebar-border: 1px solid #eeece7;
+
+  --mk-control-size: 28px;
+  --mk-control-radius: 4px;
+  --mk-control-bg: transparent;
+  --mk-control-fg: #8b8880;
+  --mk-control-close-bg: transparent;
+
+  --mk-taskbar-bg: #ffffff;
+  --mk-taskbar-radius: 0px;
+  --mk-taskbar-shadow: none;
+  --mk-taskbar-border: 1px solid #eeece7;
+
+  --mk-app-active-bg: #f0efeb;
+  --mk-app-active-fg: #2b2a28;
+  --mk-app-radius: 4px;
+
+  --mk-launcher-bg: #ffffff;
+  --mk-launcher-shadow: 0 20px 40px rgba(30,28,24,.14);
+  --mk-launcher-radius: 6px;
+
+  --mk-radius-sm: 3px;
+  --mk-tag-bg: #eef3ef;
+  --mk-tag-fg: #3b6e5e;
+}

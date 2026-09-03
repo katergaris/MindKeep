@@ -296,6 +296,59 @@ this contract defines have *some* visual representation.
 
 ---
 
+## Ready-Made Skeleton + Themes
+
+The checklist above isn't just a spec to satisfy by hand — `assets/skeleton/`
+is a working implementation of it, built to the point where the skin is a
+drop-in: every visual value is a `--mk-*` CSS custom property, so swapping
+`data-theme` on `<html>` re-skins the whole app live, with zero JS changes.
+
+```
+assets/skeleton/
+├── index.html        demo shell: desktop, taskbar, launcher, theme switcher,
+│                      two demo windows (Dossiers, Nota) — replace these
+├── skeleton.css       the structural CSS from §1–11, entirely token-driven;
+│                      never edit this to change how something *looks*
+├── wm.js              the window manager itself — openWindow/closeWindow/
+│                      focusWindow/minimizeWindow/restoreWindow, drag/resize,
+│                      the launcher, and Deliberate Split View, implemented
+└── themes/            one CSS file per skin, each just a --mk-* token set
+    ├── windows-95.css        + a handful of theme-scoped structural tweaks
+    ├── neumorphism.css       where a skin needs more than tokens (macOS's
+    ├── glassmorphism.css     traffic-light controls, Windows 11's floating
+    ├── macos-modern.css      centered dock) — see the comment at the top
+    ├── windows-11-fluent.css of each theme file for its specific overrides.
+    ├── material-3.css
+    ├── neubrutalism.css
+    ├── cyberpunk.css
+    ├── minimal-flat.css
+    └── aero-glass.css
+```
+
+**To scaffold a new app**: copy `assets/skeleton/` into the new project,
+replace the two demo windows in `index.html` with real ones (call
+`MkWM.openWindow({ id, title, icon, html, defaultSize })` with your own
+content — `wm.js` never needs to know what's inside), delete the theme
+files you don't want, and keep (or strip) the `<select id="mk-theme-select">`
+switcher depending on whether the app should let users pick a theme at
+runtime or just ship with one baked in via `data-theme` on `<html>`.
+
+**To design a new theme**: write a new `themes/<name>.css` file scoped
+under `:root[data-theme="<name>"]`, define every token skeleton.css
+declares a default for (see its own `:root` block for the full list —
+colors, window chrome, titlebar, controls, taskbar, launcher, radii, tags),
+and add it to `index.html`'s theme `<link>` list and `<select>` options.
+Every mockup style explored in the design canvas earlier in this project
+maps directly to one of these token sets — that's deliberate: the canvas
+was the sketch, this is the implementation.
+
+Touch targets for window controls are enforced at ≥44px in a mobile media
+query inside skeleton.css regardless of what a theme's desktop sizing is
+(minimize/maximize/close/split all stay tappable on mobile even though
+drag/resize don't apply there) — don't fight this override per-theme.
+
+---
+
 ## References
 
 - `references/window-mechanics.md` — full detail + concrete numbers for
@@ -306,6 +359,8 @@ this contract defines have *some* visual representation.
   baseline (§12)
 - `references/patterns-library.md` — the app switcher and launcher (§7–8),
   progressive disclosure (§10), and the quick action panel (§11)
+- `assets/skeleton/` — the working, themeable implementation of this whole
+  contract (see "Ready-Made Skeleton + Themes" above)
 
 Read the relevant reference file when implementing that piece precisely —
 this document is the contract summary, the references carry the worked
