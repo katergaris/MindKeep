@@ -53,6 +53,10 @@
   --mk-radius-sm: 0px;
   --mk-tag-bg: #161326;
   --mk-tag-fg: #ff2ec4;
+
+  --mk-desktop-icon-fg: #00f6ff;
+  --mk-desktop-icon-svg-shadow: 0 0 6px rgba(0,246,255,.6);
+  --mk-desktop-icon-text-shadow: 0 0 4px rgba(0,246,255,.5);
 }
 [data-theme="cyberpunk"] .mk-app-btn.mk-active{border-color:#00f6ff;box-shadow:0 0 8px rgba(0,246,255,.4);}
 [data-theme="cyberpunk"] .mk-wctl-close{color:#ff2ec4;border-color:#ff2ec4;}

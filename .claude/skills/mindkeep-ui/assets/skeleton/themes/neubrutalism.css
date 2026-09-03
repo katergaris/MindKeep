@@ -53,8 +53,14 @@
   --mk-radius-sm: 0px;
   --mk-tag-bg: #ffd23f;
   --mk-tag-fg: #111111;
+
+  /* Icons sit on their own white bordered card below (not directly on the
+     yellow desktop), so plain black reads fine regardless of desktop bg. */
+  --mk-desktop-icon-fg: #111111;
+  --mk-desktop-icon-svg-shadow: none;
+  --mk-desktop-icon-text-shadow: none;
 }
-[data-theme="neubrutalism"] .mk-launcher-btn,[data-theme="neubrutalism"] .mk-icon-btn,[data-theme="neubrutalism"] .mk-theme-btn{background:#fff268;}
+[data-theme="neubrutalism"] .mk-launcher-btn,[data-theme="neubrutalism"] .mk-icon-btn{background:#fff268;}
 [data-theme="neubrutalism"] .mk-launcher-btn{background:#ff5b52;color:#fff;}
 [data-theme="neubrutalism"] .mk-app-btn{color:#fff268;}
 [data-theme="neubrutalism"] .mk-app-btn.mk-active{color:#111;}

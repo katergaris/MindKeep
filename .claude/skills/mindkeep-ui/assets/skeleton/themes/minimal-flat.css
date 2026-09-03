@@ -48,4 +48,8 @@
   --mk-radius-sm: 3px;
   --mk-tag-bg: #eef3ef;
   --mk-tag-fg: #3b6e5e;
+
+  --mk-desktop-icon-fg: #4a4843;
+  --mk-desktop-icon-svg-shadow: 1px 1px 1px rgba(255,255,255,.6);
+  --mk-desktop-icon-text-shadow: 0 1px 1px rgba(255,255,255,.7);
 }

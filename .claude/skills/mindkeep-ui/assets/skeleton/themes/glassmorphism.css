@@ -54,6 +54,10 @@
   --mk-radius-sm: 8px;
   --mk-tag-bg: rgba(255,255,255,.2);
   --mk-tag-fg: #ffffff;
+
+  --mk-desktop-icon-fg: #ffffff;
+  --mk-desktop-icon-svg-shadow: 0 2px 6px rgba(0,0,0,.35);
+  --mk-desktop-icon-text-shadow: 0 1px 3px rgba(0,0,0,.4);
 }
 /* The content pane is a more opaque frosted card than the chrome around
    it (titlebar/taskbar stay very translucent with light text) — that

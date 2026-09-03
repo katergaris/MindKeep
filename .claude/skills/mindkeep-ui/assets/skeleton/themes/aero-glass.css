@@ -50,6 +50,10 @@
   --mk-radius-sm: 6px;
   --mk-tag-bg: #e0f0ff;
   --mk-tag-fg: #1c5ba8;
+
+  --mk-desktop-icon-fg: #ffffff;
+  --mk-desktop-icon-svg-shadow: 0 2px 5px rgba(0,0,0,.4);
+  --mk-desktop-icon-text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
 [data-theme="aero-glass"] .mk-titlebar-active{position:relative;overflow:hidden;}
 [data-theme="aero-glass"] .mk-titlebar-active::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;}

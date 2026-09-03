@@ -33,22 +33,6 @@
     <button id="mk-btn-launcher" class="mk-launcher-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg><span>Avvio</span></button>
     <div id="mk-taskbar-apps" style="display:flex;align-items:center;gap:6px;"></div>
     <div class="mk-spacer"></div>
-    <div class="mk-theme-switcher">
-      <label class="mk-theme-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
-        <select id="mk-theme-select">
-          <option value="windows-95">Windows 95 (riferimento)</option>
-          <option value="neumorphism">Neumorphism</option>
-          <option value="glassmorphism">Glassmorphism</option>
-          <option value="macos-modern">macOS moderno</option>
-          <option value="windows-11-fluent">Windows 11 Fluent</option>
-          <option value="material-3">Material 3</option>
-          <option value="neubrutalism">Neubrutalismo</option>
-          <option value="cyberpunk">Cyberpunk</option>
-          <option value="minimal-flat">Minimal flat</option>
-          <option value="aero-glass">Aero glass</option>
-        </select>
-      </label>
-    </div>
     <div id="mk-clock" class="mk-clock"></div>
   </div>
 
@@ -85,7 +69,22 @@ const ICONS = {
   note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>',
   checkOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/></svg>',
   checkOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.91 2.91l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2.06 2.06 0 1 1-4.12 0v-.09a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.91-2.91l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2.06 2.06 0 1 1 0-4.12h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.91-2.91l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2.06 2.06 0 1 1 4.12 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.91 2.91l-.06.06a1.7 1.7 0 0 0-.34 1.87v0a1.7 1.7 0 0 0 1.55 1H21a2.06 2.06 0 1 1 0 4.12h-.09a1.7 1.7 0 0 0-1.55 1v0Z"/></svg>',
+  checkMark: '<svg class="mk-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
 };
+
+const THEMES = [
+  ['windows-95', 'Windows 95 (riferimento)'],
+  ['neumorphism', 'Neumorphism'],
+  ['glassmorphism', 'Glassmorphism'],
+  ['macos-modern', 'macOS moderno'],
+  ['windows-11-fluent', 'Windows 11 Fluent'],
+  ['material-3', 'Material 3'],
+  ['neubrutalism', 'Neubrutalismo'],
+  ['cyberpunk', 'Cyberpunk'],
+  ['minimal-flat', 'Minimal flat'],
+  ['aero-glass', 'Aero glass'],
+];
 
 function dossiersHTML() {
   const rows = [
@@ -112,8 +111,31 @@ function notaHTML() {
     <div class="mk-tags"><span class="mk-tag">sito</span><span class="mk-tag">urgente</span></div>`;
 }
 
+function settingsHTML() {
+  return `
+    <h3 class="mk-note-title">Aspetto</h3>
+    <p class="mk-note-body">Scegli lo stile dell'interfaccia — il cambio è immediato.</p>
+    <div class="mk-option-list" id="mk-theme-options"></div>`;
+}
+
+function renderThemeOptions() {
+  const list = document.getElementById('mk-theme-options');
+  if (!list) return;
+  const current = MkWM.getTheme() || 'windows-95';
+  list.innerHTML = THEMES.map(([value, label]) =>
+    `<button type="button" class="mk-option-row${value === current ? ' mk-active' : ''}" data-theme-value="${value}"><span>${label}</span>${ICONS.checkMark}</button>`
+  ).join('');
+  list.querySelectorAll('.mk-option-row').forEach((row) => {
+    row.addEventListener('click', () => { MkWM.setTheme(row.dataset.themeValue); renderThemeOptions(); });
+  });
+}
+
 function openDossiers() { MkWM.openWindow({ id: 'dossiers', title: 'Dossiers', icon: ICONS.folder, html: dossiersHTML(), defaultSize: { w: 520, h: 420 } }); }
 function openNota() { MkWM.openWindow({ id: 'nota', title: 'Nota', icon: ICONS.note, html: notaHTML(), defaultSize: { w: 400, h: 360 } }); }
+function openSettings() {
+  MkWM.openWindow({ id: 'settings', title: 'Impostazioni', icon: ICONS.settings, html: settingsHTML(), resizable: false, defaultSize: { w: 320, h: 400 } });
+  renderThemeOptions();
+}
 
 document.querySelectorAll('[data-open]').forEach((el) => {
   el.addEventListener('click', () => { el.dataset.open === 'dossiers' ? openDossiers() : openNota(); });
@@ -122,13 +144,10 @@ document.querySelectorAll('[data-open]').forEach((el) => {
 MkWM.setLauncherItems([
   { label: 'Dossiers', icon: ICONS.folder, onSelect: openDossiers },
   { label: 'Nota', icon: ICONS.note, onSelect: openNota },
+  { label: 'Impostazioni', icon: ICONS.settings, onSelect: openSettings },
 ]);
 
-const themeSelect = document.getElementById('mk-theme-select');
-const savedTheme = MkWM.getTheme() || 'windows-95';
-themeSelect.value = savedTheme;
-MkWM.setTheme(savedTheme);
-themeSelect.addEventListener('change', () => MkWM.setTheme(themeSelect.value));
+MkWM.setTheme(MkWM.getTheme() || 'windows-95');
 
 openDossiers();
 openNota();

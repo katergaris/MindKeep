@@ -57,6 +57,10 @@
   --mk-radius-sm: 8px;
   --mk-tag-bg: #e8f0fe;
   --mk-tag-fg: #0a6cff;
+
+  --mk-desktop-icon-fg: #ffffff;
+  --mk-desktop-icon-svg-shadow: 0 2px 5px rgba(0,0,0,.4);
+  --mk-desktop-icon-text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
 [data-theme="macos-modern"] #mk-taskbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);}
 [data-theme="macos-modern"] .mk-tb-controls{left:14px;top:50%;transform:translateY(-50%);}

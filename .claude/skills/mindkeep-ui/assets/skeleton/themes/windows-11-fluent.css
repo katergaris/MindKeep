@@ -52,6 +52,10 @@
   --mk-radius-sm: 6px;
   --mk-tag-bg: #e0edfb;
   --mk-tag-fg: #0067c0;
+
+  --mk-desktop-icon-fg: #1b1b1f;
+  --mk-desktop-icon-svg-shadow: 1px 1px 1px rgba(255,255,255,.6);
+  --mk-desktop-icon-text-shadow: 0 1px 1px rgba(255,255,255,.7);
 }
 [data-theme="windows-11-fluent"] #mk-taskbar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);}
 [data-theme="windows-11-fluent"] .mk-launcher-btn span{display:none;}

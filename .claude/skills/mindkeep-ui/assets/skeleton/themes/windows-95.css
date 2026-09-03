@@ -58,6 +58,10 @@
   --mk-radius-md: 0px;
   --mk-tag-bg: #c9defb;
   --mk-tag-fg: #123a5c;
+
+  --mk-desktop-icon-fg: #ffffff;
+  --mk-desktop-icon-svg-shadow: 1px 1px 2px rgba(0,0,0,.45);
+  --mk-desktop-icon-text-shadow: 0 1px 2px rgba(0,0,0,.6);
 }
 [data-theme="windows-95"] .mk-app-btn.mk-active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff;}
 [data-theme="windows-95"] .mk-win{padding:2px;}

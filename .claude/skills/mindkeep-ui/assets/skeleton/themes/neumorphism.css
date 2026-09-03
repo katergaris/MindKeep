@@ -51,6 +51,13 @@
   --mk-radius-md: 14px;
   --mk-tag-bg: #e6ebf3;
   --mk-tag-fg: #5b7fdb;
+
+  /* Desktop background is a light lavender-grey — icons need a dark
+     foreground, not the skeleton's white default (built for dark/vivid
+     desktops), or they disappear against it. */
+  --mk-desktop-icon-fg: #4a5468;
+  --mk-desktop-icon-svg-shadow: 1px 1px 1px rgba(255,255,255,.6);
+  --mk-desktop-icon-text-shadow: 0 1px 1px rgba(255,255,255,.7);
 }
 [data-theme="neumorphism"] .mk-app-btn.mk-active{box-shadow:inset 3px 3px 6px #c3cadb,inset -3px -3px 6px #ffffff;}
 [data-theme="neumorphism"] .mk-dossier-row{box-shadow:4px 4px 8px #c3cadb,-4px -4px 8px #fff;border-radius:14px;padding:10px 10px;margin-bottom:8px;border-bottom:none;}

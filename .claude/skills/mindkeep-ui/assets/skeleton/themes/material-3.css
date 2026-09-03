@@ -46,6 +46,10 @@
   --mk-radius-sm: 12px;
   --mk-tag-bg: #ffd8e4;
   --mk-tag-fg: #5e1128;
+
+  --mk-desktop-icon-fg: #4a4459;
+  --mk-desktop-icon-svg-shadow: 1px 1px 1px rgba(255,255,255,.6);
+  --mk-desktop-icon-text-shadow: 0 1px 1px rgba(255,255,255,.7);
 }
 [data-theme="material-3"] #mk-taskbar{height:64px;}
 [data-theme="material-3"] .mk-launcher-btn{background:#65558f;color:#fff;border-radius:22px;}
