@@ -41,6 +41,21 @@
   --sel-bg: #000080;
   --sel-text: #ffffff;
   --taskbar-h: 44px;
+
+  /* Le due "ricette" di rilievo Win95 (raised/sunken) e quella più marcata
+     usata dalle cornici (finestre, menu Avvio) erano ripetute lettera per
+     lettera in una trentina di punti del foglio invece di essere un token
+     — impossibile ridisegnarle per un tema diverso senza toccare ognuno di
+     quei punti. Qui diventano 3 variabili; ogni tema (skill mindkeep-ui,
+     vedi impostazioni/aspetto) le ridefinisce insieme al resto della
+     palette. Il valore di default sotto è identico byte per byte a quello
+     che c'era prima: nessun cambiamento visivo per il tema Windows 95. */
+  --shadow-raised: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+  --shadow-sunken: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+  --shadow-frame: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2), inset 2px 2px 0 var(--bevel-hi2), inset -2px -2px 0 var(--bevel-lo);
+  --shadow-frame-drop: 4px 4px 0 rgba(0,0,0,.28);
+  /* Only glass-like themes set this to a blur(); harmless no-op otherwise. */
+  --chrome-blur: none;
 }
 
 * { box-sizing: border-box; }
@@ -81,13 +96,13 @@ html, body {
    .start-menu), che altrimenti restava trasparente sullo sfondo del desktop. */
 .raised {
   background: var(--win-face);
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+  box-shadow: var(--shadow-raised);
 }
 /* Controparte "incassata" di .raised, stesso discorso: usata su
    #taskbar-clock in index.html ma mai definita finora. */
 .sunken {
   background: var(--win-face);
-  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+  box-shadow: var(--shadow-sunken);
 }
 
 a { color: var(--accent-soft); }
@@ -174,7 +189,8 @@ button { font-family: inherit; touch-action: manipulation; }
 input, textarea, select {
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+  box-shadow: var(--shadow-sunken);
+  border-radius: var(--radius-sm);
   color: var(--text);
   padding: 9px 10px;
   font-family: var(--font-body);
@@ -197,7 +213,8 @@ input:focus, textarea:focus, select:focus {
 .btn {
   border: none;
   background: var(--win-face);
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+  box-shadow: var(--shadow-raised);
+  border-radius: var(--radius-sm);
   color: var(--text);
   padding: 9px 16px;
   font-size: 0.87rem;
@@ -210,8 +227,8 @@ input:focus, textarea:focus, select:focus {
   justify-content: center;
   gap: 6px;
 }
-.btn:active { box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi); }
-.btn-primary { font-weight: 700; box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2), 0 0 0 1px var(--titlebar-active-2); }
+.btn:active { box-shadow: var(--shadow-sunken); }
+.btn-primary { font-weight: 700; box-shadow: var(--shadow-raised), 0 0 0 1px var(--titlebar-active-2); }
 .btn-ghost { background: transparent; box-shadow: none; color: var(--accent-soft); }
 .btn-ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .btn-danger { color: var(--danger-soft); }
@@ -335,7 +352,10 @@ body.no-scroll { overflow: hidden; }
 /* ---------- Finestre ---------- */
 .win-frame {
   background: var(--win-face);
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2), inset 2px 2px 0 var(--bevel-hi2), inset -2px -2px 0 var(--bevel-lo);
+  box-shadow: var(--shadow-frame);
+  border-radius: var(--radius);
+  backdrop-filter: var(--chrome-blur);
+  -webkit-backdrop-filter: var(--chrome-blur);
 }
 .win-frame.window {
   position: absolute;
@@ -345,17 +365,18 @@ body.no-scroll { overflow: hidden; }
   min-width: 280px;
   min-height: 200px;
   pointer-events: auto;
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2), inset 2px 2px 0 var(--bevel-hi2), inset -2px -2px 0 var(--bevel-lo), 4px 4px 0 rgba(0,0,0,.28);
+  box-shadow: var(--shadow-frame), var(--shadow-frame-drop);
 }
 .win-frame.window.minimized { display: none; }
-.win-frame.window.maximized { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; }
+.win-frame.window.maximized { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; border-radius: 0; }
+.win-frame.window.maximized .titlebar, .win-frame.window.maximized .win-content { border-radius: 0; }
 .win-frame.window.mobile-full { position: absolute; inset: 0; width: auto !important; height: auto !important; box-shadow: none; }
 .window-layer.split-mode .win-frame.window.mobile-full { position: relative; inset: auto; flex: 1 1 50%; min-height: 0; }
 
 .titlebar {
   height: 26px; flex: none; display: flex; align-items: center; justify-content: space-between;
   padding: 0 3px 0 8px; color: var(--titlebar-text); font-weight: 700; font-size: 12.5px;
-  touch-action: manipulation;
+  touch-action: manipulation; border-radius: var(--radius) var(--radius) 0 0;
 }
 .titlebar-active { background: linear-gradient(90deg, var(--titlebar-active), var(--titlebar-active-2)); }
 .titlebar-inactive { background: var(--titlebar-inactive); }
@@ -366,14 +387,14 @@ body.no-scroll { overflow: hidden; }
 .win-btn {
   width: 20px; height: 18px; border: none; padding: 0; display: flex; align-items: center; justify-content: center;
   background: var(--win-face); color: #111; font-weight: 700; font-size: 12px; line-height: 1;
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2); cursor: pointer;
+  box-shadow: var(--shadow-raised); border-radius: var(--radius-sm); cursor: pointer;
 }
-.win-btn:active { box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi); }
+.win-btn:active { box-shadow: var(--shadow-sunken); }
 .win-btn-close { font-size: 11px; }
 
 .win-content {
   flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; background: var(--surface);
-  padding: 20px 22px 28px;
+  padding: 20px 22px 28px; border-radius: 0 0 var(--radius) var(--radius);
 }
 
 .resize-handle { position: absolute; }
@@ -386,17 +407,17 @@ body.no-scroll { overflow: hidden; }
 .taskbar {
   flex: none; height: calc(var(--taskbar-h) + env(safe-area-inset-bottom, 0px));
   padding: 0 6px calc(env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 5px;
-  z-index: 90;
+  z-index: 90; backdrop-filter: var(--chrome-blur); -webkit-backdrop-filter: var(--chrome-blur);
 }
 .taskbar-start, .taskbar-btn, .taskbtn {
   display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
   background: var(--win-face); color: var(--text); font-size: 12px; white-space: nowrap;
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2);
+  box-shadow: var(--shadow-raised); border-radius: var(--radius-sm);
   border: none; cursor: pointer;
 }
 .taskbar-start { font-weight: 700; }
 .taskbar-start.pressed, .taskbar-btn.pressed, .taskbtn.pressed {
-  box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+  box-shadow: var(--shadow-sunken);
 }
 .taskbar-start-icon {
   width: 14px; height: 14px; display: inline-block;
@@ -413,7 +434,7 @@ body.no-scroll { overflow: hidden; }
 .taskbtn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .taskbar-clock {
   flex: none; padding: 3px 10px; font-family: var(--font-mono);
-  background: var(--win-face); box-shadow: inset 1px 1px 0 var(--bevel-lo2), inset -1px -1px 0 var(--bevel-hi);
+  background: var(--win-face); box-shadow: var(--shadow-sunken); border-radius: var(--radius-sm);
   display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25;
 }
 .taskbar-clock-time { font-size: 11px; }
@@ -421,7 +442,9 @@ body.no-scroll { overflow: hidden; }
 
 .start-menu {
   position: fixed; z-index: 95; display: flex; padding: 2px;
-  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo2), inset 2px 2px 0 var(--bevel-hi2), inset -2px -2px 0 var(--bevel-lo), 4px 4px 0 rgba(0,0,0,.32);
+  box-shadow: var(--shadow-frame), var(--shadow-frame-drop);
+  border-radius: var(--radius); overflow: hidden;
+  backdrop-filter: var(--chrome-blur); -webkit-backdrop-filter: var(--chrome-blur);
   left: 4px; bottom: calc(var(--taskbar-h) + 4px);
 }
 .start-menu-sidebar {

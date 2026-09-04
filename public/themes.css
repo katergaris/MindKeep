@@ -1,0 +1,235 @@
+/* Temi alternativi per il chrome di MindKeep (finestre, taskbar, menu Avvio,
+   pulsanti, campi) — esperimento su branch, skill mindkeep-ui.
+   Ogni blocco ridefinisce l'intero set di variabili di style.css sotto
+   [data-theme="…"]; il tema Windows 95 resta quello di default (nessun
+   attributo o data-theme="windows-95") e non ha bisogno di un blocco qui.
+
+   Perimetro dichiarato: finestre, titlebar, pulsanti finestra, taskbar,
+   menu Avvio, pulsanti generici (.btn) e campi (input/textarea/select)
+   cambiano davvero forma per ogni tema (vedi --shadow-raised/-sunken/-frame
+   in style.css). Superfici più specifiche — calendario, vault, composer,
+   notifiche, schermata di login, modali — ereditano solo la palette
+   colore (restano "a rilievo" in stile Windows 95): non sono nel perimetro
+   della skill mindkeep-ui, che governa finestre/taskbar/launcher. */
+
+[data-theme="neumorphism"] {
+  --bg: linear-gradient(160deg,#e6ebf3,#dbe1ec);
+  --bg-2: #e6ebf3;
+  --surface: #eef1f7;
+  --surface-2: #e2e7f0;
+  --surface-hover: #dde3ec;
+  --border: #c3cadb;
+  --border-soft: #d5dbe6;
+  --accent: #5b7fdb;
+  --accent-soft: #6f8fe0;
+  --accent-dim: #8b95a8;
+  --accent-bg: #e6ebf3;
+  --accent-bg-strong: #d7deea;
+  --text: #3a4557;
+  --text-muted: #8b95a8;
+  --text-faint: #a8b1c2;
+  --radius-sm: 12px; --radius: 20px; --radius-lg: 24px;
+  --font-ui: 'Quicksand', sans-serif; --font-body: 'Quicksand', sans-serif;
+  --win-face: #e6ebf3;
+  --bevel-hi: #ffffff; --bevel-hi2: #f2f5fa; --bevel-lo: #c3cadb; --bevel-lo2: #b0b8cc;
+  --titlebar-active: #eef1f7; --titlebar-active-2: #eef1f7;
+  --titlebar-inactive: #dde3ec; --titlebar-text: #3a4557;
+  --sel-bg: #5b7fdb; --sel-text: #ffffff;
+  --shadow-raised: 6px 6px 12px #c3cadb, -6px -6px 12px #ffffff;
+  --shadow-sunken: inset 3px 3px 6px #c3cadb, inset -3px -3px 6px #ffffff;
+  --shadow-frame: 10px 10px 20px #c3cadb, -10px -10px 20px #ffffff;
+  --shadow-frame-drop: 0 0 0 rgba(0,0,0,0);
+}
+
+[data-theme="glassmorphism"] {
+  --bg: linear-gradient(135deg,#4338ca 0%,#0891b2 55%,#ec4899 100%);
+  --bg-2: rgba(255,255,255,.16);
+  --surface: rgba(255,255,255,.62);
+  --surface-2: rgba(255,255,255,.4);
+  --surface-hover: rgba(255,255,255,.78);
+  --border: rgba(255,255,255,.35);
+  --border-soft: rgba(36,31,92,.12);
+  --accent: #4338ca;
+  --accent-soft: #6d28d9;
+  --accent-dim: #7c6fd8;
+  --accent-bg: rgba(67,56,202,.14);
+  --accent-bg-strong: rgba(67,56,202,.24);
+  --text: #241f5c;
+  --text-muted: #5b5490;
+  --text-faint: #8a84b8;
+  --radius-sm: 10px; --radius: 18px; --radius-lg: 22px;
+  --font-ui: 'Sora', sans-serif; --font-body: 'Sora', sans-serif;
+  --win-face: rgba(255,255,255,.16);
+  --bevel-hi: rgba(255,255,255,.5); --bevel-hi2: rgba(255,255,255,.3);
+  --bevel-lo: rgba(255,255,255,.15); --bevel-lo2: rgba(0,0,0,.15);
+  --titlebar-active: rgba(255,255,255,.22); --titlebar-active-2: rgba(255,255,255,.1);
+  --titlebar-inactive: rgba(255,255,255,.06); --titlebar-text: #ffffff;
+  --sel-bg: rgba(255,255,255,.3); --sel-text: #241f5c;
+  --shadow-raised: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(0,0,0,.08);
+  --shadow-sunken: inset 0 1px 2px rgba(0,0,0,.18);
+  --shadow-frame: 0 1px 0 rgba(255,255,255,.4), 0 0 0 1px rgba(255,255,255,.35);
+  --shadow-frame-drop: 0 20px 50px rgba(0,0,0,.3);
+  --chrome-blur: blur(22px);
+}
+[data-theme="glassmorphism"] .win-content { color: var(--text); }
+
+[data-theme="macos-modern"] {
+  --bg: linear-gradient(165deg,#1e3c72 0%,#3a6186 55%,#89a7c2 100%);
+  --bg-2: #f7f7f8;
+  --surface: #ffffff; --surface-2: #f5f5f6; --surface-hover: #ececed;
+  --border: #dcdcdd; --border-soft: #ececed;
+  --accent: #0a6cff; --accent-soft: #338aff; --accent-dim: #5b8fd6;
+  --accent-bg: #e8f0fe; --accent-bg-strong: #cfe0fd;
+  --text: #1d1d1f; --text-muted: #8a8a8e; --text-faint: #b0b0b3;
+  --radius-sm: 8px; --radius: 12px; --radius-lg: 16px;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --win-face: #f7f7f8;
+  --bevel-hi: #ffffff; --bevel-hi2: #fbfbfc; --bevel-lo: #dcdcdd; --bevel-lo2: #c7c7c9;
+  --titlebar-active: #eceded; --titlebar-active-2: #eceded;
+  --titlebar-inactive: #f2f2f3; --titlebar-text: #1d1d1f;
+  --sel-bg: #0a6cff; --sel-text: #ffffff;
+  --shadow-raised: 0 1px 2px rgba(0,0,0,.12);
+  --shadow-sunken: inset 0 1px 3px rgba(0,0,0,.15);
+  --shadow-frame: 0 1px 0 rgba(255,255,255,.6), 0 0 0 1px rgba(0,0,0,.06);
+  --shadow-frame-drop: 0 24px 48px rgba(0,0,0,.35);
+  --chrome-blur: blur(20px);
+}
+/* Pallini colorati al posto dei tre pulsanti generici — unico tema che lo fa,
+   perché è il dettaglio più riconoscibile di macOS. Le classi win-btn-close/
+   -min/-max esistono già nel template di MindKeep (index.html). */
+[data-theme="macos-modern"] .win-btn-close,
+[data-theme="macos-modern"] .win-btn-min,
+[data-theme="macos-modern"] .win-btn-max { border-radius: 50%; color: transparent; box-shadow: none; }
+[data-theme="macos-modern"] .win-btn-close { background: #ff5f57; }
+[data-theme="macos-modern"] .win-btn-min { background: #febc2e; }
+[data-theme="macos-modern"] .win-btn-max { background: #28c840; }
+[data-theme="macos-modern"] .titlebar-btns { gap: 8px; }
+
+[data-theme="windows-11-fluent"] {
+  --bg: linear-gradient(160deg,#dfe7f5 0%,#eef2fb 100%);
+  --bg-2: rgba(249,249,252,.85);
+  --surface: rgba(255,255,255,.65); --surface-2: rgba(255,255,255,.4); --surface-hover: rgba(255,255,255,.8);
+  --border: rgba(0,0,0,.08); --border-soft: rgba(0,0,0,.06);
+  --accent: #0067c0; --accent-soft: #2f8ae0; --accent-dim: #5a9bd8;
+  --accent-bg: #e0edfb; --accent-bg-strong: #c2ddf7;
+  --text: #1b1b1f; --text-muted: #6c6c74; --text-faint: #97979d;
+  --radius-sm: 6px; --radius: 12px; --radius-lg: 16px;
+  --font-ui: 'Plus Jakarta Sans', sans-serif; --font-body: 'Plus Jakarta Sans', sans-serif;
+  --win-face: rgba(249,249,252,.85);
+  --bevel-hi: rgba(255,255,255,.7); --bevel-hi2: rgba(255,255,255,.4);
+  --bevel-lo: rgba(0,0,0,.08); --bevel-lo2: rgba(0,0,0,.15);
+  --titlebar-active: rgba(255,255,255,.55); --titlebar-active-2: rgba(255,255,255,.55);
+  --titlebar-inactive: rgba(255,255,255,.25); --titlebar-text: #1b1b1f;
+  --sel-bg: #0067c0; --sel-text: #ffffff;
+  --shadow-raised: 0 1px 2px rgba(20,30,60,.12);
+  --shadow-sunken: inset 0 1px 2px rgba(20,30,60,.14);
+  --shadow-frame: 0 1px 0 rgba(255,255,255,.6), 0 0 0 1px rgba(255,255,255,.5);
+  --shadow-frame-drop: 0 18px 40px rgba(20,30,60,.18);
+  --chrome-blur: blur(28px);
+}
+
+[data-theme="material-3"] {
+  --bg: #fef7ff; --bg-2: #e8def8;
+  --surface: #fffbfe; --surface-2: #f3edf7; --surface-hover: #ece4f5;
+  --border: #f0e9f5; --border-soft: #f3edf7;
+  --accent: #65558f; --accent-soft: #7a68a8; --accent-dim: #9083b5;
+  --accent-bg: #e8def8; --accent-bg-strong: #d0bcff;
+  --text: #1d1b20; --text-muted: #79747e; --text-faint: #9a959e;
+  --radius-sm: 12px; --radius: 24px; --radius-lg: 28px;
+  --font-ui: 'Outfit', sans-serif; --font-body: 'Outfit', sans-serif;
+  --win-face: #fef7ff;
+  --bevel-hi: #ffffff; --bevel-hi2: #fdfaff; --bevel-lo: #e8def8; --bevel-lo2: #d0bcff;
+  --titlebar-active: #e8def8; --titlebar-active-2: #e8def8;
+  --titlebar-inactive: #f3edf7; --titlebar-text: #1d1b20;
+  --sel-bg: #65558f; --sel-text: #ffffff;
+  --shadow-raised: 0 1px 3px rgba(103,80,164,.25);
+  --shadow-sunken: inset 0 1px 3px rgba(103,80,164,.2);
+  --shadow-frame: 0 1px 2px rgba(103,80,164,.15);
+  --shadow-frame-drop: 0 8px 24px rgba(103,80,164,.3);
+}
+
+[data-theme="neubrutalism"] {
+  --bg: #fff268; --bg-2: #ffffff;
+  --surface: #ffffff; --surface-2: #f4f4f4; --surface-hover: #ffd23f;
+  --border: #111111; --border-soft: #111111;
+  --accent: #111111; --accent-soft: #ff5b52; --accent-dim: #555555;
+  --accent-bg: #ffd23f; --accent-bg-strong: #ff5b52;
+  --text: #111111; --text-muted: #444444; --text-faint: #6a6a6a;
+  --radius-sm: 0px; --radius: 0px; --radius-lg: 0px;
+  --font-ui: 'Archivo', sans-serif; --font-body: 'Archivo', sans-serif;
+  --win-face: #ffffff;
+  --bevel-hi: #111111; --bevel-hi2: #111111; --bevel-lo: #111111; --bevel-lo2: #111111;
+  --titlebar-active: #7cf5c4; --titlebar-active-2: #7cf5c4;
+  --titlebar-inactive: #e5e5e5; --titlebar-text: #111111;
+  --sel-bg: #7cf5c4; --sel-text: #111111;
+  --shadow-raised: 0 0 0 3px #111111, 3px 3px 0 #111111;
+  --shadow-sunken: 0 0 0 3px #111111, inset 2px 2px 0 #111111;
+  --shadow-frame: 0 0 0 4px #111111;
+  --shadow-frame-drop: 8px 8px 0 #111111;
+}
+[data-theme="neubrutalism"] .titlebar { text-transform: uppercase; letter-spacing: .02em; }
+
+[data-theme="cyberpunk"] {
+  --bg: #08070f; --bg-2: #12101f;
+  --surface: #0a0912; --surface-2: #12101f; --surface-hover: #161326;
+  --border: #2a2740; --border-soft: #201d34;
+  --accent: #00f6ff; --accent-soft: #33f8ff; --accent-dim: #6f6c8f;
+  --accent-bg: #161326; --accent-bg-strong: #201d34;
+  --text: #c9f9ff; --text-muted: #6f6c8f; --text-faint: #4a4864;
+  --radius-sm: 0px; --radius: 0px; --radius-lg: 0px;
+  --font-ui: 'JetBrains Mono', monospace; --font-body: 'JetBrains Mono', monospace;
+  --win-face: #0d0c18;
+  --bevel-hi: #2a2740; --bevel-hi2: #201d34; --bevel-lo: #161326; --bevel-lo2: #00f6ff;
+  --titlebar-active: #161326; --titlebar-active-2: #161326;
+  --titlebar-inactive: #0d0c18; --titlebar-text: #00f6ff;
+  --sel-bg: #ff2ec4; --sel-text: #08070f;
+  --shadow-raised: 0 0 0 1px #2a2740;
+  --shadow-sunken: inset 0 0 0 1px #00f6ff;
+  --shadow-frame: 0 0 0 1px #2a2740, 0 0 20px rgba(0,246,255,.12);
+  --shadow-frame-drop: 0 20px 40px rgba(0,0,0,.6);
+}
+[data-theme="cyberpunk"] .titlebar { text-transform: uppercase; letter-spacing: .06em; }
+
+[data-theme="minimal-flat"] {
+  --bg: #f6f5f3; --bg-2: #ffffff;
+  --surface: #ffffff; --surface-2: #faf9f7; --surface-hover: #f0efeb;
+  --border: #e4e2dd; --border-soft: #eeece7;
+  --accent: #3b6e5e; --accent-soft: #4d8571; --accent-dim: #6f8a80;
+  --accent-bg: #eef3ef; --accent-bg-strong: #d9e8e1;
+  --text: #2b2a28; --text-muted: #9b988f; --text-faint: #bcb9b0;
+  --radius-sm: 3px; --radius: 4px; --radius-lg: 6px;
+  --font-ui: 'IBM Plex Sans', sans-serif; --font-body: 'IBM Plex Sans', sans-serif;
+  --win-face: #ffffff;
+  --bevel-hi: #ffffff; --bevel-hi2: #fbfaf8; --bevel-lo: #eeece7; --bevel-lo2: #e4e2dd;
+  --titlebar-active: #ffffff; --titlebar-active-2: #ffffff;
+  --titlebar-inactive: #faf9f7; --titlebar-text: #2b2a28;
+  --sel-bg: #3b6e5e; --sel-text: #ffffff;
+  --shadow-raised: 0 1px 2px rgba(30,28,24,.08);
+  --shadow-sunken: inset 0 1px 2px rgba(30,28,24,.1);
+  --shadow-frame: 0 0 0 1px #eeece7;
+  --shadow-frame-drop: 0 10px 28px rgba(30,28,24,.1);
+}
+
+[data-theme="aero-glass"] {
+  --bg: linear-gradient(160deg,#1b3a6b 0%,#2f6fb0 60%,#8fc4e8 100%);
+  --bg-2: #ffffff;
+  --surface: #ffffff; --surface-2: #eef4fa; --surface-hover: #e0eefb;
+  --border: #eaf0f6; --border-soft: #eaf0f6;
+  --accent: #1c5ba8; --accent-soft: #2f7fd6; --accent-dim: #5c8fc4;
+  --accent-bg: #e0f0ff; --accent-bg-strong: #bfe0ff;
+  --text: #0d2340; --text-muted: #4a5a6c; --text-faint: #7c8a9a;
+  --radius-sm: 6px; --radius: 11px; --radius-lg: 14px;
+  --font-ui: 'Manrope', sans-serif; --font-body: 'Manrope', sans-serif;
+  --win-face: rgba(255,255,255,.92);
+  --bevel-hi: rgba(255,255,255,.8); --bevel-hi2: rgba(255,255,255,.5);
+  --bevel-lo: rgba(0,0,0,.08); --bevel-lo2: rgba(0,0,0,.15);
+  --titlebar-active: #7fc4ff; --titlebar-active-2: #1c5ba8;
+  --titlebar-inactive: #cfd8e0; --titlebar-text: #ffffff;
+  --sel-bg: #1c5ba8; --sel-text: #ffffff;
+  --shadow-raised: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px rgba(0,0,0,.15);
+  --shadow-sunken: inset 0 1px 3px rgba(0,0,0,.2);
+  --shadow-frame: 0 1px 0 rgba(255,255,255,.8), inset 0 1px 0 rgba(255,255,255,.4);
+  --shadow-frame-drop: 0 22px 46px rgba(5,20,45,.4);
+  --chrome-blur: blur(6px);
+}

@@ -673,6 +673,37 @@
     localStorage.setItem('mindkeep-wallpaper', name);
   }
 
+  // Tema del chrome (finestre/taskbar/menu Avvio/pulsanti/campi) — skill
+  // mindkeep-ui, ramo sperimentale. Stessa logica di applyWallpaper: solo
+  // dispositivo, niente sync. 'windows-95' e' il default e non serve un
+  // attributo (nessun file themes.css da caricare per quel caso).
+  const THEMES = {
+    'windows-95': { label: 'Windows 95 (predefinito)' },
+    neumorphism: { label: 'Neumorphism' },
+    glassmorphism: { label: 'Glassmorphism' },
+    'macos-modern': { label: 'macOS moderno' },
+    'windows-11-fluent': { label: 'Windows 11 Fluent' },
+    'material-3': { label: 'Material 3' },
+    neubrutalism: { label: 'Neubrutalismo' },
+    cyberpunk: { label: 'Cyberpunk' },
+    'minimal-flat': { label: 'Minimal flat' },
+    'aero-glass': { label: 'Aero glass' },
+  };
+
+  function currentTheme() {
+    return localStorage.getItem('mindkeep-theme') || 'windows-95';
+  }
+
+  function applyTheme(name) {
+    if (name && name !== 'windows-95' && THEMES[name]) {
+      document.documentElement.setAttribute('data-theme', name);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      name = 'windows-95';
+    }
+    localStorage.setItem('mindkeep-theme', name);
+  }
+
   const POSTIT_CLASSES = ['postit-y', 'postit-p', 'postit-b'];
 
   // Le note sul desktop mostrano solo il titolo per restare compatte; al tocco
@@ -714,6 +745,7 @@
 
   async function buildDesktop() {
     applyWallpaper(currentWallpaper());
+    applyTheme(currentTheme());
     expandedPostit = null;
     desktopIconsEl.innerHTML = '';
     try {
@@ -2832,6 +2864,17 @@
     });
     wallpaperBlock.appendChild(wallpaperRow);
     root.appendChild(wallpaperBlock);
+
+    const themeBlock = el('<div class="section-block"><h3>Aspetto</h3><p class="card-sub">Stile di finestre, taskbar e pulsanti — solo su questo dispositivo. Sperimentale (skill mindkeep-ui).</p></div>');
+    const themeRow = el('<div class="card-actions" style="padding-top:10px"></div>');
+    Object.entries(THEMES).forEach(([key, th]) => {
+      const btn = el(`<button class="btn btn-sm${key === currentTheme() ? ' btn-primary' : ''}" data-theme-key="${key}"></button>`);
+      btn.textContent = th.label;
+      btn.addEventListener('click', () => { applyTheme(key); render('security'); });
+      themeRow.appendChild(btn);
+    });
+    themeBlock.appendChild(themeRow);
+    root.appendChild(themeBlock);
 
     const langBlock = el(`<div class="section-block"><h3>${esc(tr('settings_language'))}</h3><p class="card-sub">${esc(tr('settings_language_hint'))}</p></div>`);
     const langRow = el('<div class="card-actions" style="padding-top:10px"></div>');
