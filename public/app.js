@@ -419,7 +419,7 @@
   function showAuthScreen() {
     appRoot.classList.add('hidden');
     authScreen.classList.remove('hidden');
-    if (!authTitleDecoded) { authTitleDecoded = true; decodeReveal(authTitle, 'Mindkeep'); }
+    if (!authTitleDecoded) { authTitleDecoded = true; decodeReveal(authTitle, 'Memento'); }
   }
 
   async function checkAuth() {

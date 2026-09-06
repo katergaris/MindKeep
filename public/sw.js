@@ -48,7 +48,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { /* payload non-JSON: ignorato, resta {} */ }
-  const title = data.title || 'Mindkeep';
+  const title = data.title || 'Memento';
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',

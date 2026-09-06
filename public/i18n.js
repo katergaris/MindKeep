@@ -9,8 +9,8 @@ window.MindkeepI18n = (() => {
 
   const STRINGS = {
     it: {
-      app_name: 'Mindkeep',
-      lang_pick_title: 'Mindkeep',
+      app_name: 'Memento',
+      lang_pick_title: 'Memento',
       lang_pick_sub: 'Scegli la lingua — Choose your language',
       lang_it: 'Italiano',
       lang_en: 'English',
@@ -26,7 +26,7 @@ window.MindkeepI18n = (() => {
       auth_submit_setup: 'Crea accesso',
       auth_submit_login: 'Entra',
       auth_submit_verify: 'Verifica ed entra',
-      search_placeholder: 'Cerca in tutto Mindkeep…',
+      search_placeholder: 'Cerca in tutto Memento…',
       taskbar_start: 'Avvio',
       taskbar_new: 'Nuovo',
 
@@ -350,7 +350,7 @@ window.MindkeepI18n = (() => {
       push_inactive_hint: 'Non attive: ricevi una notifica quando una scadenza arriva a termine, anche ad app chiusa. Nessun dato lascia il tuo server.',
       btn_enable_notifications: 'Attiva notifiche',
       toast_push_enabled: 'Notifiche attivate',
-      lost_phone_hint: 'Usa uno dei codici di recupero al posto delle 6 cifre nella schermata di accesso. Se non hai nemmeno quelli, dal computer dove gira Mindkeep puoi disattivare la verifica con:',
+      lost_phone_hint: 'Usa uno dei codici di recupero al posto delle 6 cifre nella schermata di accesso. Se non hai nemmeno quelli, dal computer dove gira Memento puoi disattivare la verifica con:',
       wallpaper_classic: 'Classico',
       wallpaper_sunset: 'Vaporwave — Tramonto',
       wallpaper_palm: 'Vaporwave — Palma',
@@ -383,8 +383,8 @@ window.MindkeepI18n = (() => {
       title_quick_capture: 'Cattura veloce — sempre disponibile',
     },
     en: {
-      app_name: 'Mindkeep',
-      lang_pick_title: 'Mindkeep',
+      app_name: 'Memento',
+      lang_pick_title: 'Memento',
       lang_pick_sub: 'Scegli la lingua — Choose your language',
       lang_it: 'Italiano',
       lang_en: 'English',
@@ -400,7 +400,7 @@ window.MindkeepI18n = (() => {
       auth_submit_setup: 'Create account',
       auth_submit_login: 'Sign in',
       auth_submit_verify: 'Verify and sign in',
-      search_placeholder: 'Search all of Mindkeep…',
+      search_placeholder: 'Search all of Memento…',
       taskbar_start: 'Start',
       taskbar_new: 'New',
 
@@ -711,7 +711,7 @@ window.MindkeepI18n = (() => {
       push_inactive_hint: 'Not active: you\'ll get a notification when a deadline is due, even with the app closed. No data leaves your server.',
       btn_enable_notifications: 'Enable notifications',
       toast_push_enabled: 'Notifications enabled',
-      lost_phone_hint: 'Use one of your recovery codes instead of the 6-digit code on the sign-in screen. If you don\'t have those either, from the computer running Mindkeep you can turn off verification with:',
+      lost_phone_hint: 'Use one of your recovery codes instead of the 6-digit code on the sign-in screen. If you don\'t have those either, from the computer running Memento you can turn off verification with:',
       wallpaper_classic: 'Classic',
       wallpaper_sunset: 'Vaporwave — Sunset',
       wallpaper_palm: 'Vaporwave — Palm',

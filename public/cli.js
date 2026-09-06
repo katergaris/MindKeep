@@ -72,7 +72,7 @@
   }
 
   async function boot() {
-    print('Mindkeep — accesso da riga di comando', 'cli-banner');
+    print('Memento — accesso da riga di comando', 'cli-banner');
     try {
       const status = await api('/auth/status');
       if (status.authenticated) {
