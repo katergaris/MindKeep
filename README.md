@@ -1,10 +1,13 @@
 # Mindkeep
 
+> Su questo branch (`memento`) l'app si presenta all'utente come **"Memento"** (titolo, schermata di login, icona PWA) — un restyling ancora sperimentale, non ancora unito al branch principale. Identificatori tecnici (repository, nome del pacchetto, immagine Docker, comandi) restano `mindkeep` in entrambi i casi. Questo README usa "Mindkeep" per tutto ciò che è stabile e "Memento" solo dove descrive cosa vedi a schermo su questo branch.
+
 Spazio personale self-hosted per idee, progetti, password, account e documenti — con **fascicoli** che li collegano tra loro. Gira interamente sul tuo computer o server, dentro Docker: nessun dato lascia la tua macchina.
 
 ## Cosa contiene
 
 - **Note** — libere, con tag, `#hashtag` e checklist spuntabile
+- **Cattura veloce** — finestrella sempre disponibile (icona "+" in basso) per annotare al volo senza aprire una sezione; `@` collega a una cartella, `#` aggiunge un tag, il pulsante "Cambia tipo" trasforma la nota in promemoria/progetto al momento del salvataggio
 - **Progetti** — stato (da fare / in corso / fatto), checklist, scadenza, persone/contatti e budget, in una Bacheca kanban
 - **Vault password** — voci cifrate (AES-256-GCM), con **import da CSV**
 - **Abbonamenti** — account digitali o abbonamenti cartacei/fisici, con campi propri per ciascuno e data di rinnovo
@@ -14,6 +17,7 @@ Spazio personale self-hosted per idee, progetti, password, account e documenti �
 - **Ricerca globale** — cerca in tutte le sezioni insieme
 - **Cestino** — eliminazione soft con possibilità di ripristino
 - **Backup** — esporta un file .zip con database e documenti caricati
+- **Personalizzazione** — sfondo del desktop e skin dell'interfaccia, vedi [sezione dedicata](#personalizzazione-sfondo-e-skin)
 
 ## Requisiti
 
@@ -105,6 +109,15 @@ Il conteggio riparte a ogni utilizzo: con `SESSION_DAYS=7`, se apri Mindkeep alm
 L'interfaccia si adatta agli schermi piccoli: al posto del menu laterale compare una **barra in basso su due righe** con quasi tutte le sezioni, mentre "Altro" apre un elenco con tutte le sezioni più "Esporta backup" ed "Esci". La ricerca sta dietro l'icona della lente e si apre al tocco.
 
 Puoi anche **aggiungerlo alla schermata home** e usarlo come un'app, senza barra del browser: dal telefono apri l'indirizzo di Mindkeep e scegli "Aggiungi a schermata Home" (Safari) o "Installa app" / "Aggiungi a schermata Home" (Chrome). Serve che il telefono raggiunga il server: stessa rete di casa, oppure una VPN.
+
+## Personalizzazione: sfondo e skin
+
+Da **Sicurezza** nel menu laterale puoi scegliere:
+
+- **Sfondo del desktop**: Classico, Vaporwave Tramonto, Vaporwave Palma, Grigio — un'immagine o un colore dietro le icone del desktop.
+- **Skin dell'interfaccia** *(solo sul branch `memento`)*: Windows 95 (predefinita), Neumorphism, Glassmorphism, macOS moderno, Windows 11 Fluent, Material 3, Neubrutalismo, Cyberpunk, Minimal flat, Aero glass — cambia l'aspetto di finestre, taskbar, pulsanti e campi in tutta l'app.
+
+Entrambe le scelte sono **una preferenza del singolo dispositivo/browser** (salvate in `localStorage`, non nel database): non si sincronizzano tra dispositivi diversi e si applicano anche alla schermata di accesso, non solo al desktop dopo il login.
 
 ## Verifica in due passaggi (Google Authenticator)
 
