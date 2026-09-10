@@ -190,6 +190,9 @@
   --shadow-frame-drop: 0 20px 40px rgba(0,0,0,.6);
 }
 [data-theme="cyberpunk"] .titlebar { text-transform: uppercase; letter-spacing: .06em; }
+/* .win-btn ha "color: #111" fisso in style.css: su --win-face quasi nero
+   (#0d0c18) sarebbe illeggibile. Stesso accento ciano del testo titlebar. */
+[data-theme="cyberpunk"] .win-btn { color: var(--titlebar-text); }
 
 [data-theme="minimal-flat"] {
   --bg: #f6f5f3; --bg-2: #ffffff;

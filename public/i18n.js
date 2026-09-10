@@ -431,6 +431,7 @@ window.MindkeepI18n = (() => {
       settings_language: 'Language',
       settings_language_hint: 'This device only.',
       version_label: 'version {version}',
+      version_label_build: 'version {version} · {build}',
 
       field_title: 'Title',
       field_description: 'Description',

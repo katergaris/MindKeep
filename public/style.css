@@ -457,7 +457,7 @@ body.no-scroll { overflow: hidden; }
 }
 .start-menu-items { background: var(--win-face); padding: 3px 0; min-width: 220px; max-height: 70vh; overflow-y: auto; }
 .menu-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; color: var(--text); cursor: pointer; }
-.menu-row:hover { background: var(--sel-bg); color: #fff; }
+.menu-row:hover { background: var(--sel-bg); color: var(--sel-text); }
 .menu-divider { height: 1px; background: var(--bevel-lo); margin: 4px 8px; }
 
 /* Piu' prominente in alto/al centro invece che vicino alla taskbar — resta
@@ -493,7 +493,7 @@ body.no-scroll { overflow: hidden; }
   background: var(--win-face); cursor: pointer; font-family: inherit;
   border-radius: var(--radius-sm);
 }
-.chip:hover { background: var(--sel-bg); color: #fff; }
+.chip:hover { background: var(--sel-bg); color: var(--sel-text); }
 .chip.chip-fascicolo { color: var(--accent-soft); }
 .composer-row .btn-primary { margin-left: auto; flex: none; font-size: 12.5px; padding: 7px 15px; }
 .composer-hint {
@@ -520,8 +520,8 @@ body.no-scroll { overflow: hidden; }
 }
 .composer-menu-item .cmi-token { color: var(--accent-soft); font-family: var(--font-mono); flex: none; }
 .composer-menu-item .cmi-desc { color: var(--text-faint); font-size: 10.5px; margin-left: auto; white-space: nowrap; }
-.composer-menu-item.active, .composer-menu-item:hover { background: var(--sel-bg); color: #fff; }
-.composer-menu-item.active .cmi-token, .composer-menu-item:hover .cmi-token { color: #fff; }
+.composer-menu-item.active, .composer-menu-item:hover { background: var(--sel-bg); color: var(--sel-text); }
+.composer-menu-item.active .cmi-token, .composer-menu-item:hover .cmi-token { color: var(--sel-text); }
 
 /* ---------- Vista Progetti: griglia a icone + dettaglio singolo ---------- */
 .chip-status { display: inline-block; width: fit-content; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; }
