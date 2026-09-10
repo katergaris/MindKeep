@@ -20,15 +20,33 @@ window.MindkeepWM = (() => {
   mobileMQ.addEventListener('change', (e) => { isMobile = e.matches; adaptToViewport(); });
 
   function adaptToViewport() {
-    if (isMobile) return;
-    // Tornando a desktop, tolgo lo split forzato e ridò a ogni finestra la
-    // sua geometria libera invece di lasciarla "impilata".
     windowLayer.classList.remove('split-mode');
     splitPending = false;
+    if (!isMobile) {
+      // Tornando a desktop, tolgo lo split forzato e ridò a ogni finestra la
+      // sua geometria libera invece di lasciarla "impilata".
+      windows.forEach((win) => {
+        win.el.classList.remove('mobile-full');
+        if (!win.el.style.left) cascadePosition(win);
+      });
+      return;
+    }
+    // Restringendo la finestra del browser (o ruotando il telefono) sotto la
+    // soglia mobile con finestre gia' aperte in modalita' desktop: senza
+    // questo restavano con la vecchia geometria assoluta in pixel e
+    // traboccavano fuori schermo, invece di passare alla modalita' "una app
+    // a schermo intero alla volta" come le finestre aperte gia' da mobile.
+    let top = null;
     windows.forEach((win) => {
-      win.el.classList.remove('mobile-full');
-      if (!win.el.style.left) cascadePosition(win);
+      if (win.state !== 'normal') return;
+      if (!top || Number(win.el.style.zIndex || 0) > Number(top.el.style.zIndex || 0)) top = win;
     });
+    windows.forEach((win) => {
+      win.el.style.left = win.el.style.top = win.el.style.width = win.el.style.height = '';
+      win.el.classList.add('mobile-full');
+      if (win.state === 'normal' && top && win.id !== top.id) minimizeWindow(win.id);
+    });
+    updateSplitButtons();
   }
 
   function cascadePosition(win, size) {
@@ -308,6 +326,18 @@ window.MindkeepWM = (() => {
 
   function getWindow(id) { return windows.get(id); }
 
+  // Usata dall'Escape globale in app.js: chiude la finestra attualmente a
+  // fuoco solo se non c'era nient'altro (modale/menu/anteprima) da chiudere
+  // prima - vedi il keydown in app.js, che prova quelli in ordine e arriva
+  // qui solo come ultima risorsa.
+  function closeFocusedWindow() {
+    let found = null;
+    windows.forEach((w) => { if (w.state === 'normal' && w.el.classList.contains('focused')) found = w; });
+    if (!found) return false;
+    closeWindow(found.id);
+    return true;
+  }
+
   function tickClock() {
     if (!taskbarClock) return;
     const now = new Date();
@@ -318,5 +348,5 @@ window.MindkeepWM = (() => {
   tickClock();
   setInterval(tickClock, 30000);
 
-  return { openWindow, closeWindow, focusWindow, minimizeWindow, restoreWindow, getWindow };
+  return { openWindow, closeWindow, focusWindow, minimizeWindow, restoreWindow, getWindow, closeFocusedWindow };
 })();

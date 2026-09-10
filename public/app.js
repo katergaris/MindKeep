@@ -289,7 +289,9 @@
   }
 
   function closeModal() {
-    if (activeModal) { activeModal.remove(); activeModal = null; }
+    if (!activeModal) return false;
+    activeModal.remove(); activeModal = null;
+    return true;
   }
 
   // ---------------- Anteprima documento a schermo intero ----------------
@@ -307,7 +309,9 @@
   let activePreview = null;
 
   function closePreview() {
-    if (activePreview) { activePreview.remove(); activePreview = null; }
+    if (!activePreview) return false;
+    activePreview.remove(); activePreview = null;
+    return true;
   }
 
   function openDocumentPreview(doc) {
@@ -342,10 +346,16 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    closePreview();
-    closeModal();
-    if (typeof closeStartMenu === 'function') closeStartMenu();
-    if (typeof closeQuickCapture === 'function') closeQuickCapture();
+    // Chiude tutti i livelli "locali" gia' aperti (come prima), e se non
+    // ce n'era nessuno chiude come ultima risorsa la finestra a fuoco
+    // (stesso effetto della sua ×) - cosi' Escape su una finestra senza
+    // nient'altro sopra non resta senza alcun effetto.
+    let closedSomething = false;
+    if (closePreview()) closedSomething = true;
+    if (closeModal()) closedSomething = true;
+    if (typeof closeStartMenu === 'function' && closeStartMenu()) closedSomething = true;
+    if (typeof closeQuickCapture === 'function' && closeQuickCapture()) closedSomething = true;
+    if (!closedSomething && window.MindkeepWM) window.MindkeepWM.closeFocusedWindow();
   });
 
   function el(html) {
@@ -360,6 +370,20 @@
       return frag;
     }
     return div.firstElementChild;
+  }
+
+  // Rende un <div>/<span> cliccabile raggiungibile e attivabile da tastiera
+  // (Tab per il focus, Invio/Spazio per attivare) senza cambiare il click
+  // esistente. Serve per elementi che semanticamente sono voci di menu/opzioni
+  // ma non possono essere <button> per via dello stile (bordo/hover custom).
+  function makeActivatable(elm, role, onActivate) {
+    elm.setAttribute('tabindex', '0');
+    elm.setAttribute('role', role);
+    elm.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      onActivate(e);
+    });
   }
 
   // ---------------- Effetto "decodifica" per il nome (una tantum) ----------------
@@ -582,13 +606,18 @@
         items.appendChild(el('<div class="menu-divider"></div>'));
       }
       const row = el(`<div class="menu-row" data-view="${s.view}">${appIcon(s.view)}<span>${esc(s.label)}</span></div>`);
-      row.addEventListener('click', () => { closeStartMenu(); render(s.view); });
+      const activate = () => { closeStartMenu(); render(s.view); };
+      row.addEventListener('click', activate);
+      makeActivatable(row, 'menuitem', activate);
       items.appendChild(row);
     });
     items.appendChild(el('<div class="menu-divider"></div>'));
     const esci = el(`<div class="menu-row">${appIcon('esci')}<span>${esc(tr('btn_logout'))}</span></div>`);
-    esci.addEventListener('click', () => { closeStartMenu(); logout(); });
+    const activateLogout = () => { closeStartMenu(); logout(); };
+    esci.addEventListener('click', activateLogout);
+    makeActivatable(esci, 'menuitem', activateLogout);
     items.appendChild(esci);
+    items.setAttribute('role', 'menu');
     startMenu.appendChild(sidebar);
     startMenu.appendChild(items);
   }
@@ -599,8 +628,10 @@
     btnStart.classList.add('pressed');
   }
   function closeStartMenu() {
+    const wasOpen = !startMenu.classList.contains('hidden');
     startMenu.classList.add('hidden');
     btnStart.classList.remove('pressed');
+    return wasOpen;
   }
   btnStart.addEventListener('click', () => {
     if (startMenu.classList.contains('hidden')) openStartMenu(); else closeStartMenu();
@@ -809,6 +840,7 @@
   ];
 
   function closeQuickCapture() {
+    const wasOpen = !quickCaptureEl.classList.contains('hidden');
     quickCaptureEl.classList.add('hidden');
     quickCaptureEl.innerHTML = '';
     // Riportata alla posizione di default (in alto al centro): uno
@@ -819,6 +851,7 @@
     quickCaptureEl.style.transform = '';
     btnNuovo.classList.remove('pressed');
     qcMenuEl = null; qcMenuItems = []; qcMenuTrigger = null; qcSelectedDossier = null;
+    return wasOpen;
   }
 
   // Trascinamento libero del riquadro tramite la barretta in cima — stessa
@@ -893,15 +926,23 @@
     }
     function highlightQcMenu() {
       if (!qcMenuEl) return;
-      qcMenuEl.querySelectorAll('.composer-menu-item').forEach((n, i) => n.classList.toggle('active', i === qcMenuActive));
+      qcMenuEl.querySelectorAll('.composer-menu-item').forEach((n, i) => {
+        const isActive = i === qcMenuActive;
+        n.classList.toggle('active', isActive);
+        n.setAttribute('aria-selected', String(isActive));
+      });
     }
     function openQcMenu(items) {
       if (qcMenuEl) { qcMenuEl.remove(); qcMenuEl = null; }
       if (!items.length) { qcMenuItems = []; return; }
       qcMenuItems = items; qcMenuActive = 0;
-      qcMenuEl = el('<div class="composer-menu"></div>');
+      qcMenuEl = el('<div class="composer-menu" role="listbox"></div>');
       items.forEach((it, i) => {
-        const row = el(`<div class="composer-menu-item ${i === 0 ? 'active' : ''}"><span class="cmi-token">${esc(it.token)}</span><span class="cmi-desc">${esc(it.desc)}</span></div>`);
+        const row = el(`<div class="composer-menu-item ${i === 0 ? 'active' : ''}" role="option" aria-selected="${i === 0}"><span class="cmi-token">${esc(it.token)}</span><span class="cmi-desc">${esc(it.desc)}</span></div>`);
+        // mousedown (non click) apposta: previene il blur della textarea, che
+        // deve restare a fuoco per le frecce/Invio (vedi keydown piu' sotto) -
+        // questo e' un combobox pilotato da tastiera sulla textarea, non una
+        // lista di voci tabbabili singolarmente.
         row.addEventListener('mousedown', (e) => { e.preventDefault(); selectQcMenuItem(i); });
         qcMenuEl.appendChild(row);
       });
@@ -2960,11 +3001,13 @@
       } else {
         results.slice(0, 20).forEach((r) => {
           const item = el(`<div class="search-result-item"><span>${esc(r.label)}</span><span class="search-result-tag">${esc(TYPE_LABELS[r.type] || r.type)}</span></div>`);
-          item.addEventListener('click', () => {
+          const activate = () => {
             searchResults.classList.add('hidden');
             searchInput.value = '';
             render(TYPE_TO_VIEW[r.type] || 'ideas', { highlight: r.id });
-          });
+          };
+          item.addEventListener('click', activate);
+          makeActivatable(item, 'option', activate);
           searchResults.appendChild(item);
         });
       }

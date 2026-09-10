@@ -281,9 +281,9 @@ input:focus, textarea:focus, select:focus {
   border-bottom: 1px solid var(--border-soft);
 }
 .search-result-item:last-child { border-bottom: none; }
-.search-result-item:hover { background: var(--sel-bg); color: var(--sel-text); }
+.search-result-item:hover, .search-result-item:focus-visible { background: var(--sel-bg); color: var(--sel-text); outline: none; }
 .search-result-tag { color: var(--accent-soft); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
-.search-result-item:hover .search-result-tag { color: var(--sel-text); }
+.search-result-item:hover .search-result-tag, .search-result-item:focus-visible .search-result-tag { color: var(--sel-text); }
 
 .icon { width: 20px; height: 20px; flex-shrink: 0; }
 .icon-btn {
@@ -457,7 +457,7 @@ body.no-scroll { overflow: hidden; }
 }
 .start-menu-items { background: var(--win-face); padding: 3px 0; min-width: 220px; max-height: 70vh; overflow-y: auto; }
 .menu-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; color: var(--text); cursor: pointer; }
-.menu-row:hover { background: var(--sel-bg); color: var(--sel-text); }
+.menu-row:hover, .menu-row:focus-visible { background: var(--sel-bg); color: var(--sel-text); outline: none; }
 .menu-divider { height: 1px; background: var(--bevel-lo); margin: 4px 8px; }
 
 /* Piu' prominente in alto/al centro invece che vicino alla taskbar — resta
@@ -487,14 +487,6 @@ body.no-scroll { overflow: hidden; }
   width: 100%; resize: none; font-size: 14px; line-height: 1.5; min-height: 24px;
 }
 .composer-row { display: flex; align-items: center; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
-.chip {
-  font-size: 11px; padding: 3px 7px; border: 1px solid var(--border-soft);
-  color: var(--text-muted); white-space: nowrap; flex: none;
-  background: var(--win-face); cursor: pointer; font-family: inherit;
-  border-radius: var(--radius-sm);
-}
-.chip:hover { background: var(--sel-bg); color: var(--sel-text); }
-.chip.chip-fascicolo { color: var(--accent-soft); }
 .composer-row .btn-primary { margin-left: auto; flex: none; font-size: 12.5px; padding: 7px 15px; }
 .composer-hint {
   display: flex; gap: 12px; margin-top: 8px; font-size: 10.5px; color: var(--text-faint);
@@ -776,6 +768,11 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   .icon-btn { min-width: 44px; min-height: 44px; }
   input, textarea, select { font-size: 16px; } /* evita lo zoom automatico su iOS */
 
+  /* I pulsanti finestra (min/max/chiudi) restavano a 20x18px anche qui,
+     ben sotto le dimensioni minime consigliate per un tocco preciso. */
+  .win-btn { min-width: 44px; min-height: 40px; }
+  .titlebar-btns { gap: 2px; }
+
   .view-header { margin-bottom: 16px; }
   .view-header h2 { font-size: 1.25rem; }
   .view-header-actions { width: 100%; }
@@ -810,7 +807,6 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   .btn-icon { width: 40px; height: 40px; }
   .btn-icon .icon { width: 18px; height: 18px; }
 
-  .chip { font-size: 12.5px; padding: 4px 8px; }
   .composer-hint { font-size: 12px; }
   .composer-link-badge, .composer-link-badge button { font-size: 12.5px; }
   .composer-menu-item { font-size: 13px; }
