@@ -768,11 +768,6 @@ img.preview-media { object-fit: contain; background: #0a0a0a; }
   .icon-btn { min-width: 44px; min-height: 44px; }
   input, textarea, select { font-size: 16px; } /* evita lo zoom automatico su iOS */
 
-  /* I pulsanti finestra (min/max/chiudi) restavano a 20x18px anche qui,
-     ben sotto le dimensioni minime consigliate per un tocco preciso. */
-  .win-btn { min-width: 44px; min-height: 40px; }
-  .titlebar-btns { gap: 2px; }
-
   .view-header { margin-bottom: 16px; }
   .view-header h2 { font-size: 1.25rem; }
   .view-header-actions { width: 100%; }
