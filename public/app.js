@@ -677,8 +677,11 @@
   // ---------------- Desktop: sfondo, cartelle e note recenti come icone ----------------
   // Lo sfondo e' una preferenza solo del dispositivo (localStorage), non un
   // dato di Mindkeep: niente migrazione, niente sincronizzazione fra dispositivi.
+  // "classico" non ha un suo themeColor: lascia che sia lo skin attivo a
+  // decidere il colore (vedi updateThemeColorMeta) invece di forzare sempre
+  // il teal di Windows 95 anche quando e' selezionato un altro skin.
   const WALLPAPERS = {
-    classico: { label: tr('wallpaper_classic'), themeColor: '#008080' },
+    classico: { label: tr('wallpaper_classic') },
     'vaporwave-tramonto': { label: tr('wallpaper_sunset'), url: '/wallpapers/wp-tramonto.jpg', themeColor: '#442e64' },
     'vaporwave-palma': { label: tr('wallpaper_palm'), url: '/wallpapers/wp-palma.jpg', themeColor: '#43294b' },
     grigio: { label: tr('wallpaper_gray'), color: '#6b6b76', themeColor: '#6b6b76' },
@@ -691,15 +694,25 @@
     return localStorage.getItem('mindkeep-wallpaper') || 'classico';
   }
 
-  // Applica sfondo/theme-color ovunque, incluse le schermate di login/lingua
-  // (che non hanno un elemento "desktop" da riempire, quindi qui usiamo solo
-  // colore/immagine piatti — mai il fallback col logo, pensato solo per il desktop).
+  // Colore della barra del browser/PWA: il wallpaper vince se ne ha uno suo
+  // (grigio, vaporwave...), altrimenti decide lo skin attivo - cosi' con
+  // "classico" (che non impone nulla) si vede il colore del tema scelto
+  // invece di un teal fisso che ignorava quale skin fosse selezionato.
+  function updateThemeColorMeta() {
+    const wp = WALLPAPERS[currentWallpaper()] || WALLPAPERS.classico;
+    const theme = THEMES[currentTheme()] || THEMES['windows-95'];
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) themeColorMeta.setAttribute('content', wp.themeColor || theme.themeColor || '#008080');
+  }
+
+  // Applica lo sfondo anche alle schermate di login/lingua (che non hanno un
+  // elemento "desktop" da riempire, quindi qui usiamo solo colore/immagine
+  // piatti — mai il fallback col logo, pensato solo per il desktop).
   function applyGlobalTheme(name) {
     const wp = WALLPAPERS[name] || WALLPAPERS.classico;
     const bg = wp.url ? `url(${wp.url}) center/cover` : (wp.color || '');
     authScreenEls.forEach((screenEl) => { screenEl.style.background = bg; });
-    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) themeColorMeta.setAttribute('content', wp.themeColor || '#008080');
+    updateThemeColorMeta();
   }
 
   function applyWallpaper(name) {
@@ -721,17 +734,20 @@
   // mindkeep-ui, ramo sperimentale. Stessa logica di applyWallpaper: solo
   // dispositivo, niente sync. 'windows-95' e' il default e non serve un
   // attributo (nessun file themes.css da caricare per quel caso).
+  // themeColor qui sotto = --accent di ciascuno skin in themes.css (il
+  // colore che lo rappresenta meglio), usato per la barra del browser/PWA
+  // quando il wallpaper e' "classico" (vedi updateThemeColorMeta).
   const THEMES = {
-    'windows-95': { label: 'Windows 95 (predefinito)' },
-    neumorphism: { label: 'Neumorphism' },
-    glassmorphism: { label: 'Glassmorphism' },
-    'macos-modern': { label: 'macOS moderno' },
-    'windows-11-fluent': { label: 'Windows 11 Fluent' },
-    'material-3': { label: 'Material 3' },
-    neubrutalism: { label: 'Neubrutalismo' },
-    cyberpunk: { label: 'Cyberpunk' },
-    'minimal-flat': { label: 'Minimal flat' },
-    'aero-glass': { label: 'Aero glass' },
+    'windows-95': { label: 'Windows 95 (predefinito)', themeColor: '#008080' },
+    neumorphism: { label: 'Neumorphism', themeColor: '#5b7fdb' },
+    glassmorphism: { label: 'Glassmorphism', themeColor: '#4338ca' },
+    'macos-modern': { label: 'macOS moderno', themeColor: '#0a6cff' },
+    'windows-11-fluent': { label: 'Windows 11 Fluent', themeColor: '#0067c0' },
+    'material-3': { label: 'Material 3', themeColor: '#65558f' },
+    neubrutalism: { label: 'Neubrutalismo', themeColor: '#111111' },
+    cyberpunk: { label: 'Cyberpunk', themeColor: '#00f6ff' },
+    'minimal-flat': { label: 'Minimal flat', themeColor: '#3b6e5e' },
+    'aero-glass': { label: 'Aero glass', themeColor: '#1c5ba8' },
   };
 
   function currentTheme() {
@@ -746,6 +762,7 @@
       name = 'windows-95';
     }
     localStorage.setItem('mindkeep-theme', name);
+    updateThemeColorMeta();
   }
 
   // Applicati subito al caricamento dello script (le schermate di login/lingua
