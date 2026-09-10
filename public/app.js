@@ -1049,7 +1049,7 @@
     });
     const contentEl = win.contentEl;
     contentEl.innerHTML = '';
-    contentEl.appendChild(el('<div class="empty-state">Carico…</div>'));
+    contentEl.appendChild(el(`<div class="empty-state">${esc(tr('loading_label'))}</div>`));
     try {
       await views[view](contentEl, opts);
       // Cartelle e Note compaiono anche come icone sul desktop: ogni volta che
@@ -1058,7 +1058,7 @@
       if (view === 'ideas' || view === 'dossiers') buildDesktop();
     } catch (err) {
       contentEl.innerHTML = '';
-      contentEl.appendChild(el(`<div class="empty-state">Errore: ${esc(err.message)}</div>`));
+      contentEl.appendChild(el(`<div class="empty-state">${esc(tr('err_view_prefix'))}: ${esc(err.message)}</div>`));
     }
   }
 
