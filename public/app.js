@@ -647,16 +647,28 @@
   // Lo sfondo e' una preferenza solo del dispositivo (localStorage), non un
   // dato di Mindkeep: niente migrazione, niente sincronizzazione fra dispositivi.
   const WALLPAPERS = {
-    classico: { label: tr('wallpaper_classic') },
-    'vaporwave-tramonto': { label: tr('wallpaper_sunset'), url: '/wallpapers/wp-tramonto.jpg' },
-    'vaporwave-palma': { label: tr('wallpaper_palm'), url: '/wallpapers/wp-palma.jpg' },
-    grigio: { label: tr('wallpaper_gray'), color: '#6b6b76' },
+    classico: { label: tr('wallpaper_classic'), themeColor: '#008080' },
+    'vaporwave-tramonto': { label: tr('wallpaper_sunset'), url: '/wallpapers/wp-tramonto.jpg', themeColor: '#442e64' },
+    'vaporwave-palma': { label: tr('wallpaper_palm'), url: '/wallpapers/wp-palma.jpg', themeColor: '#43294b' },
+    grigio: { label: tr('wallpaper_gray'), color: '#6b6b76', themeColor: '#6b6b76' },
   };
   const desktopWallpaperEl = document.getElementById('desktop-wallpaper');
+  const authScreenEls = document.querySelectorAll('.auth-screen');
   const desktopIconsEl = document.getElementById('desktop-icons');
 
   function currentWallpaper() {
     return localStorage.getItem('mindkeep-wallpaper') || 'classico';
+  }
+
+  // Applica sfondo/theme-color ovunque, incluse le schermate di login/lingua
+  // (che non hanno un elemento "desktop" da riempire, quindi qui usiamo solo
+  // colore/immagine piatti — mai il fallback col logo, pensato solo per il desktop).
+  function applyGlobalTheme(name) {
+    const wp = WALLPAPERS[name] || WALLPAPERS.classico;
+    const bg = wp.url ? `url(${wp.url}) center/cover` : (wp.color || '');
+    authScreenEls.forEach((screenEl) => { screenEl.style.background = bg; });
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) themeColorMeta.setAttribute('content', wp.themeColor || '#008080');
   }
 
   function applyWallpaper(name) {
@@ -671,7 +683,13 @@
       desktopWallpaperEl.appendChild(el('<img class="wallpaper-logo" src="/icon-512.png" alt="" />'));
     }
     localStorage.setItem('mindkeep-wallpaper', name);
+    applyGlobalTheme(name);
   }
+
+  // Applicato subito al caricamento dello script (le schermate di login/lingua
+  // sono gia' nel DOM a questo punto, lo script e' in fondo al body) cosi' anche
+  // chi non ha ancora sbloccato il vault vede lo sfondo scelto in precedenza.
+  applyGlobalTheme(currentWallpaper());
 
   // Tema del chrome (finestre/taskbar/menu Avvio/pulsanti/campi) — skill
   // mindkeep-ui, ramo sperimentale. Stessa logica di applyWallpaper: solo
