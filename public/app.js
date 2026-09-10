@@ -686,11 +686,6 @@
     applyGlobalTheme(name);
   }
 
-  // Applicato subito al caricamento dello script (le schermate di login/lingua
-  // sono gia' nel DOM a questo punto, lo script e' in fondo al body) cosi' anche
-  // chi non ha ancora sbloccato il vault vede lo sfondo scelto in precedenza.
-  applyGlobalTheme(currentWallpaper());
-
   // Tema del chrome (finestre/taskbar/menu Avvio/pulsanti/campi) — skill
   // mindkeep-ui, ramo sperimentale. Stessa logica di applyWallpaper: solo
   // dispositivo, niente sync. 'windows-95' e' il default e non serve un
@@ -721,6 +716,14 @@
     }
     localStorage.setItem('mindkeep-theme', name);
   }
+
+  // Applicati subito al caricamento dello script (le schermate di login/lingua
+  // sono gia' nel DOM a questo punto, lo script e' in fondo al body) cosi' anche
+  // chi non ha ancora sbloccato il vault vede sfondo e skin scelti in precedenza,
+  // non solo chi e' gia' arrivato al desktop (data-theme su <html> si eredita
+  // ovunque via CSS, incluso .auth-screen: vedi themes.css).
+  applyGlobalTheme(currentWallpaper());
+  applyTheme(currentTheme());
 
   const POSTIT_CLASSES = ['postit-y', 'postit-p', 'postit-b'];
 
